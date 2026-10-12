@@ -9,6 +9,7 @@ Core Java interview topics taught as **concept → picture → example → gotch
 - Part 4: Multithreading and concurrency
 - Part 5: Spring Boot, JPA, microservices
 - Part 6: Real-world scenarios
+- Part 7: Language features in depth
 
 New to a topic? Start with its **Theory: start here** section: the idea in one sentence, a plain-language explanation with an everyday analogy, key terms, how it works step by step, how it shows up in real projects, and common mistakes. No prior knowledge is assumed.
 
@@ -4762,6 +4763,399 @@ The fix is to use immutable, thread-safe replacements (`DateTimeFormatter`, java
 
 - Assuming a class is thread-safe because it's in the JDK.
 - Trusting single-threaded unit tests for concurrency bugs.
+
+---
+
+# Part 7: Language features in depth
+
+## 7.1 Enums with fields and behaviour
+
+*Interview priority: must-know.* An enum is a class with a fixed set of instances. Give it fields and logic, switch over it exhaustively, store it safely, and use EnumMap.
+
+#### Theory: start here
+
+**In one sentence:** An enum defines a type with a fixed, named set of values, and each value is a real object that can hold data and behaviour.
+
+Many things in a program have a small fixed set of possible values: order status, day of week, payment method. Using Strings ("PAID") or ints (2) for them invites typos and invalid values. An **enum** makes them a type: `OrderStatus.PAID` is checked by the compiler, and nothing else can be passed.
+
+Each enum constant is a single object created once, so you compare with `==`. Because enums are classes, constants can carry fields (like `isTerminal`) and methods (like `canMoveTo`), keeping related rules in one place.
+
+**Key terms**
+
+- **Constant**: One named instance of the enum (PAID).
+- **ordinal()**: Position in the declaration (0, 1, 2…).
+- **name() / valueOf()**: Constant → String / String → constant.
+- **EnumMap / EnumSet**: Fast collections specialised for enum keys.
+- **Exhaustive switch**: A switch expression covering every constant, checked by the compiler.
+
+**How it works**
+
+1. Declare constants, optionally with constructor arguments.
+2. Add fields, a (private) constructor and methods.
+3. Use constants directly, compare with ==, switch over them.
+4. Convert from text with valueOf (handle IllegalArgumentException).
+
+**In real projects**
+
+- Model statuses, types and modes as enums, with the business rules on them.
+- Persist with `@Enumerated(EnumType.STRING)`.
+- Use EnumMap for per-status counters or handlers.
+
+**Common mistakes**
+
+- Storing ordinals in the database.
+- Switching on enums with a default that silently swallows new constants.
+- Using valueOf on raw user input without handling bad values.
+
+#### Code
+
+```java
+public enum OrderStatus {
+  PENDING(false), PAID(false), SHIPPED(true), CANCELLED(true);
+
+  private final boolean terminal;               // enums can have fields
+  OrderStatus(boolean terminal) { this.terminal = terminal; }
+  public boolean isTerminal() { return terminal; }
+
+  public boolean canMoveTo(OrderStatus next) {  // and behaviour
+    return switch (this) {
+      case PENDING -> next == PAID || next == CANCELLED;
+      case PAID    -> next == SHIPPED || next == CANCELLED;
+      case SHIPPED, CANCELLED -> false;
+    };
+  }
+}
+OrderStatus s = OrderStatus.valueOf("PAID");    // from a String
+boolean same = (s == OrderStatus.PAID);         // == is safe for enums
+Map<OrderStatus, Long> counts = new EnumMap<>(OrderStatus.class);
+```
+
+#### Remember
+
+- Enum = class with a fixed set of singleton instances; can have fields, constructors, methods, implement interfaces.
+- Switch expressions over enums are exhaustive: adding a constant breaks unhandled switches at compile time.
+- Compare with ==; use EnumMap/EnumSet; persist with EnumType.STRING, never ORDINAL.
+
+## 7.2 Reflection and annotations
+
+*Interview priority: good to know.* Annotations are labels on code; reflection lets a program inspect and call its own classes at run time. Together they're how Spring, JPA and JUnit work. Build a tiny `@Timed` framework to see it.
+
+#### Theory: start here
+
+**In one sentence:** Annotations attach metadata to code; reflection lets a program read that metadata and inspect or call classes at run time. Frameworks combine the two.
+
+An **annotation** like `@Transactional` or `@Test` is a label. On its own it does nothing; it's information for some tool. That tool might be the compiler (`@Override`), an annotation processor that generates code (Lombok), or a framework that reads it while the program runs.
+
+**Reflection** is how a program examines itself at run time: list a class's methods and fields, read their annotations, create objects and call methods by name. Spring uses reflection at startup to find your `@Component` classes, inject constructors and decide which methods need proxies.
+
+**Key terms**
+
+- **@interface**: Declares an annotation type.
+- **@Retention**: SOURCE, CLASS or RUNTIME: how long the annotation is kept.
+- **@Target**: Where the annotation may be used.
+- **Class object**: Run-time description of a class (Foo.class).
+- **Method.invoke**: Calls a method reflectively.
+- **Annotation processor**: A compiler plugin that reads annotations and generates code.
+
+**How it works**
+
+1. Define an annotation with RUNTIME retention.
+2. Place it on classes, methods or fields.
+3. At run time, get the Class / Method / Field objects.
+4. Read annotations with getAnnotation and act on them (call, wrap, validate).
+
+**In real projects**
+
+- You'll rarely write reflection by hand; you'll use annotations that frameworks read.
+- Custom annotations + an aspect (5.3) are a clean way to add auditing, timing or rate limiting.
+
+**Common mistakes**
+
+- Forgetting RUNTIME retention, so the annotation is invisible.
+- Using reflection in hot paths.
+- Reflecting into private JDK internals (blocked since Java 17).
+
+#### Code
+
+```java
+@Retention(RetentionPolicy.RUNTIME)            // keep it at run time
+@Target(ElementType.METHOD)                    // only allowed on methods
+public @interface Timed { String value() default ""; }
+
+class ReportService {
+  @Timed("report.build")
+  public String build(int id) { return "report-" + id; }
+}
+
+// A tiny "framework" that reads the annotation
+Method m = ReportService.class.getMethod("build", int.class);
+Timed t = m.getAnnotation(Timed.class);        // null if absent
+long start = System.nanoTime();
+Object result = m.invoke(new ReportService(), 42);
+System.out.println(t.value() + " took " + (System.nanoTime() - start) + " ns");
+```
+
+#### Remember
+
+- Annotations are metadata; they do nothing until code reads them. Retention RUNTIME is needed for reflection.
+- Reflection: Class → getMethod / getDeclaredFields / getAnnotation → invoke. Flexible, but no compile-time checks and slower.
+- Spring, JPA, JUnit = annotations + reflection + proxies at startup; annotation processors do it at compile time.
+
+## 7.3 Collectors in depth: grouping, partitioning, toMap
+
+*Interview priority: must-know.* The stream collectors interviewers actually ask about, run on one small data set: groupingBy with downstream collectors, partitioningBy, the toMap duplicate-key trap, joining, and sorted results.
+
+#### Theory: start here
+
+**In one sentence:** Collectors describe how a stream's elements are gathered into a final result, such as a list, a grouped map, a count or a joined string.
+
+A stream pipeline ends with a terminal operation. `collect(collector)` is the most flexible one: the collector decides what to build. Simple ones: `toList()`, `toSet()`, `joining()`. Powerful ones build maps: `groupingBy` groups elements by a key, `partitioningBy` splits them into true/false, and `toMap` creates one entry per element.
+
+Grouping collectors take a second, **downstream** collector that decides what each group becomes: a count, a sum, a set of names. This is the Java equivalent of SQL's GROUP BY.
+
+**Key terms**
+
+- **Collector**: A recipe for accumulating elements into a result.
+- **groupingBy**: Map from key → elements (or a downstream result).
+- **Downstream collector**: What to do with each group (counting, summing, mapping…).
+- **partitioningBy**: Map with exactly two keys: true and false.
+- **Merge function**: toMap's rule for combining values with the same key.
+
+**How it works**
+
+1. Pick the shape you want: list, map, string, number.
+2. For maps: choose key function, then downstream or value function.
+3. Handle duplicates (toMap merge function) and choose the map type if order matters.
+4. Collect.
+
+**In real projects**
+
+- Reports and dashboards: totals per customer, counts per status.
+- Index a list by id: `toMap(User::id, identity())` when ids are unique.
+
+**Common mistakes**
+
+- toMap without a merge function on data that may contain duplicate keys.
+- Assuming groupingBy's map is sorted.
+- Building huge in-memory groupings that belong in a SQL query.
+
+#### Code
+
+```java
+record Order(String customer, String city, long amount, boolean paid) {}
+
+Map<String, List<Order>> byCity =
+    orders.stream().collect(groupingBy(Order::city));
+Map<String, Long> totalByCity =
+    orders.stream().collect(groupingBy(Order::city, summingLong(Order::amount)));
+Map<Boolean, Long> paidCount =
+    orders.stream().collect(partitioningBy(Order::paid, counting()));
+Map<String, Long> byCustomer =
+    orders.stream().collect(toMap(Order::customer, Order::amount));
+Map<String, Long> merged =
+    orders.stream().collect(toMap(Order::customer, Order::amount, Long::sum));
+String names = orders.stream().map(Order::customer).distinct()
+    .sorted().collect(joining(", ", "[", "]"));
+TreeMap<String, Long> countByCity = orders.stream()
+    .collect(groupingBy(Order::city, TreeMap::new, counting()));
+```
+
+#### Remember
+
+- groupingBy(key[, mapFactory][, downstream]) — downstream: counting, summingLong, mapping, toSet…
+- partitioningBy always has both true and false keys.
+- toMap throws on duplicate keys (and null values): pass a merge function.
+
+## 7.4 Date and time with java.time
+
+*Interview priority: good to know.* Instant, LocalDate, LocalDateTime and ZonedDateTime each mean something different. Watch a meeting fall into a daylight-saving gap, months clamp, and why servers store UTC.
+
+#### Theory: start here
+
+**In one sentence:** java.time separates exact moments (Instant) from calendar dates and wall-clock times (LocalDate, LocalDateTime) and from time zones (ZonedDateTime), and every type is immutable.
+
+Time is harder than it looks. "2026-03-29 02:30" means different moments in Berlin and Mumbai, and in Berlin on that day it doesn't exist at all because clocks jump forward for daylight saving. The old `Date` and `Calendar` classes mixed these ideas and were mutable.
+
+The **java.time** API (Java 8) gives each idea its own type: **Instant** for a precise moment, **LocalDate** for a calendar date, **LocalDateTime** for a date and time without a zone, **ZonedDateTime** for local time in a specific zone, **Duration** and **Period** for amounts of time.
+
+**Key terms**
+
+- **Instant**: A moment on the UTC timeline.
+- **LocalDate / LocalDateTime**: Calendar date / date-time without a zone.
+- **ZoneId**: A time zone with its rules, e.g. Europe/Berlin.
+- **DST**: Daylight saving time: clocks jump, creating gaps and overlaps.
+- **Duration / Period**: Exact time amount / calendar amount.
+- **ISO-8601**: Standard text format: 2026-03-31T09:15:00Z.
+
+**How it works**
+
+1. Capture moments as Instant (UTC).
+2. Keep dates without time as LocalDate.
+3. Convert to ZonedDateTime with the user's ZoneId only for display or local rules.
+4. Format and parse with DateTimeFormatter (ISO by default).
+
+**In real projects**
+
+- Database: timestamp with time zone (stored in UTC) for moments; date for plain dates.
+- Inject `Clock` into services so tests can fix "now".
+
+**Common mistakes**
+
+- Using LocalDateTime for timestamps across regions.
+- Scheduling at local times inside DST transitions.
+- Mixing old Date/SimpleDateFormat with java.time.
+
+#### Code
+
+```java
+Instant now = Instant.now();                          // a point on the timeline (UTC)
+LocalDate due = LocalDate.of(2026, 3, 31);            // a calendar date, no time zone
+LocalDateTime meeting = LocalDateTime.of(2026, 3, 29, 2, 30);   // no zone either!
+ZonedDateTime inBerlin = meeting.atZone(ZoneId.of("Europe/Berlin"));
+ZonedDateTime inIndia = inBerlin.withZoneSameInstant(ZoneId.of("Asia/Kolkata"));
+LocalDate nextMonth = due.plusMonths(1);
+Duration d = Duration.between(now, now.plusSeconds(5400));
+Period p = Period.between(LocalDate.of(1990, 5, 20), due);
+String s = due.format(DateTimeFormatter.ISO_LOCAL_DATE);
+```
+
+#### Remember
+
+- Instant = moment (UTC); LocalDate/LocalDateTime = wall calendar, no zone; ZonedDateTime = local time + zone rules.
+- Store UTC, convert at the edges; DST gaps/overlaps make some local times invalid or ambiguous.
+- java.time is immutable and thread-safe; Duration = exact, Period = calendar; inject a Clock for tests.
+
+## 7.5 I/O, NIO files and serialization
+
+*Interview priority: good to know.* Read and write files the modern way with Path and Files, avoid loading huge files into memory, close resources safely, and turn objects into JSON (and why Java's built-in serialization is risky).
+
+#### Theory: start here
+
+**In one sentence:** Java reads and writes data as streams of bytes or characters; the modern Files API handles files simply, and serialization turns objects into bytes or text such as JSON.
+
+Every program reads or writes data: files, network sockets, HTTP bodies. Java models these as **streams** (not the same as the Stream API): you read or write a sequence of bytes, or characters decoded with a charset. Resources like files and sockets must be **closed**, which try-with-resources guarantees.
+
+To save or send an object, you **serialize** it: turn it into JSON, binary or another format. Today that's usually JSON with Jackson. Java's built-in object serialization still exists but is discouraged for security and compatibility reasons.
+
+**Key terms**
+
+- **InputStream / OutputStream**: Byte-oriented I/O.
+- **Reader / Writer**: Character-oriented I/O using a charset.
+- **Path / Files**: Modern file API (NIO.2).
+- **Buffering**: Collecting data in memory to read/write in efficient chunks.
+- **Serialization**: Object → bytes/text; deserialization is the reverse.
+- **transient**: Field excluded from Java serialization.
+
+**How it works**
+
+1. Locate the file with Path.of.
+2. Small file: Files.readString / readAllLines. Big file: Files.lines or a BufferedReader, inside try-with-resources.
+3. Write with Files.writeString or a BufferedWriter.
+4. For objects, map to and from JSON with an ObjectMapper.
+
+**In real projects**
+
+- Process large CSV/log files line by line.
+- Configure Jackson once (dates as ISO, unknown properties policy) and share the ObjectMapper.
+
+**Common mistakes**
+
+- Reading huge files fully into memory.
+- Not closing streams (file descriptor leaks).
+- Deserializing untrusted data with ObjectInputStream.
+
+#### Code
+
+```java
+Path file = Path.of("orders.csv");
+List<String> all = Files.readAllLines(file);          // whole file in memory
+try (Stream<String> lines = Files.lines(file)) {      // lazy: one line at a time
+  long paid = lines.filter(l -> l.endsWith(",PAID")).count();
+}                                                     // file closed here
+try (BufferedWriter w = Files.newBufferedWriter(Path.of("out.txt"))) {
+  w.write("total=" + all.size());
+}                                                     // flushed + closed here
+
+record OrderDto(long id, String customer) {}
+String json = mapper.writeValueAsString(new OrderDto(7, "Ana"));
+OrderDto back = mapper.readValue(json, OrderDto.class);
+
+class Legacy implements Serializable {                // Java serialization
+  private static final long serialVersionUID = 1L;
+  private transient String password;                  // not written
+}
+```
+
+#### Remember
+
+- Use Path + Files; readAllLines only for small files, Files.lines (closed with try-with-resources) for big ones.
+- Always close streams/writers with try-with-resources; writers are buffered.
+- JSON (Jackson) for object serialization; avoid Java serialization of untrusted data; transient fields are skipped.
+
+## 7.6 What changed from Java 8 to Java 25
+
+*Interview priority: must-know.* The features interviewers ask about, version by version, and the same code written in Java 8 style versus modern Java.
+
+#### Theory: start here
+
+**In one sentence:** Java evolves every six months, with a long-term-support release every two years; knowing the headline features of 8, 11, 17, 21 and 25 shows you write modern Java.
+
+Java 8 (2014) introduced lambdas and streams and stayed dominant for years. Since 2017 Java has released a new version every six months, which made features arrive steadily instead of in huge jumps. Companies mostly run **LTS** versions: 11, 17, 21 and now 25.
+
+Modern Java code looks noticeably different from Java 8: records instead of boilerplate classes, `var`, text blocks, switch expressions, pattern matching, sealed types and virtual threads.
+
+**Key terms**
+
+- **LTS**: Long-Term Support release, maintained for years.
+- **Preview feature**: Included but not final; must be enabled with --enable-preview.
+- **JEP**: JDK Enhancement Proposal: the document describing a feature.
+- **jakarta.***: New package names for Java EE APIs, required by Spring Boot 3.
+
+**How it works**
+
+1. Know the headline features of each LTS.
+2. Know which version your framework needs (Spring Boot 3 → Java 17+).
+3. When upgrading: update build plugins and libraries, move javax.* to jakarta.*, fix illegal reflective access.
+
+**In real projects**
+
+- Use records, switch expressions, text blocks and pattern matching in new code.
+- Enable virtual threads in Spring Boot on Java 21+.
+
+**Common mistakes**
+
+- Claiming a feature from a preview version as standard.
+- Staying on Java 8 and missing years of GC and performance improvements.
+
+#### Code
+
+```java
+// Java 8 style
+List<String> names = Arrays.asList("Ana", "Raj");
+if (obj instanceof Order) { Order o = (Order) obj; total += o.amount(); }
+String sql = "SELECT *\n" + "FROM orders\n";
+
+// Modern Java
+var names2 = List.of("Ana", "Raj");                   // Java 9 / 10
+record Order(String id, long amount) {}               // Java 16
+if (obj instanceof Order o) total += o.amount();      // Java 16
+String sql2 = """
+    SELECT *
+    FROM orders
+    """;                                              // Java 15
+String label = switch (shape) {                       // Java 21
+  case Circle c -> "circle r=" + c.r();
+  case Square s -> "square " + s.side();
+};
+names2.getFirst();                                    // Java 21
+try (var exec = Executors.newVirtualThreadPerTaskExecutor()) { }  // Java 21
+```
+
+#### Remember
+
+- LTS: 8, 11, 17, 21, 25; a new release every 6 months.
+- 8: lambdas/streams/Optional/java.time · 11: var, HttpClient · 17: records, sealed, switch expr, text blocks · 21: virtual threads, pattern switch, sequenced collections.
+- 25: scoped values, compact source files, flexible constructor bodies. Spring Boot 3 needs Java 17+.
 
 ---
 

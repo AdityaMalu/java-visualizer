@@ -3882,6 +3882,232 @@ keep:[`Package = folder + namespace; import is only a naming shortcut.`,`public 
 ]});
 </script>
 <script>
+PARTS.push({no:'7', title:'Language features in depth', topics:[
+
+/* =============================== 7.1 =============================== */
+{ no:'7.1', title:'Enums with fields and behaviour', imp:'must', idea:`An enum is a class with a fixed set of instances. Give it fields and logic, switch over it exhaustively, store it safely, and use EnumMap.`,
+actors:'Thread', stateTitle:'Enum instances',
+codes:{a:`public enum OrderStatus {
+  PENDING(false), PAID(false), SHIPPED(true), CANCELLED(true);
+
+  private final boolean terminal;               // enums can have fields
+  OrderStatus(boolean terminal) { this.terminal = terminal; }
+  public boolean isTerminal() { return terminal; }
+
+  public boolean canMoveTo(OrderStatus next) {  // and behaviour
+    return switch (this) {
+      case PENDING -> next == PAID || next == CANCELLED;
+      case PAID    -> next == SHIPPED || next == CANCELLED;
+      case SHIPPED, CANCELLED -> false;
+    };
+  }
+}
+OrderStatus s = OrderStatus.valueOf("PAID");    // from a String
+boolean same = (s == OrderStatus.PAID);         // == is safe for enums
+Map<OrderStatus, Long> counts = new EnumMap<>(OrderStatus.class);`},
+steps:[
+{hl:{main:[1,2]}, th:[], g:[G('OrderStatus instances (created once)',['PENDING','ordinal 0'],['PAID','ordinal 1'],['SHIPPED','ordinal 2'],['CANCELLED','ordinal 3'])],
+ say:`An <b>enum</b> is a class whose instances are listed up front and created exactly once, when the class is initialised. Nobody can create a fifth one: no public constructor, no subclassing. It's the type-safe replacement for <code>int</code> or String constants.`},
+{hl:{main:[4,5,6]}, g:[G('OrderStatus instances',['PENDING','terminal = false'],['PAID','terminal = false'],['SHIPPED','terminal = true','hot'],['CANCELLED','terminal = true','hot'])],
+ say:`Enums are full classes: each constant can carry data. The values in brackets go to the constructor, which is implicitly private. Put facts about a status <b>on the status</b>, instead of scattering <code>if (status == SHIPPED || …)</code> through the code.`},
+{hl:{main:[8,9,10,11,12]}, g:[G('canMoveTo',['PENDING → PAID','✔','ok'],['PAID → PENDING','✘','bad'],['SHIPPED → anything','✘ (terminal)','bad'])],
+ say:`Behaviour belongs here too. A <b>switch expression</b> over an enum with no <code>default</code> must cover every constant, so if someone adds <code>REFUNDED</code>, this method <b>stops compiling</b> until the rule is defined. That's a compile-time safety net a String status can't give you.`},
+{hl:{main:[16]}, g:[G('Built-in methods',['valueOf("PAID")','PAID','ok'],['valueOf("paid")','IllegalArgumentException','bad'],['name()','"PAID"'],['ordinal()','1'],['values()','[PENDING, PAID, SHIPPED, CANCELLED]'])],
+ say:`Every enum gets <code>valueOf</code> (exact, case-sensitive name), <code>name()</code>, <code>ordinal()</code> (position) and <code>values()</code>. Parsing user or API input with valueOf throws on unknown values, so validate or map errors to a 400.`},
+{hl:{main:[17]}, g:[G('Comparing',['s == OrderStatus.PAID','true: one instance per constant','ok'],['null == PAID','false (no NPE)','ok'],['nullStatus.equals(PAID)','NullPointerException','bad'])],
+ say:`Each constant is a singleton, so <code>==</code> is correct and also null-safe. Enums also work in switch, as map keys, and are thread-safe to share.`},
+{hl:{main:[18]}, g:[G('EnumMap counts (array indexed by ordinal)',C('',[['PENDING: 4'],['PAID: 9'],['SHIPPED: 12'],['CANCELLED: 1']]),['order','declaration order','ok'],['speed','array lookup, no hashing','ok'])],
+ say:`<b>EnumMap</b> and <b>EnumSet</b> are specialised collections: internally an array indexed by ordinal (EnumSet is a bit set). Faster and smaller than HashMap/HashSet, and they iterate in declaration order.`},
+{th:[], g:[G('Storing enums',['@Enumerated(EnumType.ORDINAL)','stores 0,1,2…: reordering constants corrupts data','bad'],['@Enumerated(EnumType.STRING)','stores "PAID": safe to reorder','ok'],['renaming a constant','still needs a migration'],['JSON (Jackson)','name() by default'])],
+ say:`<b>Production pitfall:</b> JPA's default stores the <b>ordinal</b>. Insert a new constant in the middle and every existing row now means something else. Always use <code>@Enumerated(EnumType.STRING)</code>. Enums can also implement interfaces, which gives you a strategy per constant (3.7d) and the safest singleton (3.7a).`}
+],
+keep:[`Enum = class with a fixed set of singleton instances; can have fields, constructors, methods, implement interfaces.`,`Switch expressions over enums are exhaustive: adding a constant breaks unhandled switches at compile time.`,`Compare with ==; use EnumMap/EnumSet; persist with EnumType.STRING, never ORDINAL.`]},
+
+/* =============================== 7.2 =============================== */
+{ no:'7.2', title:'Reflection and annotations', imp:'good', idea:`Annotations are labels on code; reflection lets a program inspect and call its own classes at run time. Together they're how Spring, JPA and JUnit work. Build a tiny <code>@Timed</code> framework to see it.`,
+actors:'Thread', stateTitle:'What the program can see', logTitle:'Console',
+codes:{a:`@Retention(RetentionPolicy.RUNTIME)            // keep it at run time
+@Target(ElementType.METHOD)                    // only allowed on methods
+public @interface Timed { String value() default ""; }
+
+class ReportService {
+  @Timed("report.build")
+  public String build(int id) { return "report-" + id; }
+}
+
+// A tiny "framework" that reads the annotation
+Method m = ReportService.class.getMethod("build", int.class);
+Timed t = m.getAnnotation(Timed.class);        // null if absent
+long start = System.nanoTime();
+Object result = m.invoke(new ReportService(), 42);
+System.out.println(t.value() + " took " + (System.nanoTime() - start) + " ns");`},
+steps:[
+{hl:{main:[1,2,3]}, th:[], g:[G('@Timed',['kind','annotation type (@interface)'],['element','value(), default ""'],['@Target','METHOD only'],['@Retention','RUNTIME'])],
+ say:`An <b>annotation</b> is metadata: a label attached to a class, method, field or parameter. <b>By itself it does nothing.</b> Something must read it. <code>@Target</code> says where it may be used; <code>@Retention</code> says how long it survives: SOURCE (compiler only, like @Override), CLASS (in the .class file), RUNTIME (readable by reflection).`},
+{hl:{main:[5,6,7]}, g:[G('ReportService.build',['annotations','@Timed("report.build")'],['behaviour','unchanged: it just returns a string'])],
+ say:`Putting <code>@Timed</code> on <code>build</code> changes nothing about how build runs. If no code ever looks for @Timed, it's just a comment the compiler checked.`},
+{hl:{main:[11]}, g:[G('Reflection',['ReportService.class','the Class object: a description of the class','hot'],['getMethod("build", int.class)','Method object for build(int)','hot'])],
+ say:`<b>Reflection</b> is the program looking at itself. Every class has a <code>Class</code> object describing its fields, methods, constructors and annotations. <code>getMethod</code> finds a public method by name and parameter types.`},
+{hl:{main:[12]}, g:[G('Reflection',['m.getAnnotation(Timed.class)','@Timed("report.build")','ok'],['t.value()','"report.build"'])],
+ say:`Because retention is RUNTIME, we can read the annotation and its values. With CLASS or SOURCE retention this would return <code>null</code>, which is a classic "my annotation is ignored" bug.`},
+{hl:{main:[13,14,15]}, g:[G('Reflective call',['m.invoke(obj, 42)','"report-42"','ok'],['checked at compile time?','no: wrong args fail at run time','bad'],['cost','slower than a direct call (mostly at setup)'])], log:['report.build took 81234 ns'],
+ say:`<code>invoke</code> calls the method dynamically. Our "framework" timed it based on the annotation, without the service knowing. Type mistakes now show up at run time (IllegalArgumentException, InvocationTargetException wraps exceptions thrown inside).`},
+{th:[], g:[G('How Spring uses this',['startup','scan classes, read @Component, @Transactional, @GetMapping'],['wiring','create beans, inject constructors (reflection)'],['behaviour','wrap beans in proxies that act on annotations (5.3)'],['per request','mostly generated code / cached metadata, not fresh reflection'])],
+ say:`Frameworks do exactly this at scale: at startup Spring scans your classes, reads annotations, creates objects and wires them by reflection, and builds proxies so <code>@Transactional</code> runs code around your method. JPA reads <code>@Entity</code> and <code>@Column</code>; JUnit finds <code>@Test</code> methods.`},
+{th:[], g:[G('Compile-time alternative',['annotation processors','run inside javac, generate code'],['examples','Lombok, MapStruct, Dagger, Micronaut DI'],['benefit','no run-time reflection, faster startup','ok']), G('Reflection limits',['private members','need setAccessible(true)'],['modules (Java 9+)','can block deep reflection unless opened'],['GraalVM native image','needs reflection config'])],
+ say:`Some tools process annotations at <b>compile time</b> instead, generating plain code (Lombok's getters, MapStruct mappers). That avoids reflection costs and suits native images. Reflection into private internals is increasingly restricted by the module system.`}
+],
+keep:[`Annotations are metadata; they do nothing until code reads them. Retention RUNTIME is needed for reflection.`,`Reflection: Class → getMethod / getDeclaredFields / getAnnotation → invoke. Flexible, but no compile-time checks and slower.`,`Spring, JPA, JUnit = annotations + reflection + proxies at startup; annotation processors do it at compile time.`]},
+
+/* =============================== 7.3 =============================== */
+{ no:'7.3', title:'Collectors in depth: grouping, partitioning, toMap', imp:'must', idea:`The stream collectors interviewers actually ask about, run on one small data set: groupingBy with downstream collectors, partitioningBy, the toMap duplicate-key trap, joining, and sorted results.`,
+actors:'Thread', stateTitle:'Results',
+codes:{a:`record Order(String customer, String city, long amount, boolean paid) {}
+
+Map<String, List<Order>> byCity =
+    orders.stream().collect(groupingBy(Order::city));
+Map<String, Long> totalByCity =
+    orders.stream().collect(groupingBy(Order::city, summingLong(Order::amount)));
+Map<Boolean, Long> paidCount =
+    orders.stream().collect(partitioningBy(Order::paid, counting()));
+Map<String, Long> byCustomer =
+    orders.stream().collect(toMap(Order::customer, Order::amount));
+Map<String, Long> merged =
+    orders.stream().collect(toMap(Order::customer, Order::amount, Long::sum));
+String names = orders.stream().map(Order::customer).distinct()
+    .sorted().collect(joining(", ", "[", "]"));
+TreeMap<String, Long> countByCity = orders.stream()
+    .collect(groupingBy(Order::city, TreeMap::new, counting()));`},
+steps:[
+{hl:{main:[1]}, th:[], g:[G('orders',['Ana · Pune · 300','paid'],['Raj · Delhi · 200','unpaid'],['Ana · Delhi · 500','paid'],['Mia · Pune · 100','paid'])],
+ say:`Four orders. A <b>collector</b> is the recipe a terminal <code>collect(...)</code> uses to build the result: a list, a map, a string, a number. The static methods come from <code>java.util.stream.Collectors</code>.`},
+{hl:{main:[3,4]}, g:[G('byCity (HashMap)',['Pune','[Ana 300, Mia 100]','hot'],['Delhi','[Raj 200, Ana 500]','hot'])],
+ say:`<code>groupingBy(classifier)</code> puts each element in a bucket keyed by the classifier's result. By default the values are Lists and the map is a HashMap (no guaranteed key order).`},
+{hl:{main:[5,6]}, g:[G('totalByCity',['Pune','400','hot'],['Delhi','700','hot'])],
+ say:`The second argument is a <b>downstream collector</b>: what to do with each bucket. <code>summingLong</code> totals amounts per city. Others: <code>counting()</code>, <code>averagingLong</code>, <code>mapping(fn, toList())</code>, <code>maxBy</code>, <code>toSet()</code>.`},
+{hl:{main:[7,8]}, g:[G('paidCount',['true','3','ok'],['false','1','bad'])],
+ say:`<code>partitioningBy</code> is grouping by a yes/no predicate. The result always has <b>both</b> keys, true and false, even if one group is empty.`},
+{hl:{main:[9,10]}, g:[G('toMap(customer, amount)',['Ana','300'],['Raj','200'],['Ana (again)','500 → conflict','bad'])], log:['java.lang.IllegalStateException: Duplicate key Ana (attempted merging values 300 and 500)'],
+ say:`<b>The classic trap.</b> <code>toMap(keyFn, valueFn)</code> assumes keys are unique. Ana has two orders, so it <b>throws IllegalStateException</b>. It works in testing with clean data and fails in production. toMap also throws NullPointerException on null values.`},
+{hl:{main:[11,12]}, g:[G('merged',['Ana','300 + 500 = 800','ok'],['Raj','200'],['Mia','100'])],
+ say:`Pass a <b>merge function</b> as the third argument to say what to do on duplicate keys: sum, keep first <code>(a, b) -&gt; a</code>, keep latest, and so on. Add a fourth argument (<code>LinkedHashMap::new</code>) to choose the map type.`},
+{hl:{main:[13,14]}, g:[G('names',['distinct + sorted','Ana, Mia, Raj'],['joining(", ", "[", "]")','"[Ana, Mia, Raj]"','ok'])],
+ say:`<code>joining(separator, prefix, suffix)</code> builds a string. <code>distinct()</code> removes duplicates using equals/hashCode, and <code>sorted()</code> uses natural order (or pass a Comparator).`},
+{hl:{main:[15,16]}, g:[G('countByCity (TreeMap)',['Delhi','2'],['Pune','2'],['key order','sorted: Delhi, Pune','ok'])],
+ say:`<code>groupingBy(classifier, mapFactory, downstream)</code> lets you choose the map: TreeMap for sorted keys, LinkedHashMap for first-seen order. Also handy: <code>collectingAndThen(toList(), List::copyOf)</code>, and <code>stream.toList()</code> (Java 16, unmodifiable) vs <code>Collectors.toList()</code> (no guarantees about mutability).`}
+],
+keep:[`groupingBy(key[, mapFactory][, downstream]) — downstream: counting, summingLong, mapping, toSet…`,`partitioningBy always has both true and false keys.`,`toMap throws on duplicate keys (and null values): pass a merge function.`]},
+
+/* =============================== 7.4 =============================== */
+{ no:'7.4', title:'Date and time with java.time', imp:'good', idea:`Instant, LocalDate, LocalDateTime and ZonedDateTime each mean something different. Watch a meeting fall into a daylight-saving gap, months clamp, and why servers store UTC.`,
+actors:'Thread', stateTitle:'Values',
+codes:{a:`Instant now = Instant.now();                          // a point on the timeline (UTC)
+LocalDate due = LocalDate.of(2026, 3, 31);            // a calendar date, no time zone
+LocalDateTime meeting = LocalDateTime.of(2026, 3, 29, 2, 30);   // no zone either!
+ZonedDateTime inBerlin = meeting.atZone(ZoneId.of("Europe/Berlin"));
+ZonedDateTime inIndia = inBerlin.withZoneSameInstant(ZoneId.of("Asia/Kolkata"));
+LocalDate nextMonth = due.plusMonths(1);
+Duration d = Duration.between(now, now.plusSeconds(5400));
+Period p = Period.between(LocalDate.of(1990, 5, 20), due);
+String s = due.format(DateTimeFormatter.ISO_LOCAL_DATE);`},
+steps:[
+{hl:{main:[1]}, th:[], g:[G('Instant',['meaning','an exact moment, same everywhere'],['stored as','seconds + nanos since 1970-01-01T00:00Z'],['now','2026-03-28T09:15:00Z (example)'])],
+ say:`<b>Instant</b> is a moment on the global timeline: "when did this happen?" It has no time zone and no calendar, just a count of seconds since 1970 UTC. Use it for timestamps: createdAt, event times, logs.`},
+{hl:{main:[2,3]}, g:[G('Local types (no zone)',['LocalDate','2026-03-31: a date on a calendar'],['LocalDateTime','2026-03-29T02:30: a wall-clock reading'],['is it a moment?','no: 02:30 where?','bad'])],
+ say:`<b>LocalDate</b> and <b>LocalDateTime</b> are what a calendar or wall clock shows, with <b>no zone</b>. A birthday or a due date is a LocalDate. A LocalDateTime is not an exact moment until you say where.`},
+{hl:{main:[4]}, g:[G('Berlin, 2026-03-29',['clocks jump','02:00 → 03:00 (DST starts)','hot'],['02:30 exists?','no: it\'s in the gap','bad'],['atZone result','2026-03-29T03:30+02:00','ok'])],
+ say:`Attaching a zone gives a <b>ZonedDateTime</b>. On 29 March 2026 Berlin skips from 02:00 to 03:00 for daylight saving, so 02:30 never happens. java.time doesn't fail: it shifts forward by the gap, to 03:30. Real bug: jobs scheduled at 02:30 local time run late or twice in autumn.`},
+{hl:{main:[5]}, g:[G('Same instant, two zones',['Berlin','03:30 +02:00'],['UTC','01:30 Z'],['India','07:00 +05:30','ok'])],
+ say:`<code>withZoneSameInstant</code> converts to another zone without changing the moment. The same instant is 07:00 in India. (<code>withZoneSameLocal</code> would keep 03:30 and change the moment, which is rarely what you want.)`},
+{hl:{main:[6]}, g:[G('Calendar math',['2026-03-31 plusMonths(1)','2026-04-30 (clamped)','ok'],['plusDays(30)','2026-04-30'],['immutable?','yes: due is unchanged','ok'])],
+ say:`Calendar arithmetic is careful: March 31 + 1 month is April 30, since April 31 doesn't exist. All java.time types are <b>immutable</b>: plusMonths returns a new value, so they're thread-safe (unlike the old <code>Date</code>, <code>Calendar</code> and <code>SimpleDateFormat</code>, see 6.6).`},
+{hl:{main:[7,8]}, g:[G('Amounts of time',['Duration','PT1H30M: exact seconds/nanos (machine time)'],['Period','P35Y10M11D: years, months, days (human time)'])],
+ say:`<b>Duration</b> is an exact amount (timeouts, elapsed time). <b>Period</b> is calendar-based (age, subscription length): "one day" in a Period can be 23 or 25 hours across a DST change.`},
+{hl:{main:[9]}, g:[G('Good practice',['store','Instant / UTC (DB: timestamptz)','ok'],['display','convert to the user\'s ZoneId at the edges','ok'],['APIs','ISO-8601 strings: 2026-03-31, 2026-03-28T09:15:00Z','ok'],['tests','inject a Clock instead of calling now() directly','ok'])],
+ say:`Rules of thumb: <b>store and compute in UTC</b> (Instant), convert to local time only for display, exchange ISO-8601 strings, and inject a <code>Clock</code> so tests can control "now". <code>DateTimeFormatter</code> is immutable and safe to share.`}
+],
+keep:[`Instant = moment (UTC); LocalDate/LocalDateTime = wall calendar, no zone; ZonedDateTime = local time + zone rules.`,`Store UTC, convert at the edges; DST gaps/overlaps make some local times invalid or ambiguous.`,`java.time is immutable and thread-safe; Duration = exact, Period = calendar; inject a Clock for tests.`]},
+
+/* =============================== 7.5 =============================== */
+{ no:'7.5', title:'I/O, NIO files and serialization', imp:'good', idea:`Read and write files the modern way with Path and Files, avoid loading huge files into memory, close resources safely, and turn objects into JSON (and why Java's built-in serialization is risky).`,
+actors:'Thread', stateTitle:'Memory and files', logTitle:'Console',
+codes:{a:`Path file = Path.of("orders.csv");
+List<String> all = Files.readAllLines(file);          // whole file in memory
+try (Stream<String> lines = Files.lines(file)) {      // lazy: one line at a time
+  long paid = lines.filter(l -> l.endsWith(",PAID")).count();
+}                                                     // file closed here
+try (BufferedWriter w = Files.newBufferedWriter(Path.of("out.txt"))) {
+  w.write("total=" + all.size());
+}                                                     // flushed + closed here
+
+record OrderDto(long id, String customer) {}
+String json = mapper.writeValueAsString(new OrderDto(7, "Ana"));
+OrderDto back = mapper.readValue(json, OrderDto.class);
+
+class Legacy implements Serializable {                // Java serialization
+  private static final long serialVersionUID = 1L;
+  private transient String password;                  // not written
+}`},
+steps:[
+{hl:{main:[1]}, th:[], g:[G('I/O families',['byte streams','InputStream / OutputStream: images, any binary'],['character streams','Reader / Writer: text, with a charset'],['NIO.2 (Java 7+)','Path + Files: the modern file API','ok'])],
+ say:`Java I/O moves data as <b>streams of bytes</b> (InputStream/OutputStream) or <b>characters</b> (Reader/Writer, which decode bytes using a charset like UTF-8). For files, use the modern <b>Path</b> and <b>Files</b> API. A Path is just a location; nothing is opened yet.`},
+{hl:{main:[2]}, g:[G('readAllLines',['file size','2 GB'],['heap needed','> 2 GB of Strings','bad'],['fine for','small config or test files','ok'])], log:['java.lang.OutOfMemoryError: Java heap space'],
+ say:`<code>Files.readAllLines</code> (and <code>readString</code>) load the <b>whole file</b> into memory. Perfect for a small file, fatal for a 2 GB export.`},
+{hl:{main:[3,4,5]}, g:[G('Files.lines (lazy)',['in memory at once','~1 line','ok'],['file handle','open until the stream is closed','hot'],['paid','184,302'])],
+ say:`<code>Files.lines</code> returns a <b>lazy</b> Stream that reads line by line as you consume it, so memory stays flat. But it holds an open file handle, so it must be closed: put it in <b>try-with-resources</b>. Forgetting leaks file descriptors until "Too many open files".`},
+{hl:{main:[6,7,8]}, g:[G('BufferedWriter',['buffer','8 KB in memory, written in chunks'],['on close','flush buffer → close file','ok'],['charset','UTF-8 (default since Java 18)'])],
+ say:`Writers are <b>buffered</b> for speed: data sits in memory until the buffer fills or you flush. try-with-resources flushes and closes even if an exception is thrown. Without closing, the last chunk can be lost (see 3.7g).`},
+{hl:{main:[10,11,12]}, g:[G('JSON with Jackson',['object → JSON','{"id":7,"customer":"Ana"}','ok'],['JSON → object','OrderDto[id=7, customer=Ana]','ok'],['ObjectMapper','create once, share (thread-safe)'])],
+ say:`<b>Serialization</b> means turning an object into bytes or text to store or send, and <b>deserialization</b> is the reverse. In real services that's almost always <b>JSON</b> via Jackson (Spring does it for every request, 5.8). Records work out of the box.`},
+{hl:{main:[14,15,16]}, g:[G('Java built-in serialization',['marker','implements Serializable'],['serialVersionUID','version check between writer and reader'],['transient','field skipped (null/0 after reading)'],['risk','deserializing untrusted bytes can run gadget code','bad'])],
+ say:`Java also has <b>built-in</b> binary serialization (<code>ObjectOutputStream</code>). Fields marked <code>transient</code> aren't written; <code>serialVersionUID</code> detects incompatible class versions. It's discouraged today: brittle across versions, and <b>deserializing untrusted data is a known remote-code-execution risk</b>. Prefer JSON, Protobuf or Avro.`},
+{th:[], g:[G('When you need more',['huge files','stream + process line by line','ok'],['servers handling 10k sockets','NIO channels / Netty, or virtual threads'],['memory-mapped files','FileChannel.map for random access to huge files'],['temp files','Files.createTempFile + delete'])],
+ say:`NIO also has <b>channels</b> and <b>buffers</b> for non-blocking network I/O (the basis of Netty and WebFlux), and memory-mapped files. For most application code: Path + Files, try-with-resources, stream big data, JSON for objects.`}
+],
+keep:[`Use Path + Files; readAllLines only for small files, Files.lines (closed with try-with-resources) for big ones.`,`Always close streams/writers with try-with-resources; writers are buffered.`,`JSON (Jackson) for object serialization; avoid Java serialization of untrusted data; transient fields are skipped.`]},
+
+/* =============================== 7.6 =============================== */
+{ no:'7.6', title:'What changed from Java 8 to Java 25', imp:'must', idea:`The features interviewers ask about, version by version, and the same code written in Java 8 style versus modern Java.`,
+actors:'Thread', stateTitle:'Release timeline',
+codes:{a:`// Java 8 style
+List<String> names = Arrays.asList("Ana", "Raj");
+if (obj instanceof Order) { Order o = (Order) obj; total += o.amount(); }
+String sql = "SELECT *\\n" + "FROM orders\\n";
+
+// Modern Java
+var names2 = List.of("Ana", "Raj");                   // Java 9 / 10
+record Order(String id, long amount) {}               // Java 16
+if (obj instanceof Order o) total += o.amount();      // Java 16
+String sql2 = """
+    SELECT *
+    FROM orders
+    """;                                              // Java 15
+String label = switch (shape) {                       // Java 21
+  case Circle c -> "circle r=" + c.r();
+  case Square s -> "square " + s.side();
+};
+names2.getFirst();                                    // Java 21
+try (var exec = Executors.newVirtualThreadPerTaskExecutor()) { }  // Java 21`},
+steps:[
+{hl:{main:[1,2,3,4]}, th:[], g:[G('Release model',['LTS versions','8, 11, 17, 21, 25'],['cadence','a release every 6 months, LTS every 2 years'],['in production today','mostly 17 and 21, moving to 25'])],
+ say:`Java ships a new version every <b>six months</b>, and every two years one is a <b>Long-Term Support</b> (LTS) release that companies standardise on: 8, 11, 17, 21 and 25. Interviewers usually ask "what did 8 bring?" and "what's new in 17/21?".`},
+{hl:{main:[2,3]}, g:[G('Java 8 (2014, LTS)',['lambdas + method refs','2.12','ok'],['Stream API','2.13','ok'],['Optional','2.14'],['java.time','7.4'],['default methods','3.5'],['CompletableFuture','4.14'])],
+ say:`<b>Java 8</b> was the big shift to functional style: lambdas, streams, Optional, the new date/time API, default methods in interfaces, and CompletableFuture.`},
+{hl:{main:[7]}, g:[G('Java 9 – 11',['9: modules (JPMS), List.of / Set.of / Map.of, jshell','ok'],['10: var for local variables','ok'],['11 (LTS): HttpClient, String.isBlank / lines / strip / repeat, Files.readString, run a .java file directly'])],
+ say:`<b>9</b> added modules and immutable collection factories; <b>10</b> added <code>var</code>; <b>11</b> (LTS) added the standard HttpClient and handy String and Files methods.`},
+{hl:{main:[8,9,10,11,12,13]}, g:[G('Java 12 – 17',['14: switch expressions, helpful NullPointerException messages','ok'],['15: text blocks (""")','ok'],['16: records, pattern matching for instanceof, Stream.toList()','ok'],['17 (LTS): sealed classes; JDK internals strongly encapsulated'])],
+ say:`Up to <b>17</b>: switch expressions, text blocks for multi-line strings, records, <code>instanceof</code> with a binding variable, and sealed classes. 17 also locked down reflective access to JDK internals, which broke some old libraries.`},
+{hl:{main:[14,15,16,17,18,19]}, g:[G('Java 21 (LTS)',['virtual threads','4.17','ok'],['pattern matching for switch + record patterns','2.14','ok'],['sequenced collections','getFirst / getLast / reversed()','ok'],['generational ZGC','low pauses, better throughput'])],
+ say:`<b>21</b> is the headline LTS for modern backends: <b>virtual threads</b>, pattern matching in switch (with record deconstruction), sequenced collections with <code>getFirst()</code>/<code>reversed()</code>, and generational ZGC.`},
+{hl:{main:[19]}, g:[G('Java 22 – 25',['22: unnamed variables _ , foreign function & memory API'],['24: stream gatherers; synchronized no longer pins virtual threads'],['25 (LTS): scoped values, compact source files + instance main, flexible constructor bodies, module import declarations, compact object headers','ok'])],
+ say:`Since 21: unnamed variables (<code>_</code>), the FFM API for calling native code, stream gatherers, virtual threads no longer pinned by <code>synchronized</code> (24), and in <b>25 (LTS)</b> scoped values (a safer ThreadLocal), simpler <code>void main()</code> programs, statements before <code>super(...)</code> in constructors, and smaller object headers.`},
+{th:[], g:[G('Upgrading 8 → 17/21',['removed APIs','javax.* EE modules (JAXB, javax.annotation) → jakarta.*'],['illegal reflective access','now an error: upgrade libraries'],['Spring Boot 3','requires Java 17+ and jakarta namespace','hot'],['payoff','faster GC, lower memory, virtual threads','ok'])],
+ say:`<b>Say it:</b> "8 brought lambdas, streams, Optional and java.time. 11 added var, HttpClient and List.of. 17 brought records, sealed classes, switch expressions and text blocks. 21 added virtual threads and pattern matching for switch. Spring Boot 3 needs Java 17+, and moving there mostly means jakarta packages and newer library versions."`}
+],
+keep:[`LTS: 8, 11, 17, 21, 25; a new release every 6 months.`,`8: lambdas/streams/Optional/java.time · 11: var, HttpClient · 17: records, sealed, switch expr, text blocks · 21: virtual threads, pattern switch, sequenced collections.`,`25: scoped values, compact source files, flexible constructor bodies. Spring Boot 3 needs Java 17+.`]}
+]});
+</script>
+<script>
 /* ---------- quiz bank. Each question: [question, options, index of correct option, why, level E|M|H].
    QUIZ is the core set (3 per topic); QUIZ_ADV the advanced set (2 per topic). Wrong options are real misconceptions. ---------- */
 const QUIZ = {
@@ -5234,6 +5460,99 @@ Object.assign(QUIZ_ADV, {
 '0.7':[
  [`Can a top-level class be declared <code>private</code>?`,[`Yes`,`Only inside a package-info file`,`Only if it's final`,`No: only public or package-private`],3,`private and protected apply to members and nested classes.`,'M'],
  [`A protected method in <code>com.a.Base</code>. Can <code>com.b.Other</code> (not a subclass) call it?`,[`Yes, protected is public within the module`,`No: only the same package or subclasses`,`Yes, after importing com.a.Base`,`Only through reflection with no restrictions`],1,`protected = package access plus subclasses.`,'H']]
+});
+</script>
+<script>
+/* ---------- Part 7: theory and quizzes ---------- */
+Object.assign(THEORY, {
+'7.1': TH(`An enum defines a type with a fixed, named set of values, and each value is a real object that can hold data and behaviour.`,
+`<p>Many things in a program have a small fixed set of possible values: order status, day of week, payment method. Using Strings ("PAID") or ints (2) for them invites typos and invalid values. An <b>enum</b> makes them a type: <code>OrderStatus.PAID</code> is checked by the compiler, and nothing else can be passed.</p>
+<p>Each enum constant is a single object created once, so you compare with <code>==</code>. Because enums are classes, constants can carry fields (like <code>isTerminal</code>) and methods (like <code>canMoveTo</code>), keeping related rules in one place.</p>`,
+[[`Constant`,`One named instance of the enum (PAID).`],[`ordinal()`,`Position in the declaration (0, 1, 2…).`],[`name() / valueOf()`,`Constant → String / String → constant.`],[`EnumMap / EnumSet`,`Fast collections specialised for enum keys.`],[`Exhaustive switch`,`A switch expression covering every constant, checked by the compiler.`]],
+[`Declare constants, optionally with constructor arguments.`,`Add fields, a (private) constructor and methods.`,`Use constants directly, compare with ==, switch over them.`,`Convert from text with valueOf (handle IllegalArgumentException).`],
+[`Model statuses, types and modes as enums, with the business rules on them.`,`Persist with <code>@Enumerated(EnumType.STRING)</code>.`,`Use EnumMap for per-status counters or handlers.`],
+[`Storing ordinals in the database.`,`Switching on enums with a default that silently swallows new constants.`,`Using valueOf on raw user input without handling bad values.`]),
+'7.2': TH(`Annotations attach metadata to code; reflection lets a program read that metadata and inspect or call classes at run time. Frameworks combine the two.`,
+`<p>An <b>annotation</b> like <code>@Transactional</code> or <code>@Test</code> is a label. On its own it does nothing; it's information for some tool. That tool might be the compiler (<code>@Override</code>), an annotation processor that generates code (Lombok), or a framework that reads it while the program runs.</p>
+<p><b>Reflection</b> is how a program examines itself at run time: list a class's methods and fields, read their annotations, create objects and call methods by name. Spring uses reflection at startup to find your <code>@Component</code> classes, inject constructors and decide which methods need proxies.</p>`,
+[[`@interface`,`Declares an annotation type.`],[`@Retention`,`SOURCE, CLASS or RUNTIME: how long the annotation is kept.`],[`@Target`,`Where the annotation may be used.`],[`Class object`,`Run-time description of a class (Foo.class).`],[`Method.invoke`,`Calls a method reflectively.`],[`Annotation processor`,`A compiler plugin that reads annotations and generates code.`]],
+[`Define an annotation with RUNTIME retention.`,`Place it on classes, methods or fields.`,`At run time, get the Class / Method / Field objects.`,`Read annotations with getAnnotation and act on them (call, wrap, validate).`],
+[`You'll rarely write reflection by hand; you'll use annotations that frameworks read.`,`Custom annotations + an aspect (5.3) are a clean way to add auditing, timing or rate limiting.`],
+[`Forgetting RUNTIME retention, so the annotation is invisible.`,`Using reflection in hot paths.`,`Reflecting into private JDK internals (blocked since Java 17).`]),
+'7.3': TH(`Collectors describe how a stream's elements are gathered into a final result, such as a list, a grouped map, a count or a joined string.`,
+`<p>A stream pipeline ends with a terminal operation. <code>collect(collector)</code> is the most flexible one: the collector decides what to build. Simple ones: <code>toList()</code>, <code>toSet()</code>, <code>joining()</code>. Powerful ones build maps: <code>groupingBy</code> groups elements by a key, <code>partitioningBy</code> splits them into true/false, and <code>toMap</code> creates one entry per element.</p>
+<p>Grouping collectors take a second, <b>downstream</b> collector that decides what each group becomes: a count, a sum, a set of names. This is the Java equivalent of SQL's GROUP BY.</p>`,
+[[`Collector`,`A recipe for accumulating elements into a result.`],[`groupingBy`,`Map from key → elements (or a downstream result).`],[`Downstream collector`,`What to do with each group (counting, summing, mapping…).`],[`partitioningBy`,`Map with exactly two keys: true and false.`],[`Merge function`,`toMap's rule for combining values with the same key.`]],
+[`Pick the shape you want: list, map, string, number.`,`For maps: choose key function, then downstream or value function.`,`Handle duplicates (toMap merge function) and choose the map type if order matters.`,`Collect.`],
+[`Reports and dashboards: totals per customer, counts per status.`,`Index a list by id: <code>toMap(User::id, identity())</code> when ids are unique.`],
+[`toMap without a merge function on data that may contain duplicate keys.`,`Assuming groupingBy's map is sorted.`,`Building huge in-memory groupings that belong in a SQL query.`]),
+'7.4': TH(`java.time separates exact moments (Instant) from calendar dates and wall-clock times (LocalDate, LocalDateTime) and from time zones (ZonedDateTime), and every type is immutable.`,
+`<p>Time is harder than it looks. "2026-03-29 02:30" means different moments in Berlin and Mumbai, and in Berlin on that day it doesn't exist at all because clocks jump forward for daylight saving. The old <code>Date</code> and <code>Calendar</code> classes mixed these ideas and were mutable.</p>
+<p>The <b>java.time</b> API (Java 8) gives each idea its own type: <b>Instant</b> for a precise moment, <b>LocalDate</b> for a calendar date, <b>LocalDateTime</b> for a date and time without a zone, <b>ZonedDateTime</b> for local time in a specific zone, <b>Duration</b> and <b>Period</b> for amounts of time.</p>`,
+[[`Instant`,`A moment on the UTC timeline.`],[`LocalDate / LocalDateTime`,`Calendar date / date-time without a zone.`],[`ZoneId`,`A time zone with its rules, e.g. Europe/Berlin.`],[`DST`,`Daylight saving time: clocks jump, creating gaps and overlaps.`],[`Duration / Period`,`Exact time amount / calendar amount.`],[`ISO-8601`,`Standard text format: 2026-03-31T09:15:00Z.`]],
+[`Capture moments as Instant (UTC).`,`Keep dates without time as LocalDate.`,`Convert to ZonedDateTime with the user's ZoneId only for display or local rules.`,`Format and parse with DateTimeFormatter (ISO by default).`],
+[`Database: timestamp with time zone (stored in UTC) for moments; date for plain dates.`,`Inject <code>Clock</code> into services so tests can fix "now".`],
+[`Using LocalDateTime for timestamps across regions.`,`Scheduling at local times inside DST transitions.`,`Mixing old Date/SimpleDateFormat with java.time.`]),
+'7.5': TH(`Java reads and writes data as streams of bytes or characters; the modern Files API handles files simply, and serialization turns objects into bytes or text such as JSON.`,
+`<p>Every program reads or writes data: files, network sockets, HTTP bodies. Java models these as <b>streams</b> (not the same as the Stream API): you read or write a sequence of bytes, or characters decoded with a charset. Resources like files and sockets must be <b>closed</b>, which try-with-resources guarantees.</p>
+<p>To save or send an object, you <b>serialize</b> it: turn it into JSON, binary or another format. Today that's usually JSON with Jackson. Java's built-in object serialization still exists but is discouraged for security and compatibility reasons.</p>`,
+[[`InputStream / OutputStream`,`Byte-oriented I/O.`],[`Reader / Writer`,`Character-oriented I/O using a charset.`],[`Path / Files`,`Modern file API (NIO.2).`],[`Buffering`,`Collecting data in memory to read/write in efficient chunks.`],[`Serialization`,`Object → bytes/text; deserialization is the reverse.`],[`transient`,`Field excluded from Java serialization.`]],
+[`Locate the file with Path.of.`,`Small file: Files.readString / readAllLines. Big file: Files.lines or a BufferedReader, inside try-with-resources.`,`Write with Files.writeString or a BufferedWriter.`,`For objects, map to and from JSON with an ObjectMapper.`],
+[`Process large CSV/log files line by line.`,`Configure Jackson once (dates as ISO, unknown properties policy) and share the ObjectMapper.`],
+[`Reading huge files fully into memory.`,`Not closing streams (file descriptor leaks).`,`Deserializing untrusted data with ObjectInputStream.`]),
+'7.6': TH(`Java evolves every six months, with a long-term-support release every two years; knowing the headline features of 8, 11, 17, 21 and 25 shows you write modern Java.`,
+`<p>Java 8 (2014) introduced lambdas and streams and stayed dominant for years. Since 2017 Java has released a new version every six months, which made features arrive steadily instead of in huge jumps. Companies mostly run <b>LTS</b> versions: 11, 17, 21 and now 25.</p>
+<p>Modern Java code looks noticeably different from Java 8: records instead of boilerplate classes, <code>var</code>, text blocks, switch expressions, pattern matching, sealed types and virtual threads.</p>`,
+[[`LTS`,`Long-Term Support release, maintained for years.`],[`Preview feature`,`Included but not final; must be enabled with --enable-preview.`],[`JEP`,`JDK Enhancement Proposal: the document describing a feature.`],[`jakarta.*`,`New package names for Java EE APIs, required by Spring Boot 3.`]],
+[`Know the headline features of each LTS.`,`Know which version your framework needs (Spring Boot 3 → Java 17+).`,`When upgrading: update build plugins and libraries, move javax.* to jakarta.*, fix illegal reflective access.`],
+[`Use records, switch expressions, text blocks and pattern matching in new code.`,`Enable virtual threads in Spring Boot on Java 21+.`],
+[`Claiming a feature from a preview version as standard.`,`Staying on Java 8 and missing years of GC and performance improvements.`]),
+});
+Object.assign(QUIZ, {
+'7.1':[
+ [`How should you compare an enum value to a constant?`,[`s.equals("PAID")`,`s.name() == "PAID"`,`s == OrderStatus.PAID`,`s.ordinal() == "PAID".hashCode()`],2,`Each constant is a singleton; == is correct and null-safe.`,'E'],
+ [`JPA entity uses <code>@Enumerated</code> with the default type. You insert a new constant in the middle of the enum. Effect?`,[`Nothing: names are stored`,`Existing rows now map to different constants`,`Startup fails`,`New rows can't be saved`],1,`The default is ORDINAL; positions shift. Use EnumType.STRING.`,'M'],
+ [`A switch expression over an enum has no default. You add a new constant. What happens?`,[`The new constant is silently ignored`,`It throws at run time only`,`Nothing: switch expressions don't need cases`,`The switch fails to compile until the case is handled`],3,`Switch expressions must be exhaustive; that's the safety net.`,'H']],
+'7.2':[
+ [`What does an annotation do by itself?`,[`Nothing: some tool or framework must read it`,`It changes the method's bytecode`,`It always runs code before the method`,`It makes the method public`],0,`Annotations are metadata; behaviour comes from whoever processes them.`,'E'],
+ [`Your custom annotation is never found via <code>getAnnotation</code>. Most likely cause?`,[`The method isn't public`,`Its retention isn't RUNTIME`,`Annotations need an interface`,`Reflection is disabled by default`],1,`Default retention is CLASS, which isn't visible to reflection.`,'M'],
+ [`A reflectively invoked method throws IllegalStateException. What does <code>Method.invoke</code> throw?`,[`IllegalStateException directly`,`ReflectiveOperationException with no cause`,`InvocationTargetException wrapping it`,`Nothing: it's swallowed`],2,`Unwrap with getCause().`,'H']],
+'7.3':[
+ [`<code>toMap(Order::customer, Order::amount)</code> and two orders share a customer. Result?`,[`The later value wins`,`The values are summed`,`IllegalStateException: Duplicate key`,`A list of both values`],2,`Pass a merge function as the third argument.`,'E'],
+ [`What does <code>partitioningBy(Order::paid)</code> return when every order is paid?`,[`A map with only the true key`,`A map with true → all orders and false → empty list`,`A List`,`An empty map`],1,`partitioningBy always contains both keys.`,'M'],
+ [`You need total amount per city, with cities in alphabetical order. Which?`,[`groupingBy(Order::city, TreeMap::new, summingLong(Order::amount))`,`groupingBy(Order::city, summingLong(Order::amount))`,`toMap(Order::city, Order::amount)`,`partitioningBy(Order::city)`],0,`The map factory chooses TreeMap; the downstream sums.`,'H']],
+'7.4':[
+ [`Which type should a server use to record when an order was created?`,[`LocalDateTime`,`LocalDate`,`String`,`Instant`],3,`Instant is an exact moment, independent of time zones.`,'E'],
+ [`<code>LocalDate.of(2026, 1, 31).plusMonths(1)</code>?`,[`2026-03-03`,`2026-02-28`,`2026-02-31`,`DateTimeException`],1,`java.time clamps to the last valid day of the month.`,'M'],
+ [`In Berlin, clocks jump from 02:00 to 03:00 on 29 March 2026. <code>LocalDateTime 02:30</code>.atZone(Berlin) gives?`,[`03:30, shifted forward by the gap`,`02:30 exactly`,`01:30`,`DateTimeException`],0,`Times in a DST gap are moved forward by the gap's length.`,'H']],
+'7.5':[
+ [`Best way to count lines matching a pattern in a 5 GB log file?`,[`Files.readAllLines, then filter`,`Files.readString, then split`,`Files.lines inside try-with-resources, then filter and count`,`Load it into a StringBuilder`],2,`Lazy streaming keeps memory flat; the stream must be closed.`,'E'],
+ [`A field is marked <code>transient</code> in a Serializable class. After deserialization it is?`,[`Its default value (null / 0)`,`Its original value`,`An exception is thrown`,`Encrypted`],0,`Transient fields aren't written.`,'M'],
+ [`Why is <code>ObjectInputStream.readObject</code> on untrusted input dangerous?`,[`It's slow`,`It ignores serialVersionUID`,`It only works with records`,`Crafted byte streams can trigger code in classes on the classpath (gadget chains)`],3,`Deserialization vulnerabilities have led to remote code execution; prefer JSON with explicit types.`,'H']],
+'7.6':[
+ [`Which version introduced lambdas and the Stream API?`,[`Java 7`,`Java 8`,`Java 11`,`Java 17`],1,`Java 8 (2014).`,'E'],
+ [`Records, sealed classes and switch expressions are all standard by which LTS?`,[`Java 11`,`Java 17`,`Java 21`,`Java 25`],1,`Switch expressions (14), records (16), sealed classes (17).`,'M'],
+ [`Spring Boot 3 requires at least?`,[`Java 8`,`Java 11`,`Java 21`,`Java 17`],3,`Boot 3 is built on Spring 6, which needs Java 17 and the jakarta.* namespace.`,'M']]
+});
+Object.assign(QUIZ_ADV, {
+'7.1':[
+ [`Can an enum extend another class?`,[`Yes, any class`,`Only abstract classes`,`No: enums implicitly extend java.lang.Enum, but they can implement interfaces`,`Only other enums`],2,`Java has single inheritance, and Enum is already the parent.`,'M'],
+ [`Why are EnumMap and EnumSet faster than HashMap/HashSet for enum keys?`,[`They cache hash codes`,`They're backed by an array / bit vector indexed by ordinal`,`They're synchronized`,`They use TreeMap internally`],1,`No hashing, compact memory, declaration-order iteration.`,'H']],
+'7.2':[
+ [`Why does Spring do most reflection at startup rather than per request?`,[`Reflection is only allowed during startup`,`Requests can't use reflection`,`Annotations disappear after startup`,`Reflective lookups are slow; it caches metadata and builds proxies once`],3,`Per-call paths use proxies and cached method handles.`,'H'],
+ [`Lombok's @Getter generates getters when?`,[`At compile time, via an annotation processor`,`At startup, via reflection`,`At first call, via a proxy`,`At class loading, via bytecode rewriting by the JVM`],0,`Compile-time processing: no runtime reflection needed.`,'M']],
+'7.3':[
+ [`<code>toMap(User::id, User::email)</code> and one user's email is null?`,[`The entry maps to null`,`The entry is skipped`,`NullPointerException`,`IllegalStateException`],2,`Collectors.toMap uses HashMap.merge, which rejects null values.`,'H'],
+ [`<code>stream.toList()</code> (Java 16) vs <code>collect(Collectors.toList())</code>?`,[`toList() returns an unmodifiable list; Collectors.toList() makes no such guarantee`,`They're identical`,`toList() returns a LinkedList`,`Collectors.toList() is unmodifiable`],0,`Calling add on stream.toList()'s result throws UnsupportedOperationException.`,'M']],
+'7.4':[
+ [`<code>withZoneSameInstant</code> vs <code>withZoneSameLocal</code>?`,[`Same thing`,`SameInstant keeps the moment; SameLocal keeps the clock reading and changes the moment`,`SameLocal keeps the moment`,`SameInstant only works for UTC`],1,`Use SameInstant to convert for display.`,'M'],
+ [`Why inject a <code>Clock</code> into services?`,[`It's faster than Instant.now()`,`It's required by Spring`,`Tests can fix or advance "now" deterministically`,`It handles DST automatically`],2,`Instant.now(clock) in code; Clock.fixed(...) in tests.`,'H']],
+'7.5':[
+ [`A BufferedWriter writes 100 lines, and the program exits without close() or flush(). What's in the file?`,[`All 100 lines`,`Possibly nothing or a partial file`,`An exception is written`,`The file is deleted`],1,`Unflushed buffer contents are lost.`,'M'],
+ [`What's the default charset for Files.newBufferedWriter (and since Java 18, most APIs)?`,[`The OS default, always`,`ISO-8859-1`,`UTF-16`,`UTF-8`],3,`Files methods always defaulted to UTF-8; JEP 400 made UTF-8 the platform default in 18.`,'H']],
+'7.6':[
+ [`Which Java 21 feature lets you write <code>list.getFirst()</code> and <code>list.reversed()</code>?`,[`Sequenced collections`,`Stream gatherers`,`Record patterns`,`Scoped values`],0,`SequencedCollection adds first/last/reversed to ordered collections.`,'M'],
+ [`What do scoped values (final in Java 25) replace in many cases?`,[`Optional`,`synchronized`,`ThreadLocal, for passing immutable context to callees and child tasks`,`CompletableFuture`],2,`They're immutable, bounded to a scope, and cheap with virtual threads.`,'H']]
 });
 </script>
 <script>

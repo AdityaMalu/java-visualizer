@@ -13,6 +13,7 @@ Step-by-step visual walkthroughs of core Java interview topics, like stepping th
 | 4. Multithreading and concurrency | races, synchronized, volatile/JMM, CAS, wait/notify, deadlock, locks, synchronizers, pools, CompletableFuture, virtual threads |
 | 5. Spring Boot, JPA, microservices | DI, bean lifecycle, AOP proxies, @Transactional, Hibernate, Boot internals, security, circuit breaker, saga/outbox, idempotency |
 | 6. Real-world scenarios | flash-sale overselling across pods, production memory leak (heap dump → fix), thread-pool starvation, long @Transactional draining the connection pool, cache stampede, shared SimpleDateFormat |
+| 7. Language features in depth | enums, reflection and annotations, Collectors (groupingBy, toMap), java.time, I/O and serialization, Java 8 → 25 |
 
 Each topic is tagged by interview priority (must-know, good to know, beyond interviews). Use the **Interview focus** filter at the top of the topic list to see only what you need; Prev/Next topic and the `[` `]` keys follow it.
 
