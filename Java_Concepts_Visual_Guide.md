@@ -11,6 +11,7 @@ Core Java interview topics taught as **concept → picture → example → gotch
 - Part 6: Real-world scenarios
 - Part 7: Language features in depth
 - Part 8: Data and messaging
+- Part 9: Testing and production tooling
 
 New to a topic? Start with its **Theory: start here** section: the idea in one sentence, a plain-language explanation with an everyday analogy, key terms, how it works step by step, how it shows up in real projects, and common mistakes. No prior knowledge is assumed.
 
@@ -5416,6 +5417,345 @@ while (true) {
 - Topic → partitions (ordered logs with offsets); key → partition; order only within a partition.
 - One consumer per partition per group; other groups read independently; messages are retained, not deleted on read.
 - Commit after processing = at-least-once → idempotent consumers; rebalances redeliver; DLQ for poison messages.
+
+---
+
+# Part 9: Testing and production tooling
+
+## 9.1 Unit testing with JUnit 5 and Mockito
+
+*Interview priority: must-know.* Test one class in isolation: replace its dependency with a mock, follow arrange-act-assert, verify interactions, cover failure paths and parameterised inputs, and learn what not to mock.
+
+#### Theory: start here
+
+**In one sentence:** A unit test runs one class in isolation and checks its behaviour automatically; mocks stand in for the slow or external things it depends on.
+
+Every time you change code, you risk breaking something that used to work. **Automated tests** re-check it in seconds. A **unit test** focuses on one class: give it inputs, check its outputs. **JUnit 5** runs the tests and reports results; assertions (`assertEquals`, AssertJ's `assertThat`) express what you expect.
+
+Classes depend on other classes: a client calling a remote API, a repository using a database. A **mock** (from **Mockito**) is a fake version you control: you tell it what to return (**stubbing**) and later check how it was called (**verification**). That keeps tests fast, deterministic and focused.
+
+**Key terms**
+
+- **@Test**: Marks a JUnit test method.
+- **Assertion**: A check that fails the test if the expectation isn't met.
+- **Mock**: A fake object that records calls and returns stubbed values.
+- **Stub**: A configured response: when(x).thenReturn(y).
+- **verify**: Checks that a mock was called in a certain way.
+- **Arrange-Act-Assert**: Structure: set up, run, check.
+
+**How it works**
+
+1. Create the class under test with mocked dependencies (constructor injection makes this easy).
+2. Arrange: stub the mocks for this scenario.
+3. Act: call the method under test.
+4. Assert results; verify interactions that matter; also test errors and boundaries.
+
+**In real projects**
+
+- Run unit tests on every build; keep them fast (milliseconds each).
+- Use AssertJ for readable assertions and @ParameterizedTest for many inputs.
+- Name tests after behaviour: `rejectsNegativeAmounts`.
+
+**Common mistakes**
+
+- Mocking everything, including value objects.
+- Verifying every internal call (brittle tests).
+- Testing only the happy path.
+
+#### Code
+
+```java
+class PriceServiceTest {
+  TaxClient tax = mock(TaxClient.class);                  // fake dependency
+  PriceService service = new PriceService(tax);           // real class under test
+
+  @Test
+  void addsTaxToNetPrice() {
+    when(tax.rateFor("DE")).thenReturn(new BigDecimal("0.19"));    // arrange
+    BigDecimal gross = service.gross(new BigDecimal("100"), "DE");  // act
+    assertEquals(new BigDecimal("119.00"), gross);                  // assert
+    verify(tax).rateFor("DE");                                      // interaction
+  }
+
+  @ParameterizedTest
+  @CsvSource({"0, 0.00", "250, 297.50"})
+  void grossForManyPrices(String net, String expected) { /* … */ }
+
+  @Test
+  void failsClearlyWhenTaxServiceIsDown() {
+    when(tax.rateFor(any())).thenThrow(new TaxUnavailableException());
+    assertThrows(PriceUnavailableException.class,
+                 () -> service.gross(BigDecimal.TEN, "DE"));
+  }
+}
+```
+
+#### Remember
+
+- Arrange (stub mocks) → Act (call the method) → Assert (check results); verify only meaningful interactions.
+- Mock slow/external collaborators; use real value objects; never mock the class under test.
+- Cover failure paths (thenThrow + assertThrows) and boundaries (@ParameterizedTest).
+
+## 9.2 JVM troubleshooting toolkit
+
+*Interview priority: good to know.* Which tool for which symptom: jcmd for flags, thread dumps and heap dumps, Java Flight Recorder for "where does the time go", and GC logs. Follow one high-CPU incident from top to the guilty line of code.
+
+#### Theory: start here
+
+**In one sentence:** The JDK ships tools to look inside a running JVM: jcmd for flags, thread and heap dumps, Java Flight Recorder for profiling, and GC logs for memory behaviour.
+
+When a production service is slow, stuck or running out of memory, guessing is expensive. The JVM can tell you what it's doing. A **thread dump** shows what every thread is executing right now; a **heap dump** shows every object in memory; **JFR** (Java Flight Recorder) records CPU, allocation, lock and I/O events over time with tiny overhead; **GC logs** show how memory is collected.
+
+**jcmd** is the single command that triggers most of these on a running process.
+
+**Key terms**
+
+- **jcmd**: Sends diagnostic commands to a running JVM.
+- **Thread dump**: Stack trace of every thread at one moment.
+- **Heap dump**: Snapshot of all objects (.hprof).
+- **JFR / JMC**: Flight Recorder (low-overhead events) / Mission Control (viewer).
+- **GC log**: Record of every garbage collection.
+
+**How it works**
+
+1. Identify the symptom: hang, high CPU, memory growth, slowness.
+2. Collect the matching evidence before restarting (dumps, JFR, logs).
+3. Correlate: hot thread id → dump; dominator tree → leak; JFR hot methods → code.
+4. Fix, then add metrics or alerts so it's caught earlier next time.
+
+**In real projects**
+
+- Enable GC logging and HeapDumpOnOutOfMemoryError by default.
+- In Kubernetes, write dumps to a persistent volume.
+- Spring Boot Actuator exposes thread and heap dumps (secure them!).
+
+**Common mistakes**
+
+- Restarting before collecting evidence.
+- Taking a single thread dump and over-interpreting it.
+- Heap dumps on a live, latency-critical instance without warning (they pause the JVM).
+
+#### Code
+
+```java
+$ jcmd                                    # list running JVMs and their pids
+$ jcmd 4242 VM.flags                      # effective heap size, GC, flags
+$ top -H -p 4242                          # which THREAD burns CPU?
+$ jcmd 4242 Thread.print > dump1.txt      # thread dump (same as jstack)
+$ jcmd 4242 GC.class_histogram | head     # what fills the heap (cheap)
+$ jcmd 4242 GC.heap_dump /dumps/app.hprof # full heap dump (pauses the app)
+$ jcmd 4242 JFR.start duration=60s filename=/dumps/rec.jfr
+$ jstat -gcutil 4242 1000                 # GC stats every second
+$ java -Xlog:gc*:file=gc.log -XX:+HeapDumpOnOutOfMemoryError -jar app.jar
+```
+
+#### Remember
+
+- jcmd: VM.flags, Thread.print, GC.class_histogram, GC.heap_dump, JFR.start.
+- High CPU: top -H → thread id in hex → nid in the thread dump. Hang: several dumps compared.
+- Always on: GC logs + HeapDumpOnOutOfMemoryError; JFR is safe in production.
+
+## 9.3 Maven and Gradle: dependencies and conflicts
+
+*Interview priority: good to know.* How a build tool turns a few declared dependencies into dozens of JARs, why two libraries wanting different versions of the same JAR cause NoSuchMethodError at run time, and how to fix it.
+
+#### Theory: start here
+
+**In one sentence:** Maven and Gradle build your project and manage its libraries, including the libraries those libraries need; when two need different versions of the same one, the tool picks one, sometimes wrongly.
+
+A real project uses dozens of open-source libraries, and those use others. Build tools resolve this whole tree from a few lines of configuration, download the JARs from repositories like Maven Central, compile, run tests and package your app.
+
+Only **one version** of each library can be on the classpath. When two dependencies want different versions, the tool chooses (Maven: nearest wins; Gradle: highest wins). If the chosen version lacks something the other library calls, you get **NoSuchMethodError** or **NoClassDefFoundError** at run time.
+
+**Key terms**
+
+- **Coordinates**: groupId:artifactId:version.
+- **Transitive dependency**: A dependency of your dependency.
+- **BOM / dependencyManagement**: A central list of versions to use.
+- **Scope**: Where a dependency is available: compile, runtime, test, provided.
+- **Wrapper**: mvnw / gradlew: pins the build tool version.
+
+**How it works**
+
+1. Declare direct dependencies (versions often from a BOM).
+2. The tool resolves the full tree and resolves conflicts.
+3. Compile, test, package (a fat JAR for Spring Boot).
+4. Inspect with dependency:tree; pin versions when needed.
+
+**In real projects**
+
+- Let Spring Boot's BOM manage versions; override deliberately.
+- Use dependency convergence checks in CI.
+- Keep dependencies updated (Dependabot/Renovate) and scan for vulnerabilities.
+
+**Common mistakes**
+
+- Adding a library without checking what it drags in.
+- Ignoring "omitted for conflict" in the tree.
+- Different build tool versions on different machines.
+
+#### Code
+
+```java
+<project>
+  <groupId>com.shop</groupId>
+  <artifactId>order-service</artifactId>
+  <version>1.4.0</version>
+  <parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>3.4.0</version>
+  </parent>
+  <dependencies>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.vendor</groupId><artifactId>pay-sdk</artifactId>
+      <version>2.1.0</version>
+    </dependency>
+    <dependency>
+      <groupId>com.partner</groupId><artifactId>loyalty-client</artifactId>
+      <version>3.0.0</version>
+    </dependency>
+  </dependencies>
+</project>
+```
+
+#### Remember
+
+- Dependencies = coordinates (group:artifact:version); transitive dependencies come along automatically.
+- One version per JAR: Maven = nearest wins (then first declared), Gradle = highest wins. Mismatch → NoSuchMethodError at run time.
+- Use BOMs, pin versions in dependencyManagement, inspect with dependency:tree, commit the wrapper.
+
+## 9.4 Logging, metrics and tracing
+
+*Interview priority: good to know.* The three pillars of observability in a Spring service: well-formed logs with context, metrics with sane tags, and distributed traces that follow one request across services.
+
+#### Theory: start here
+
+**In one sentence:** Observability means understanding a running system from its outputs: logs record events, metrics measure rates and latencies, and traces follow single requests across services.
+
+In production you can't attach a debugger. You learn what's happening from the signals the application emits. **Logs** are timestamped event records. **Metrics** are numbers aggregated over time (requests per second, error rate, p99 latency) that you graph and alert on. **Traces** connect the work one request did across many services, with timings.
+
+In Java, code logs via **SLF4J** (with Logback underneath), metrics go through **Micrometer**, and traces through **OpenTelemetry** / Micrometer Tracing. Spring Boot wires them together, including putting the trace id into every log line.
+
+**Key terms**
+
+- **Log level**: ERROR, WARN, INFO, DEBUG, TRACE.
+- **MDC**: Per-thread key-values added to log lines.
+- **Counter / timer / gauge**: Metric types: count, duration distribution, current value.
+- **Cardinality**: Number of distinct tag values; keep it bounded.
+- **Span / trace**: One timed operation / all spans of one request.
+- **SLO**: Service-level objective, e.g. 99.9% of requests under 300 ms.
+
+**How it works**
+
+1. Emit structured logs with context (traceId, ids).
+2. Record metrics for key operations and expose them (/actuator/prometheus).
+3. Propagate trace context across HTTP and messaging.
+4. Build dashboards and alerts on what users feel: errors and latency.
+
+**In real projects**
+
+- One log line per meaningful event, not per loop iteration.
+- Correlate logs and traces with the trace id.
+- Use DEBUG temporarily, via Actuator's loggers endpoint.
+
+**Common mistakes**
+
+- String concatenation in log calls.
+- Logging secrets or personal data.
+- High-cardinality metric tags (user ids, URLs with ids).
+
+#### Code
+
+```java
+private static final Logger log = LoggerFactory.getLogger(OrderService.class);
+
+public Order place(Cart cart) {
+  MDC.put("orderId", cart.id());                         // added to every log line
+  log.info("Placing order with {} items", cart.size());  // {} = lazy formatting
+  try {
+    Order o = repository.save(Order.from(cart));
+    meterRegistry.counter("orders.placed", "country", cart.country()).increment();
+    return o;
+  } catch (DataAccessException e) {
+    log.error("Could not save order", e);                // exception as the last argument
+    throw e;
+  } finally {
+    MDC.remove("orderId");
+  }
+}
+```
+
+#### Remember
+
+- Logs (what), metrics (how much/fast), traces (where across services).
+- SLF4J with {} placeholders; MDC for context (cleared in finally); exception as last arg; log once; no secrets.
+- Micrometer metrics with bounded tags; traceId propagated via headers; JSON logs linked to traces.
+
+## 9.5 Java modules (JPMS)
+
+*Interview priority: beyond typical interviews.* module-info.java declares what a module needs and what it exposes. See strong encapsulation block an internal package, reflection needing opens, and why most Spring apps still live on the classpath.
+
+#### Theory: start here
+
+**In one sentence:** The Java Platform Module System lets a JAR declare which modules it needs and which packages it exposes, giving strong encapsulation beyond public/private.
+
+Before Java 9 there were only classes and packages on a flat **classpath**: any public class could be used by anyone, even if it was meant to be internal. A **module** adds a boundary around a group of packages, described in `module-info.java`: what it **requires**, what it **exports** (its public API) and what it **opens** for reflection.
+
+The JDK itself was split into modules, which allows tools like `jlink` to build small runtimes, and since Java 17 its internals can't be accessed reflectively by default.
+
+**Key terms**
+
+- **module-info.java**: The module descriptor.
+- **requires**: Declares a dependency on another module.
+- **exports**: Makes a package accessible to other modules.
+- **opens**: Allows deep reflection into a package at run time.
+- **Unnamed module**: Where classpath code lives.
+- **jlink**: Builds a custom runtime image with only needed modules.
+
+**How it works**
+
+1. Create module-info.java at the root of the source tree.
+2. List required modules and exported packages.
+3. Open packages that frameworks reflect on.
+4. Run with --module-path instead of the classpath.
+
+**In real projects**
+
+- Libraries benefit most (clear public API).
+- jlink makes slim container images.
+- Know --add-opens for legacy libraries on Java 17+.
+
+**Common mistakes**
+
+- Forgetting opens for Jackson/Hibernate model packages.
+- Expecting public classes in non-exported packages to be usable.
+
+#### Code
+
+```java
+// src/com.shop.orders/module-info.java
+module com.shop.orders {
+  requires com.shop.payments;            // I depend on this module
+  requires java.sql;
+  exports com.shop.orders.api;           // only this package is visible to others
+  opens com.shop.orders.model to com.fasterxml.jackson.databind;  // reflection access
+}
+
+// in another module that requires com.shop.orders:
+import com.shop.orders.api.OrderService;      // exported: OK
+import com.shop.orders.internal.OrderMapper;  // not exported: compile error
+```
+
+#### Remember
+
+- module-info: requires (dependencies), exports (public API), opens (reflection).
+- Non-exported packages are inaccessible even if their classes are public.
+- JDK is modular (jlink); Java 17 locks internals (--add-opens); most apps still use the classpath.
 
 ---
 

@@ -4259,6 +4259,202 @@ keep:[`Topic → partitions (ordered logs with offsets); key → partition; orde
 ]});
 </script>
 <script>
+PARTS.push({no:'9', title:'Testing and production tooling', topics:[
+
+/* =============================== 9.1 =============================== */
+{ no:'9.1', title:'Unit testing with JUnit 5 and Mockito', imp:'must', idea:`Test one class in isolation: replace its dependency with a mock, follow arrange-act-assert, verify interactions, cover failure paths and parameterised inputs, and learn what not to mock.`,
+actors:'Test run', stateTitle:'Test state', logTitle:'Test report',
+codes:{a:`class PriceServiceTest {
+  TaxClient tax = mock(TaxClient.class);                  // fake dependency
+  PriceService service = new PriceService(tax);           // real class under test
+
+  @Test
+  void addsTaxToNetPrice() {
+    when(tax.rateFor("DE")).thenReturn(new BigDecimal("0.19"));    // arrange
+    BigDecimal gross = service.gross(new BigDecimal("100"), "DE");  // act
+    assertEquals(new BigDecimal("119.00"), gross);                  // assert
+    verify(tax).rateFor("DE");                                      // interaction
+  }
+
+  @ParameterizedTest
+  @CsvSource({"0, 0.00", "250, 297.50"})
+  void grossForManyPrices(String net, String expected) { /* … */ }
+
+  @Test
+  void failsClearlyWhenTaxServiceIsDown() {
+    when(tax.rateFor(any())).thenThrow(new TaxUnavailableException());
+    assertThrows(PriceUnavailableException.class,
+                 () -> service.gross(BigDecimal.TEN, "DE"));
+  }
+}`},
+steps:[
+{hl:{test:[1,3]}, th:[['test','NEW:dim','PriceServiceTest']], g:[G('Unit under test',['PriceService','real code we want to check'],['TaxClient','calls a remote tax API: slow, flaky, costs money','bad'])],
+ say:`A <b>unit test</b> checks one class quickly and in isolation. <code>PriceService</code> depends on <code>TaxClient</code>, which calls a remote API. We don't want real network calls in a test: they're slow, flaky and may cost money. Constructor injection (5.1) lets us pass in a stand-in.`},
+{hl:{test:[2]}, g:[G('mock(TaxClient.class)',['type','generated subclass/proxy of TaxClient'],['every method','returns a default (null, 0, false, empty)'],['records calls','yes, for verify()','ok'])],
+ say:`<b>Mockito</b> creates a <b>mock</b>: a fake TaxClient whose methods do nothing and return defaults, while recording every call. (With <code>@ExtendWith(MockitoExtension.class)</code> you can write <code>@Mock TaxClient tax</code> and <code>@InjectMocks PriceService service</code> instead.)`},
+{hl:{test:[5,6,7]}, th:[['test','RUN','addsTaxToNetPrice']], g:[G('Arrange',['when(tax.rateFor("DE"))','thenReturn(0.19)','hot'])],
+ say:`Tests follow <b>Arrange, Act, Assert</b>. Arrange: <b>stub</b> the mock so <code>rateFor("DE")</code> returns 0.19. Now the result depends only on PriceService's logic. <code>@Test</code> marks the method for JUnit 5 to run.`},
+{hl:{test:[8]}, g:[G('Act',['service.gross(100, "DE")','100 × (1 + 0.19)'],['result','119.00','hot'])],
+ say:`Act: call the method being tested, exactly as production code would.`},
+{hl:{test:[9]}, g:[G('Assert',['expected','119.00'],['actual','119.00','ok'],['careful','BigDecimal.equals compares scale: 119 ≠ 119.00'])], log:['✔ addsTaxToNetPrice'],
+ say:`Assert: compare expected and actual. If they differ, the test fails with a clear message. Note the BigDecimal trap (1.10): <code>assertEquals(new BigDecimal("119"), …)</code> would fail on scale; AssertJ's <code>isEqualByComparingTo</code> avoids that.`},
+{hl:{test:[10]}, g:[G('verify',['tax.rateFor("DE") called','exactly once','ok'],['other calls','none'])],
+ say:`<code>verify</code> checks an <b>interaction</b>: that the mock was called the way we expected. Use it when the call itself is the behaviour (sending an email, publishing an event). Don't verify every internal call, or tests break on every refactor.`},
+{hl:{test:[13,14,15]}, th:[['test','RUN','grossForManyPrices × 2']], g:[G('@ParameterizedTest',['run 1','net 0 → 0.00','ok'],['run 2','net 250 → 297.50','ok'])], log:['✔ grossForManyPrices [1] 0, 0.00','✔ grossForManyPrices [2] 250, 297.50'],
+ say:`A <b>parameterised test</b> runs the same check with many inputs: here from inline CSV. Great for boundaries: 0, negative, huge, rounding cases.`},
+{hl:{test:[17,18,19,20,21]}, th:[['test','RUN','failsClearly…']], g:[G('Failure path',['stub','rateFor(any()) throws TaxUnavailableException'],['expected','PriceUnavailableException','ok'])], log:['✔ failsClearlyWhenTaxServiceIsDown'],
+ say:`Test the <b>unhappy path</b> too: make the mock throw and assert the service translates it properly. <code>assertThrows</code> runs the lambda and checks the exception type. Failure handling is where production bugs hide.`},
+{th:[['test','TERM:ok','4 passed in 0.2 s']], g:[G('Mock or not?',['remote clients, repositories','mock or fake','ok'],['value objects, records, collections','use real ones','ok'],['the class under test','never mock it','bad'],['types you don\'t own (e.g. RestTemplate)','prefer wrapping them, or a real stub server'])],
+ say:`<b>Say it:</b> "Unit tests isolate a class by mocking its collaborators: arrange with stubs, act, assert results, and verify only meaningful interactions. I test happy and failure paths and boundaries with parameterised tests, use real value objects, and leave wiring and DB behaviour to slice tests and Testcontainers (5.12)."`}
+],
+keep:[`Arrange (stub mocks) → Act (call the method) → Assert (check results); verify only meaningful interactions.`,`Mock slow/external collaborators; use real value objects; never mock the class under test.`,`Cover failure paths (thenThrow + assertThrows) and boundaries (@ParameterizedTest).`]},
+
+/* =============================== 9.2 =============================== */
+{ no:'9.2', title:'JVM troubleshooting toolkit', imp:'good', idea:`Which tool for which symptom: jcmd for flags, thread dumps and heap dumps, Java Flight Recorder for "where does the time go", and GC logs. Follow one high-CPU incident from top to the guilty line of code.`,
+actors:'On-call', stateTitle:'What each tool tells you', logTitle:'Terminal',
+codes:{a:`$ jcmd                                    # list running JVMs and their pids
+$ jcmd 4242 VM.flags                      # effective heap size, GC, flags
+$ top -H -p 4242                          # which THREAD burns CPU?
+$ jcmd 4242 Thread.print > dump1.txt      # thread dump (same as jstack)
+$ jcmd 4242 GC.class_histogram | head     # what fills the heap (cheap)
+$ jcmd 4242 GC.heap_dump /dumps/app.hprof # full heap dump (pauses the app)
+$ jcmd 4242 JFR.start duration=60s filename=/dumps/rec.jfr
+$ jstat -gcutil 4242 1000                 # GC stats every second
+$ java -Xlog:gc*:file=gc.log -XX:+HeapDumpOnOutOfMemoryError -jar app.jar`},
+steps:[
+{hl:{oncall:[1]}, th:[['oncall','RUN:ok','paged: CPU 100%, p99 3 s']], g:[G('Symptom → tool',['hang / slow / deadlock','thread dumps (several, a few seconds apart)'],['high CPU','top -H + thread dump, or JFR'],['memory growing / OOM','GC logs, class histogram, heap dump (6.2)'],['"where does time go?"','JFR / async-profiler'])],
+ say:`Production problems come in a few shapes, and each has a go-to tool. Almost everything is reachable with <b>jcmd</b>, the Swiss-army knife that ships with the JDK. Step one: find the JVM's process id.`},
+{hl:{oncall:[2]}, g:[G('VM.flags (excerpt)',['-XX:MaxHeapSize','1.5 GB (75% of a 2 GB container)'],['-XX:+UseG1GC','yes'],['-XX:ActiveProcessorCount','2'])], log:['$ jcmd 4242 VM.flags','-XX:MaxHeapSize=1610612736 -XX:+UseG1GC …'],
+ say:`<code>VM.flags</code> shows what the JVM is <i>actually</i> running with, which in containers often differs from what you assumed (heap sized from the container limit, CPU count from cgroups).`},
+{hl:{oncall:[3]}, g:[G('top -H (threads)',['tid 4311','98% CPU','bad'],['tid 4312','2%'],['4311 in hex','0x10d7','hot'])], log:['  PID USER   %CPU COMMAND','4311 app    98.0 java','4312 app     2.0 java'],
+ say:`<code>top -H</code> shows CPU per <b>thread</b>. Thread 4311 is burning a whole core. Thread dumps label native thread ids in hex as <code>nid=0x10d7</code>, so convert 4311 → 0x10d7.`},
+{hl:{oncall:[4]}, g:[G('Thread dump: nid=0x10d7',['name','"http-nio-8080-exec-7"'],['state','RUNNABLE'],['top frame','java.util.regex.Pattern$Loop.match','bad'],['our code','OrderValidator.validateEmail(OrderValidator.java:58)','hot'])], log:['"http-nio-8080-exec-7" #57 nid=0x10d7 runnable','   at java.util.regex.Pattern$Loop.match(…)','   at com.shop.OrderValidator.validateEmail(OrderValidator.java:58)'],
+ say:`The thread dump shows that thread stuck in a regex inside <code>validateEmail</code>: a <b>catastrophic backtracking</b> regex on a long input. Two or three dumps a few seconds apart confirm it's the same place every time, not a coincidence.`},
+{hl:{oncall:[5,6]}, g:[G('Memory tools',['GC.class_histogram','counts and bytes per class; cheap, no pause'],['GC.heap_dump','every object; large file; pauses the JVM','hot'],['analyse with','Eclipse MAT / IntelliJ (dominator tree)'])],
+ say:`For memory problems, start with the cheap <b>class histogram</b>; take a full <b>heap dump</b> only when needed, because it pauses the app and can be gigabytes. Analysis is covered in 6.2.`},
+{hl:{oncall:[7]}, g:[G('Java Flight Recorder',['overhead','~1–2%: safe in production','ok'],['records','hot methods, allocations, locks, I/O, GC, exceptions'],['open with','JDK Mission Control (JMC)'])], log:['$ jcmd 4242 JFR.start duration=60s filename=/dumps/rec.jfr','Started recording 1.'],
+ say:`<b>JFR</b> is a low-overhead recorder built into the JVM. A 60-second recording answers "where does CPU time go, who allocates, which locks are contended" without guessing. async-profiler's flame graphs answer similar questions.`},
+{hl:{oncall:[8,9]}, g:[G('GC visibility',['jstat -gcutil','live % of each generation, GC counts and times'],['-Xlog:gc*','full GC log to a file: always on in production','ok'],['HeapDumpOnOutOfMemoryError','dump automatically on OOM','ok'])],
+ say:`Turn on <b>GC logging</b> and <b>heap dump on OOM</b> from day one; they cost almost nothing and are invaluable after an incident. <code>jstat</code> gives a live view of GC activity.`},
+{th:[['oncall','TERM:ok','fixed: bounded regex + input length limit']], g:[G('In Kubernetes / Spring',['kubectl exec … jcmd 1 Thread.print','PID is often 1 in a container'],['Actuator','/actuator/threaddump, /heapdump, /metrics'],['keep dumps','write to a mounted volume, not the pod\'s disk'])],
+ say:`<b>Say it:</b> "For a hang I take several thread dumps; for high CPU I map the hot thread from top -H to the dump, or record JFR; for memory I check GC logs and the class histogram, then take a heap dump. GC logs and heap-dump-on-OOM are always enabled."`}
+],
+keep:[`jcmd: VM.flags, Thread.print, GC.class_histogram, GC.heap_dump, JFR.start.`,`High CPU: top -H → thread id in hex → nid in the thread dump. Hang: several dumps compared.`,`Always on: GC logs + HeapDumpOnOutOfMemoryError; JFR is safe in production.`]},
+
+/* =============================== 9.3 =============================== */
+{ no:'9.3', title:'Maven and Gradle: dependencies and conflicts', imp:'good', idea:`How a build tool turns a few declared dependencies into dozens of JARs, why two libraries wanting different versions of the same JAR cause NoSuchMethodError at run time, and how to fix it.`,
+actors:'Build', stateTitle:'Resolved dependencies', logTitle:'Build output',
+codes:{a:`<project>
+  <groupId>com.shop</groupId>
+  <artifactId>order-service</artifactId>
+  <version>1.4.0</version>
+  <parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>3.4.0</version>
+  </parent>
+  <dependencies>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.vendor</groupId><artifactId>pay-sdk</artifactId>
+      <version>2.1.0</version>
+    </dependency>
+    <dependency>
+      <groupId>com.partner</groupId><artifactId>loyalty-client</artifactId>
+      <version>3.0.0</version>
+    </dependency>
+  </dependencies>
+</project>`},
+steps:[
+{hl:{build:[1,2,3,4]}, th:[['build','RUN','mvn package']], g:[G('Coordinates',['groupId','com.shop (organisation)'],['artifactId','order-service (project)'],['version','1.4.0'])],
+ say:`A build tool (Maven or Gradle) compiles your code, runs tests and packages the result, and above all <b>downloads dependencies</b>. Every library is identified by <b>coordinates</b>: groupId, artifactId and version, fetched from a repository like Maven Central.`},
+{hl:{build:[5,6,7,8,9,11,12,13,14]}, g:[G('Managed versions (BOM)',['spring-boot-starter-web','no version written: comes from the parent'],['jackson, tomcat, logback…','all versions chosen and tested together by Spring Boot','ok'])],
+ say:`The Spring Boot <b>parent</b> (or BOM) supplies tested, compatible versions for hundreds of libraries, so you don't write versions for them. One starter brings in Spring MVC, Tomcat, Jackson and logging.`},
+{hl:{build:[15,16,17,18,19,20,21]}, g:[G('Transitive dependencies',['pay-sdk 2.1.0','→ json-lite 1.2'],['loyalty-client 3.0.0','→ json-lite 2.0'],['conflict','two versions of json-lite requested','hot'])], log:['$ mvn dependency:tree','+- com.vendor:pay-sdk:2.1.0','|  \\- com.acme:json-lite:1.2','+- com.partner:loyalty-client:3.0.0','   \\- com.acme:json-lite:2.0 (omitted for conflict with 1.2)'],
+ say:`Your libraries have their own dependencies (<b>transitive</b> dependencies). Both need <code>json-lite</code>, in different versions. Only <b>one</b> version can be on the classpath, so the build tool must pick.`},
+{g:[G('Who wins?',['Maven','nearest in the tree; on a tie, first declared → 1.2','hot'],['Gradle','highest version by default → 2.0'])], log:['[INFO] BUILD SUCCESS'],
+ say:`<b>Maven</b> picks the version <b>nearest</b> to your project in the tree, and on a tie the one declared first: json-lite 1.2. <b>Gradle</b> picks the highest by default. The build succeeds: compiling only checks your own code against the APIs you call directly.`},
+{th:[['build','TERM:bad','runtime failure']], g:[G('At run time',['loyalty-client calls','JsonLite.parseStrict() (added in 2.0)'],['classpath has','json-lite 1.2','bad'])], log:['java.lang.NoSuchMethodError: \'com.acme.JsonLite com.acme.JsonLite.parseStrict(java.lang.String)\'','   at com.partner.loyalty.Client.fetchPoints(Client.java:88)'],
+ say:`In production, loyalty-client calls a method that exists only in 2.0, and the JVM throws <b>NoSuchMethodError</b> (or NoClassDefFoundError / ClassNotFoundException). This "JAR hell" error only appears when that code path runs.`},
+{th:[['build','RUN:ok','mvn package']], g:[G('Fixes',['pin the version','<dependencyManagement> json-lite 2.0 (or Gradle constraints)','ok'],['check compatibility','does pay-sdk work with 2.0? run its tests','hot'],['exclude','<exclusions> on the dependency that brings the wrong one'],['find it','mvn dependency:tree / gradle dependencies','ok'])],
+ say:`Fix it by <b>pinning</b> the version you want in dependencyManagement (Gradle: a constraint or a version catalog), after checking the other library works with it, or by excluding the bad transitive dependency. Tools like the Maven Enforcer plugin's dependency convergence rule fail the build on such conflicts early.`},
+{th:[['build','TERM:ok','order-service-1.4.0.jar']], g:[G('Lifecycle (Maven)',['compile → test → package → verify → install → deploy','each phase runs the earlier ones'],['scopes','compile, runtime, test, provided']), G('Habits',['use the wrapper','./mvnw, ./gradlew: same tool version everywhere','ok'],['Spring Boot plugin','builds an executable fat JAR','ok'],['Gradle','implementation vs api; version catalogs'])],
+ say:`Maven runs a fixed <b>lifecycle</b>; <code>mvn package</code> compiles, tests and builds the JAR. Dependency <b>scopes</b> keep test libraries out of production. Always commit the wrapper (<code>mvnw</code>/<code>gradlew</code>) so CI and every developer use the same build tool version.`}
+],
+keep:[`Dependencies = coordinates (group:artifact:version); transitive dependencies come along automatically.`,`One version per JAR: Maven = nearest wins (then first declared), Gradle = highest wins. Mismatch → NoSuchMethodError at run time.`,`Use BOMs, pin versions in dependencyManagement, inspect with dependency:tree, commit the wrapper.`]},
+
+/* =============================== 9.4 =============================== */
+{ no:'9.4', title:'Logging, metrics and tracing', imp:'good', idea:`The three pillars of observability in a Spring service: well-formed logs with context, metrics with sane tags, and distributed traces that follow one request across services.`,
+actors:'Request', stateTitle:'Signals emitted', logTitle:'Log output (JSON lines)',
+codes:{a:`private static final Logger log = LoggerFactory.getLogger(OrderService.class);
+
+public Order place(Cart cart) {
+  MDC.put("orderId", cart.id());                         // added to every log line
+  log.info("Placing order with {} items", cart.size());  // {} = lazy formatting
+  try {
+    Order o = repository.save(Order.from(cart));
+    meterRegistry.counter("orders.placed", "country", cart.country()).increment();
+    return o;
+  } catch (DataAccessException e) {
+    log.error("Could not save order", e);                // exception as the last argument
+    throw e;
+  } finally {
+    MDC.remove("orderId");
+  }
+}`},
+steps:[
+{hl:{req:[1]}, th:[['req','RUN','POST /orders']], g:[G('Three pillars',['logs','what happened, in detail (events)'],['metrics','how much / how fast, aggregated (numbers over time)'],['traces','where the time went across services (one request)'])],
+ say:`<b>Observability</b> means you can understand what a running system is doing from the outside. Logs tell you <i>what happened</i>, metrics tell you <i>how much and how fast</i>, traces tell you <i>where a request spent its time</i> across services. You need all three during an incident.`},
+{hl:{req:[1]}, g:[G('SLF4J',['your code uses','the SLF4J API (a facade)'],['implementation','Logback (Spring Boot default) or Log4j2'],['levels','ERROR > WARN > INFO > DEBUG > TRACE'],['production level','INFO (DEBUG per package when needed)'])],
+ say:`Code logs through <b>SLF4J</b>, a facade, and an implementation (Logback by default in Boot) writes the output. You choose levels per package in config, so you can turn on DEBUG for one package in production without redeploying (via Actuator's loggers endpoint).`},
+{hl:{req:[4,5]}, g:[G('MDC (per thread)',['traceId','4bf92f3577b34da6','hot'],['orderId','ord-981','hot'])], log:['{"level":"INFO","msg":"Placing order with 3 items","orderId":"ord-981","traceId":"4bf92f3577b34da6"}'],
+ say:`<b>MDC</b> (Mapped Diagnostic Context) holds key-values for the current thread (a ThreadLocal, 4.12) that are added to every log line, so you can filter all logs of one order or one request. The <code>{}</code> placeholder formats lazily: if INFO is off, the message string is never built.`},
+{hl:{req:[8]}, g:[G('Metrics (Micrometer)',['orders.placed{country="DE"}','counter +1','ok'],['http.server.requests','timer: count, p50/p95/p99 latency (automatic)'],['tag cardinality','country: ~50 values ✔ · userId: millions ✘','bad'])],
+ say:`<b>Micrometer</b> records numbers that a monitoring system (Prometheus + Grafana) graphs and alerts on. Counters, timers and gauges, with <b>tags</b> to slice them. Keep tag values bounded: tagging by user id creates millions of time series and can take down your metrics backend.`},
+{hl:{req:[10,11,12]}, th:[['req','RUN:bad','DB error']], g:[G('Logging exceptions',['log.error("…", e)','message + full stack trace','ok'],['log.error("… " + e)','only e.toString(): stack trace lost','bad'],['log and rethrow at every layer','same error logged 4 times','bad'])], log:['{"level":"ERROR","msg":"Could not save order","orderId":"ord-981","traceId":"4bf92f3577b34da6","stack_trace":"org.springframework.dao…"}'],
+ say:`Pass the exception as the <b>last argument</b> so the stack trace is logged. Log it <b>once</b>, where it's handled (often a central @ControllerAdvice); logging and rethrowing at every layer floods the logs with duplicates.`},
+{hl:{req:[13,14]}, th:[['req','TERM','response sent']], g:[G('MDC cleanup',['MDC.remove in finally','next request on this pooled thread starts clean','ok'],['async work','copy MDC explicitly (TaskDecorator)'])],
+ say:`Remove MDC entries in <code>finally</code>: request threads are pooled, and a stale orderId would appear in the next request's logs (the ThreadLocal leak from 4.12).`},
+{th:[], g:[G('Distributed trace (one request)',['api-gateway','12 ms'],['order-service','180 ms'],['  ├ postgres INSERT','25 ms'],['  └ payment-service','140 ms','hot'],['traceId','propagated in the traceparent header','ok'])],
+ say:`A <b>trace</b> follows one request through every service. Each step is a <b>span</b> with timing; the <b>trace id</b> travels in HTTP/Kafka headers (W3C <code>traceparent</code>). With Micrometer Tracing / OpenTelemetry, Spring Boot creates spans automatically and puts traceId in the MDC, linking logs to traces.`},
+{th:[], g:[G('Rules',['structured JSON logs','searchable in ELK / Loki','ok'],['never log','passwords, tokens, card numbers, personal data','bad'],['alert on','symptoms users feel: error rate, latency (SLOs)','ok'],['health','/actuator/health liveness & readiness'])],
+ say:`<b>Say it:</b> "I log with SLF4J at sensible levels, structured JSON with MDC context like traceId; exceptions logged once with stack traces; no secrets or personal data. Metrics via Micrometer with bounded tags, alerting on error rate and latency. Distributed tracing with OpenTelemetry so a slow request can be followed across services."`}
+],
+keep:[`Logs (what), metrics (how much/fast), traces (where across services).`,`SLF4J with {} placeholders; MDC for context (cleared in finally); exception as last arg; log once; no secrets.`,`Micrometer metrics with bounded tags; traceId propagated via headers; JSON logs linked to traces.`]},
+
+/* =============================== 9.5 =============================== */
+{ no:'9.5', title:'Java modules (JPMS)', imp:'extra', idea:`module-info.java declares what a module needs and what it exposes. See strong encapsulation block an internal package, reflection needing opens, and why most Spring apps still live on the classpath.`,
+actors:'Compiler', stateTitle:'Visibility', logTitle:'Compiler output',
+codes:{a:`// src/com.shop.orders/module-info.java
+module com.shop.orders {
+  requires com.shop.payments;            // I depend on this module
+  requires java.sql;
+  exports com.shop.orders.api;           // only this package is visible to others
+  opens com.shop.orders.model to com.fasterxml.jackson.databind;  // reflection access
+}
+
+// in another module that requires com.shop.orders:
+import com.shop.orders.api.OrderService;      // exported: OK
+import com.shop.orders.internal.OrderMapper;  // not exported: compile error`},
+steps:[
+{hl:{javac:[1]}, th:[], g:[G('Classpath problems (before Java 9)',['public','means visible to every JAR','bad'],['missing JAR','found only at run time (NoClassDefFoundError)','bad'],['two JARs, same package','unpredictable (split packages)','bad'])],
+ say:`On the classpath, everything <code>public</code> in every JAR is visible to everything else, missing dependencies are discovered at run time, and duplicate classes resolve by accident of ordering. The <b>Java Platform Module System</b> (Java 9) adds explicit boundaries.`},
+{hl:{javac:[2,3,4]}, g:[G('module com.shop.orders',['requires','com.shop.payments, java.sql'],['checked','at compile time and startup','ok'])],
+ say:`A <b>module</b> is a named group of packages with a <code>module-info.java</code>. <code>requires</code> declares dependencies explicitly; if a required module is missing, the application fails at startup, not halfway through a request.`},
+{hl:{javac:[5,10,11]}, g:[G('From another module',['com.shop.orders.api','exported → accessible','ok'],['com.shop.orders.internal','public classes, but NOT exported → inaccessible','bad'])], log:['error: package com.shop.orders.internal is not visible','  (package com.shop.orders.internal is declared in module com.shop.orders, which does not export it)'],
+ say:`<b>Strong encapsulation:</b> only <code>exports</code>-ed packages are accessible from other modules. A <code>public</code> class in an internal package is no longer reachable from outside: "public" now means "public within what the module exports".`},
+{hl:{javac:[6]}, g:[G('Reflection',['exports','compile-time access to public API'],['opens','deep reflection (private fields) at run time'],['who needs it','Jackson, Hibernate, Spring'])],
+ say:`Frameworks that use reflection on private fields (Jackson filling a DTO, Hibernate setting an id) need the package <code>opens</code>-ed to them. Without it you get <code>InaccessibleObjectException</code> at run time.`},
+{th:[], g:[G('Where you meet JPMS',['the JDK itself','split into ~70 modules (java.base, java.sql…)','ok'],['jlink','build a slim runtime with only needed modules','ok'],['Java 17+','JDK internals locked: --add-opens needed for old libraries','hot'],['typical Spring Boot app','still runs on the classpath (unnamed module)'])],
+ say:`Most application code (including typical Spring Boot apps) still runs on the classpath, in the "unnamed module". But everyone meets JPMS: the JDK itself is modular, <code>jlink</code> builds small custom runtimes for containers, and since Java 17 old libraries poking at JDK internals need <code>--add-opens</code> flags. Libraries increasingly ship module names.`}
+],
+keep:[`module-info: requires (dependencies), exports (public API), opens (reflection).`,`Non-exported packages are inaccessible even if their classes are public.`,`JDK is modular (jlink); Java 17 locks internals (--add-opens); most apps still use the classpath.`]}
+]});
+</script>
+<script>
 /* ---------- quiz bank. Each question: [question, options, index of correct option, why, level E|M|H].
    QUIZ is the core set (3 per topic); QUIZ_ADV the advanced set (2 per topic). Wrong options are real misconceptions. ---------- */
 const QUIZ = {
@@ -5769,6 +5965,85 @@ Object.assign(QUIZ_ADV, {
 '8.4':[
  [`Why does adding partitions to an existing keyed topic break ordering for some keys?`,[`hash(key) % partitions changes, so a key's new events go to a different partition`,`Kafka reorders old messages`,`Offsets are reset`,`It doesn't`],0,`Plan partition counts up front.`,'H'],
  [`A message always fails processing (bad payload). What should the consumer do?`,[`Retry forever`,`Skip silently`,`Retry a few times, then send it to a dead-letter topic and continue`,`Restart the consumer`],2,`Otherwise one poison message blocks the whole partition.`,'M']]
+});
+</script>
+<script>
+/* ---------- Part 9: theory and quizzes ---------- */
+Object.assign(THEORY, {
+'9.1': TH(`A unit test runs one class in isolation and checks its behaviour automatically; mocks stand in for the slow or external things it depends on.`,
+`<p>Every time you change code, you risk breaking something that used to work. <b>Automated tests</b> re-check it in seconds. A <b>unit test</b> focuses on one class: give it inputs, check its outputs. <b>JUnit 5</b> runs the tests and reports results; assertions (<code>assertEquals</code>, AssertJ's <code>assertThat</code>) express what you expect.</p>
+<p>Classes depend on other classes: a client calling a remote API, a repository using a database. A <b>mock</b> (from <b>Mockito</b>) is a fake version you control: you tell it what to return (<b>stubbing</b>) and later check how it was called (<b>verification</b>). That keeps tests fast, deterministic and focused.</p>`,
+[[`@Test`,`Marks a JUnit test method.`],[`Assertion`,`A check that fails the test if the expectation isn't met.`],[`Mock`,`A fake object that records calls and returns stubbed values.`],[`Stub`,`A configured response: when(x).thenReturn(y).`],[`verify`,`Checks that a mock was called in a certain way.`],[`Arrange-Act-Assert`,`Structure: set up, run, check.`]],
+[`Create the class under test with mocked dependencies (constructor injection makes this easy).`,`Arrange: stub the mocks for this scenario.`,`Act: call the method under test.`,`Assert results; verify interactions that matter; also test errors and boundaries.`],
+[`Run unit tests on every build; keep them fast (milliseconds each).`,`Use AssertJ for readable assertions and @ParameterizedTest for many inputs.`,`Name tests after behaviour: <code>rejectsNegativeAmounts</code>.`],
+[`Mocking everything, including value objects.`,`Verifying every internal call (brittle tests).`,`Testing only the happy path.`]),
+'9.2': TH(`The JDK ships tools to look inside a running JVM: jcmd for flags, thread and heap dumps, Java Flight Recorder for profiling, and GC logs for memory behaviour.`,
+`<p>When a production service is slow, stuck or running out of memory, guessing is expensive. The JVM can tell you what it's doing. A <b>thread dump</b> shows what every thread is executing right now; a <b>heap dump</b> shows every object in memory; <b>JFR</b> (Java Flight Recorder) records CPU, allocation, lock and I/O events over time with tiny overhead; <b>GC logs</b> show how memory is collected.</p>
+<p><b>jcmd</b> is the single command that triggers most of these on a running process.</p>`,
+[[`jcmd`,`Sends diagnostic commands to a running JVM.`],[`Thread dump`,`Stack trace of every thread at one moment.`],[`Heap dump`,`Snapshot of all objects (.hprof).`],[`JFR / JMC`,`Flight Recorder (low-overhead events) / Mission Control (viewer).`],[`GC log`,`Record of every garbage collection.`]],
+[`Identify the symptom: hang, high CPU, memory growth, slowness.`,`Collect the matching evidence before restarting (dumps, JFR, logs).`,`Correlate: hot thread id → dump; dominator tree → leak; JFR hot methods → code.`,`Fix, then add metrics or alerts so it's caught earlier next time.`],
+[`Enable GC logging and HeapDumpOnOutOfMemoryError by default.`,`In Kubernetes, write dumps to a persistent volume.`,`Spring Boot Actuator exposes thread and heap dumps (secure them!).`],
+[`Restarting before collecting evidence.`,`Taking a single thread dump and over-interpreting it.`,`Heap dumps on a live, latency-critical instance without warning (they pause the JVM).`]),
+'9.3': TH(`Maven and Gradle build your project and manage its libraries, including the libraries those libraries need; when two need different versions of the same one, the tool picks one, sometimes wrongly.`,
+`<p>A real project uses dozens of open-source libraries, and those use others. Build tools resolve this whole tree from a few lines of configuration, download the JARs from repositories like Maven Central, compile, run tests and package your app.</p>
+<p>Only <b>one version</b> of each library can be on the classpath. When two dependencies want different versions, the tool chooses (Maven: nearest wins; Gradle: highest wins). If the chosen version lacks something the other library calls, you get <b>NoSuchMethodError</b> or <b>NoClassDefFoundError</b> at run time.</p>`,
+[[`Coordinates`,`groupId:artifactId:version.`],[`Transitive dependency`,`A dependency of your dependency.`],[`BOM / dependencyManagement`,`A central list of versions to use.`],[`Scope`,`Where a dependency is available: compile, runtime, test, provided.`],[`Wrapper`,`mvnw / gradlew: pins the build tool version.`]],
+[`Declare direct dependencies (versions often from a BOM).`,`The tool resolves the full tree and resolves conflicts.`,`Compile, test, package (a fat JAR for Spring Boot).`,`Inspect with dependency:tree; pin versions when needed.`],
+[`Let Spring Boot's BOM manage versions; override deliberately.`,`Use dependency convergence checks in CI.`,`Keep dependencies updated (Dependabot/Renovate) and scan for vulnerabilities.`],
+[`Adding a library without checking what it drags in.`,`Ignoring "omitted for conflict" in the tree.`,`Different build tool versions on different machines.`]),
+'9.4': TH(`Observability means understanding a running system from its outputs: logs record events, metrics measure rates and latencies, and traces follow single requests across services.`,
+`<p>In production you can't attach a debugger. You learn what's happening from the signals the application emits. <b>Logs</b> are timestamped event records. <b>Metrics</b> are numbers aggregated over time (requests per second, error rate, p99 latency) that you graph and alert on. <b>Traces</b> connect the work one request did across many services, with timings.</p>
+<p>In Java, code logs via <b>SLF4J</b> (with Logback underneath), metrics go through <b>Micrometer</b>, and traces through <b>OpenTelemetry</b> / Micrometer Tracing. Spring Boot wires them together, including putting the trace id into every log line.</p>`,
+[[`Log level`,`ERROR, WARN, INFO, DEBUG, TRACE.`],[`MDC`,`Per-thread key-values added to log lines.`],[`Counter / timer / gauge`,`Metric types: count, duration distribution, current value.`],[`Cardinality`,`Number of distinct tag values; keep it bounded.`],[`Span / trace`,`One timed operation / all spans of one request.`],[`SLO`,`Service-level objective, e.g. 99.9% of requests under 300 ms.`]],
+[`Emit structured logs with context (traceId, ids).`,`Record metrics for key operations and expose them (/actuator/prometheus).`,`Propagate trace context across HTTP and messaging.`,`Build dashboards and alerts on what users feel: errors and latency.`],
+[`One log line per meaningful event, not per loop iteration.`,`Correlate logs and traces with the trace id.`,`Use DEBUG temporarily, via Actuator's loggers endpoint.`],
+[`String concatenation in log calls.`,`Logging secrets or personal data.`,`High-cardinality metric tags (user ids, URLs with ids).`]),
+'9.5': TH(`The Java Platform Module System lets a JAR declare which modules it needs and which packages it exposes, giving strong encapsulation beyond public/private.`,
+`<p>Before Java 9 there were only classes and packages on a flat <b>classpath</b>: any public class could be used by anyone, even if it was meant to be internal. A <b>module</b> adds a boundary around a group of packages, described in <code>module-info.java</code>: what it <b>requires</b>, what it <b>exports</b> (its public API) and what it <b>opens</b> for reflection.</p>
+<p>The JDK itself was split into modules, which allows tools like <code>jlink</code> to build small runtimes, and since Java 17 its internals can't be accessed reflectively by default.</p>`,
+[[`module-info.java`,`The module descriptor.`],[`requires`,`Declares a dependency on another module.`],[`exports`,`Makes a package accessible to other modules.`],[`opens`,`Allows deep reflection into a package at run time.`],[`Unnamed module`,`Where classpath code lives.`],[`jlink`,`Builds a custom runtime image with only needed modules.`]],
+[`Create module-info.java at the root of the source tree.`,`List required modules and exported packages.`,`Open packages that frameworks reflect on.`,`Run with --module-path instead of the classpath.`],
+[`Libraries benefit most (clear public API).`,`jlink makes slim container images.`,`Know --add-opens for legacy libraries on Java 17+.`],
+[`Forgetting opens for Jackson/Hibernate model packages.`,`Expecting public classes in non-exported packages to be usable.`]),
+});
+Object.assign(QUIZ, {
+'9.1':[
+ [`What does <code>mock(TaxClient.class)</code> return by default for a method returning an object?`,[`A real TaxClient`,`null (or an empty value for collections/Optional)`,`It throws UnsupportedOperationException`,`The last value returned`],1,`Unstubbed methods return defaults.`,'E'],
+ [`Which should you usually NOT mock in a unit test?`,[`A remote HTTP client`,`A repository`,`A message publisher`,`Value objects like Money or a record DTO`],3,`Use real value objects; mock collaborators with side effects or slowness.`,'M'],
+ [`<code>assertEquals(new BigDecimal("119"), result)</code> fails though result is 119.00. Why?`,[`BigDecimal.equals compares scale, and 119 has scale 0`,`assertEquals can't compare BigDecimals`,`Rounding error`,`The mock returned null`],0,`Use compareTo or AssertJ's isEqualByComparingTo.`,'H']],
+'9.2':[
+ [`An app is hung but CPU is idle. First evidence to collect?`,[`A heap dump`,`GC logs`,`Several thread dumps a few seconds apart`,`A JFR recording of CPU`],2,`Dumps show what each thread is waiting on, and comparing them shows what's stuck.`,'E'],
+ [`top -H shows thread id 4311 at 98% CPU. How do you find it in a thread dump?`,[`Search for "4311" in the thread names`,`Convert 4311 to hex (0x10d7) and find nid=0x10d7`,`It's always the main thread`,`Take a heap dump instead`],1,`Thread dumps list native thread ids in hex.`,'M'],
+ [`Which is safe to run continuously in production with ~1–2% overhead?`,[`Java Flight Recorder`,`A heap dump every minute`,`-verbose:class`,`A debugger attached to the JVM`],0,`JFR was designed for always-on production use.`,'H']],
+'9.3':[
+ [`What is a transitive dependency?`,[`A dependency only used in tests`,`A dependency you declared twice`,`A dependency of one of your dependencies`,`A dependency loaded at run time by reflection`],2,`They come along automatically; inspect them with dependency:tree.`,'E'],
+ [`Two libraries need json-lite 1.2 and 2.0 at the same depth. Which does Maven pick?`,[`The highest, 2.0`,`The one declared first in the pom`,`Both are loaded`,`The build fails`],1,`Maven: nearest wins, ties go to the first declaration. Gradle picks the highest.`,'M'],
+ [`The build succeeds, but production throws NoSuchMethodError inside a library. Most likely?`,[`A dependency version conflict put an older JAR on the classpath`,`A compile error that was ignored`,`The JIT removed the method`,`Out of memory`],0,`Check dependency:tree and pin the version.`,'H']],
+'9.4':[
+ [`Why write <code>log.info("Order {} placed", id)</code> instead of <code>"Order " + id + " placed"</code>?`,[`It's required by SLF4J`,`It's thread-safe`,`It adds the stack trace`,`The message is only formatted if INFO is enabled`],3,`Placeholders avoid building strings for disabled levels.`,'E'],
+ [`What's wrong with tagging a metric by userId?`,[`Tags must be numbers`,`Unbounded cardinality creates millions of time series`,`Micrometer forbids it`,`Nothing`],1,`Keep tag values to a small, bounded set.`,'M'],
+ [`How does one request's trace id reach the next service?`,[`Through a shared database table`,`In the JWT payload`,`It's propagated in request headers (e.g. traceparent)`,`Through MDC, which is shared between services`],2,`MDC is per thread, per process; headers carry context across the network.`,'H']],
+'9.5':[
+ [`In module-info.java, what does <code>exports com.shop.api</code> do?`,[`Makes that package accessible to other modules`,`Opens it for reflection only`,`Declares a dependency`,`Hides it from other modules`],0,`Only exported packages are part of the module's public API.`,'E'],
+ [`A public class sits in a package that isn't exported. Can another module use it?`,[`Yes, it's public`,`Only via reflection, always`,`No: it's encapsulated`,`Only in the same JAR`],2,`Strong encapsulation: public isn't enough across modules.`,'M'],
+ [`Jackson throws InaccessibleObjectException on a modular app's DTO. Fix?`,[`Make the fields public static`,`Open the package to Jackson in module-info (opens … to com.fasterxml.jackson.databind)`,`Add requires transitive`,`Downgrade Java`],1,`Deep reflection needs opens, not just exports.`,'H']]
+});
+Object.assign(QUIZ_ADV, {
+'9.1':[
+ [`Your test verifies 8 internal calls on mocks and breaks on every refactor. Better approach?`,[`Verify even more calls`,`Assert on observable results; verify only interactions that are the behaviour (e.g. "email sent")`,`Delete the test`,`Use spies for everything`],1,`Tests should check behaviour, not implementation details.`,'H'],
+ [`What does <code>@InjectMocks</code> do?`,[`Creates the class under test and injects the @Mock fields into it`,`Mocks every field of the test class`,`Injects Spring beans`,`Verifies all mocks after the test`],0,`Prefer explicit constructor calls when it's just as short.`,'M']],
+'9.2':[
+ [`A heap dump on a 16 GB heap in production. What's the main risk?`,[`It corrupts the heap`,`It needs a debugger`,`It's always under 100 MB`,`It pauses the JVM (seconds or more) and writes a huge file`],3,`Take it from an instance pulled out of the load balancer if possible.`,'H'],
+ [`Why check <code>jcmd VM.flags</code> in a container?`,[`To see the real heap size and CPU count the JVM derived from container limits`,`To change flags at run time`,`To list threads`,`It shows HTTP routes`],0,`Container-aware defaults (MaxRAMPercentage, ActiveProcessorCount) often surprise people.`,'M']],
+'9.3':[
+ [`What does the Spring Boot parent / BOM give you?`,[`Faster compilation`,`Automatic security patches`,`Tested, compatible versions for many libraries, so you omit versions`,`A Gradle plugin`],2,`You still upgrade Boot to get newer managed versions.`,'M'],
+ [`Why commit <code>mvnw</code> / <code>gradlew</code>?`,[`They download faster`,`Everyone and CI run the same build tool version`,`They're required by Maven Central`,`They replace the pom`],1,`Reproducible builds.`,'M']],
+'9.4':[
+ [`A service layer, controller and advice each log the same exception with stack trace. Problem?`,[`None: more logs are safer`,`Logs grow too slowly`,`It changes the HTTP status`,`One error appears 3 times, hiding real counts and flooding logs`],3,`Log once, where it's handled.`,'M'],
+ [`MDC values show up on the wrong requests' logs. Likely cause?`,[`MDC isn't cleared in finally, and pooled threads keep old values`,`MDC is shared across threads`,`Logback bug`,`Too many log levels`],0,`It's ThreadLocal-based (4.12).`,'H']],
+'9.5':[
+ [`What does <code>jlink</code> produce?`,[`A fat JAR`,`A custom Java runtime containing only the modules you need`,`A native executable without a JVM`,`A Docker image`],1,`Smaller images; GraalVM native image is the no-JVM option.`,'M'],
+ [`Where does code from the classpath live in the module system?`,[`In java.base`,`In no module: it can't run`,`In the unnamed module, which reads all modules`,`In a module named after the JAR`],2,`Automatic modules are JARs on the module path without a descriptor.`,'H']]
 });
 </script>
 <script>
