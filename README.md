@@ -23,7 +23,7 @@ Each topic is tagged by interview priority (must-know, good to know, beyond inte
 
 Every topic opens with a **Theory: start here** section written for someone who has never seen the concept: the idea in one sentence, a plain-language explanation with an everyday analogy, key terms, how it works step by step, how it shows up in real projects, and common mistakes. Then the visual walkthrough, then the quiz.
 
-Every topic ends with a quiz: 3 core questions plus 2 advanced ones (JMM edge cases, GC tuning, Hibernate flush ordering, multi-pod failure modes), 400 in total. Each question is tagged Easy, Medium or Hard, and you can filter by set and level. Wrong options are real misconceptions, and every answer is explained. Best scores are kept in your browser and shown in the topic list (✓ core, ★ core + advanced).
+Every topic ends with a quiz: 3 core questions plus 2 advanced ones (JMM edge cases, GC tuning, Hibernate flush ordering, multi-pod failure modes), 550 in total. Each question is tagged Easy, Medium or Hard, and you can filter by set and level. Wrong options are real misconceptions, and every answer is explained. Best scores are kept in your browser and shown in the topic list (✓ core, ★ core + advanced).
 
 Keys: `←` `→` step, `space` play, `[` `]` previous/next topic.
 
