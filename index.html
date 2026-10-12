@@ -53,6 +53,18 @@ body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:1
 .rail button[aria-current="true"]{background:var(--accent-soft);color:var(--accent);font-weight:600}
 .rail button[aria-current="true"] span{color:var(--accent)}
 .mobile-pick{display:none}
+.focus{margin:0 8px 12px;display:grid;gap:6px}
+.focus-l{font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.focus .seg button{font-size:12.5px;padding:4px 8px;display:inline;width:auto;border-radius:0;line-height:1.3}
+.focus .seg button:hover{background:var(--soft)}
+.focus-key{margin:0;font-size:11.5px;color:var(--muted);display:flex;flex-wrap:wrap;align-items:center;gap:2px 6px}
+.imp{display:inline-block;width:8px;height:8px;border-radius:50%;border:1.5px solid var(--muted);flex:none}
+.imp-must{background:var(--accent);border-color:var(--accent)}
+.imp-good{background:linear-gradient(90deg,var(--waiting) 50%,transparent 50%);border-color:var(--waiting)}
+.imp-extra{background:transparent;border-color:var(--muted)}
+.rail button .imp{margin-top:6px}
+.imp-pill{font-size:11.5px;font-weight:600;letter-spacing:.04em;border:1px solid currentColor;border-radius:20px;padding:1px 9px;align-self:center}
+.imp-pill.must{color:var(--accent)} .imp-pill.good{color:var(--waiting)} .imp-pill.extra{color:var(--muted)}
 main{padding-block:24px 60px;padding-inline:28px;min-width:0;max-width:1400px}
 .crumb{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
 .head{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 14px}
@@ -200,12 +212,19 @@ button:focus-visible,select:focus-visible,summary:focus-visible{outline:2px soli
   <nav class="rail" aria-label="Topics">
     <h1>Java Concepts Stepper</h1>
     <p>The Java visual guide, one step at a time, with a short quiz after each topic. Keys: ← → step, space play, [ ] previous/next topic.</p>
+    <div class="focus" role="group" aria-label="Interview focus">
+      <span class="focus-l">Interview focus</span>
+      <div class="seg" id="focus">
+        <button type="button" data-focus="must">Must-know</button><button type="button" data-focus="good">+ Good to know</button><button type="button" data-focus="all">All</button>
+      </div>
+      <p class="focus-key"><i class="imp imp-must"></i>must-know <i class="imp imp-good"></i>good to know <i class="imp imp-extra"></i>beyond interviews</p>
+    </div>
     <div id="rail"></div>
   </nav>
   <main>
     <div class="mobile-pick"><label for="pick" class="cm" style="font-size:12px">Topic</label><select id="pick"></select></div>
     <div class="crumb" id="crumb"></div>
-    <div class="head"><span class="no" id="no"></span><h2 id="title"></h2>
+    <div class="head"><span class="no" id="no"></span><h2 id="title"></h2><span class="imp-pill" id="impPill"></span>
       <div class="topnav"><button id="ptopic">‹ Prev topic</button><button id="ntopic">Next topic ›</button></div></div>
     <p class="idea" id="idea"></p>
     <details class="card theory" id="theoryCard">
@@ -4849,9 +4868,16 @@ Object.assign(THEORY, {
 });
 </script>
 <script>
+/* ---------- interview priority per topic: must = asked in most Java backend interviews, good = often asked or very useful, extra = beyond typical interviews ---------- */
+const IMP = {};
+'1.3 1.4 1.6 1.7 1.8 1.9 1.10 2.1 2.2 2.3 2.5 2.6 2.7 2.10 2.11 2.12 2.13 3.1 3.2 3.4 3.5 3.6 3.7a 3.7b 3.7c 3.7d 3.7h 4.1 4.2 4.3 4.4 4.5 4.6 4.7 4.9 4.13 4.14 4.16 5.1 5.2 5.3 5.4 5.5 5.13a 6.1 6.4'.split(' ').forEach(n => IMP[n] = 'must');
+'1.1 1.2 1.11 2.4 2.8 2.9 2.14 3.3 3.7e 3.7f 3.7g 3.7i 3.7j 4.8 4.10 4.11 4.12 4.17 4.18 5.6 5.7 5.8 5.9 5.10 5.11 5.12 5.13b 5.13c 6.2 6.3 6.5 6.6'.split(' ').forEach(n => IMP[n] = 'good');
+'1.5 4.15'.split(' ').forEach(n => IMP[n] = 'extra');
+</script>
+<script>
 /* ---------- flatten parts, resolve inheritance between steps ---------- */
 const T = [];
-PARTS.sort((a,b)=> a.no.localeCompare(b.no));
+PARTS.sort((a,b)=> a.no.localeCompare(b.no, undefined, {numeric:true}));
 PARTS.forEach(p => p.topics.forEach(t => { t.part = p; T.push(t); }));
 function strip(g){ return (g||[]).map(x=>({t:x.t, r:x.r.map(r=> Array.isArray(r) ? (r[2]==='hot'?[r[0],r[1]]:r) : {k:r.k, c:r.c.map(ch=> Array.isArray(ch)&&ch[1]==='hot'?[ch[0]]:ch), f:r.f==='hot'?undefined:r.f})})); }
 T.forEach(t=>{
@@ -4859,6 +4885,7 @@ T.forEach(t=>{
   t.quiz = QUIZ[t.no] || [];
   t.quizAdv = QUIZ_ADV[t.no] || [];
   t.theory = THEORY[t.no] || null;
+  t.imp = t.imp || IMP[t.no] || 'good';
   let prev = {th:[], g:[], log:[], d:null, cv:'a'};
   const ids = [];
   t.R = t.steps.map(s=>{
@@ -4890,17 +4917,34 @@ function hiCode(line){
 }
 let ti = 0, si = 0, timer = null;
 
+/* ---------- interview focus filter: which topics the rail, the topic picker and prev/next show ---------- */
+const FOCUS_KEY = 'jv-focus-v1';
+const IMP_LABEL = {must:'Must-know for interviews', good:'Good to know', extra:'Beyond typical interviews'};
+let focus = 'all';
+try { focus = localStorage.getItem(FOCUS_KEY) || 'all'; } catch(e){}
+const visible = t => focus==='all' || (focus==='must' ? t.imp==='must' : t.imp!=='extra');
+function nextVisible(dir){ for (let i = ti + dir; i >= 0 && i < T.length; i += dir) if (visible(T[i])) return i; return -1; }
+$('focus').onclick = e => {
+  const b = e.target.closest('button[data-focus]'); if (!b) return;
+  focus = b.dataset.focus;
+  try { localStorage.setItem(FOCUS_KEY, focus); } catch(e){}
+  buildNav(); render();
+};
 function buildNav(){
   let html = '', opts = '';
   PARTS.forEach(p=>{
+    const vis = p.topics.filter(t => visible(t) || T.indexOf(t) === ti);
+    if (!vis.length) return;
     html += `<details open><summary>Part ${p.no} · ${esc(p.title)}</summary>`;
     opts += `<optgroup label="Part ${p.no} · ${esc(p.title)}">`;
-    p.topics.forEach(t=>{ const i = T.indexOf(t);
-      html += `<button data-i="${i}"><span>${t.no}</span>${esc(t.title)}<em class="tick" data-t="${t.id}"></em></button>`;
-      opts += `<option value="${i}">${t.no} ${esc(t.title)}</option>`; });
+    vis.forEach(t=>{ const i = T.indexOf(t);
+      html += `<button data-i="${i}"><span>${t.no}</span>${esc(t.title)}<em class="tick" data-t="${t.id}"></em><i class="imp imp-${t.imp}" title="${IMP_LABEL[t.imp]}"></i></button>`;
+      opts += `<option value="${i}">${t.no} ${t.imp==='must'?'● ':''}${esc(t.title)}</option>`; });
     html += '</details>'; opts += '</optgroup>';
   });
-  $('rail').innerHTML = html; $('pick').innerHTML = opts;
+  $('rail').innerHTML = html; $('pick').innerHTML = opts; $('pick').value = ti;
+  document.querySelectorAll('#focus button').forEach(b=> b.setAttribute('aria-pressed', b.dataset.focus===focus));
+  document.querySelectorAll('#rail button').forEach(b=> b.setAttribute('aria-current', +b.dataset.i===ti));
   updateTicks();
   $('rail').onclick = e => { const b = e.target.closest('button'); if(b) go(+b.dataset.i, 0); };
   $('pick').onchange = e => go(+e.target.value, 0);
@@ -4925,7 +4969,9 @@ function render(){
   $('crumb').textContent = `Part ${t.part.no} · ${t.part.title}`;
   $('no').textContent = t.no; $('title').textContent = t.title; $('idea').innerHTML = t.idea;
   if (theoryFor !== ti) renderTheory();
-  $('ptopic').disabled = ti===0; $('ntopic').disabled = ti===T.length-1;
+  $('ptopic').disabled = nextVisible(-1) < 0; $('ntopic').disabled = nextVisible(1) < 0;
+  $('impPill').className = 'imp-pill ' + t.imp; $('impPill').textContent = IMP_LABEL[t.imp];
+  if (!document.querySelector(`#rail button[data-i="${ti}"]`)) buildNav();
   $('count').textContent = `Step ${si+1} / ${t.R.length}`;
   $('prev').disabled = si===0; $('next').disabled = si===t.R.length-1;
   $('dots').innerHTML = t.R.map((_,i)=>`<button aria-label="Step ${i+1}" class="${i<si?'done':''} ${i===si?'cur':''}" data-i="${i}"></button>`).join('');
@@ -5111,7 +5157,7 @@ function drawQuiz(){
       const cls = a===null ? '' : j===ans ? 'right' : j===a ? 'wrong' : 'dim';
       return `<button type="button" data-q="${i}" data-o="${j}" class="${cls}"${a!==null?' disabled':''}><span class="l">${'ABCD'[j]}</span><span>${o}</span></button>`;
     }).join('')}</div>${a===null ? '' : `<div class="why" aria-live="polite"><b class="${a===ans?'ok':'bad'}">${a===ans?'Correct.':'Not quite.'}</b> ${why}</div>`}</div>`;
-  }).join('') + (done===qs.length ? `<div class="qzfoot"><span>You scored <b>${right} / ${qs.length}</b>. ${right===qs.length ? (qf.set==='core' && T[ti].quizAdv.length ? 'Solid. Try the Advanced set next.' : 'Solid.') : 'Step back through the walkthrough above, then try again.'}${qf.level!=='all' ? ' <span class="cm">(Best scores are only saved with All levels.)</span>' : ''}</span><button type="button" data-retry>Try again</button>${qf.set==='core' && T[ti].quizAdv.length ? `<button type="button" data-advanced>Advanced set</button>` : ''}${ti<T.length-1?`<button type="button" class="primary" data-nexttopic>Next topic ›</button>`:''}</div>` : '');
+  }).join('') + (done===qs.length ? `<div class="qzfoot"><span>You scored <b>${right} / ${qs.length}</b>. ${right===qs.length ? (qf.set==='core' && T[ti].quizAdv.length ? 'Solid. Try the Advanced set next.' : 'Solid.') : 'Step back through the walkthrough above, then try again.'}${qf.level!=='all' ? ' <span class="cm">(Best scores are only saved with All levels.)</span>' : ''}</span><button type="button" data-retry>Try again</button>${qf.set==='core' && T[ti].quizAdv.length ? `<button type="button" data-advanced>Advanced set</button>` : ''}${nextVisible(1)>=0?`<button type="button" class="primary" data-nexttopic>Next topic ›</button>`:''}</div>` : '');
 }
 $('qzBar').onclick = e => {
   const b = e.target.closest('button[data-f]'); if (!b || b.disabled) return;
@@ -5124,7 +5170,7 @@ $('quiz').onclick = e => {
   const b = e.target.closest('button'); if (!b) return;
   if (b.hasAttribute('data-retry')) { renderQuiz(); $('quiz').querySelector('button')?.focus(); return; }
   if (b.hasAttribute('data-advanced')) { qf.set = 'adv'; qf.level = 'all'; saveFilter(); renderQuiz(); $('quizCard').scrollIntoView({block:'start'}); return; }
-  if (b.hasAttribute('data-nexttopic')) { go(ti+1, 0); window.scrollTo(0, 0); return; }
+  if (b.hasAttribute('data-nexttopic')) { const n = nextVisible(1); if (n >= 0) { go(n, 0); window.scrollTo(0, 0); } return; }
   const i = +b.dataset.q, j = +b.dataset.o, qs = qlist;
   if (qa[i] !== null) return;
   qa[i] = j;
@@ -5151,15 +5197,15 @@ $('prev').onclick = ()=>{ stop(); step(-1); };
 $('next').onclick = ()=>{ stop(); step(1); };
 $('first').onclick = ()=> go(ti, 0);
 $('play').onclick = play;
-$('ptopic').onclick = ()=> ti>0 && go(ti-1, 0);
-$('ntopic').onclick = ()=> ti<T.length-1 && go(ti+1, 0);
+$('ptopic').onclick = ()=> { const i = nextVisible(-1); if (i >= 0) go(i, 0); };
+$('ntopic').onclick = ()=> { const i = nextVisible(1); if (i >= 0) go(i, 0); };
 $('dots').onclick = e => { const b = e.target.closest('button'); if (b){ stop(); si = +b.dataset.i; render(); } };
 document.addEventListener('keydown', e=>{
   if (e.target.tagName==='SELECT' || e.target.closest?.('#quiz, #qzBar') || e.altKey || e.ctrlKey || e.metaKey) return;
   if (e.key==='ArrowRight'){ e.preventDefault(); stop(); step(1); }
   else if (e.key==='ArrowLeft'){ e.preventDefault(); stop(); step(-1); }
-  else if (e.key===']'){ if (ti<T.length-1) go(ti+1,0); }
-  else if (e.key==='['){ if (ti>0) go(ti-1,0); }
+  else if (e.key===']'){ const i = nextVisible(1); if (i >= 0) go(i,0); }
+  else if (e.key==='['){ const i = nextVisible(-1); if (i >= 0) go(i,0); }
   else if (e.key===' ' && e.target.tagName!=='BUTTON'){ e.preventDefault(); play(); }
 });
 buildNav();
