@@ -62,6 +62,30 @@ main{padding-block:24px 60px;padding-inline:28px;min-width:0;max-width:1400px}
 .topnav{display:flex;gap:8px;margin-left:auto}
 .topnav button{font:inherit;font-size:13px;border:1px solid var(--line);background:var(--panel);color:var(--muted);border-radius:7px;padding:4px 10px;cursor:pointer}
 
+.theory{margin-bottom:16px}
+.theory>summary{cursor:pointer;list-style:none;display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;padding:12px 16px;border-radius:10px}
+.theory>summary::-webkit-details-marker{display:none}
+.theory>summary::before{content:"▸";color:var(--accent);font-size:13px;width:12px}
+.theory[open]>summary::before{content:"▾"}
+.theory[open]>summary{border-bottom:1px solid var(--line);border-radius:10px 10px 0 0}
+.th-sum{font-family:var(--f-display);font-weight:700;font-size:17px;letter-spacing:-.005em}
+.th-meta{font-size:13px;color:var(--muted);margin-left:auto}
+.theory-body{padding:16px 18px 18px;display:grid;gap:16px}
+.theory-body p{margin:0 0 10px;max-width:80ch}
+.theory-body p:last-child{margin-bottom:0}
+.theory-body ul,.theory-body ol{margin:0;padding-left:22px;display:grid;gap:5px;max-width:80ch}
+.theory-body code{font-family:var(--f-mono);font-size:.88em;background:var(--soft);border:1px solid var(--line);border-radius:4px;padding:0 4px}
+.th-one{font-size:16.5px;font-weight:500;border-left:3px solid var(--accent);padding:2px 0 2px 12px;max-width:80ch;margin:0}
+.th-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+@media (max-width: 760px){ .th-grid{grid-template-columns:minmax(0,1fr)} }
+.th-box{background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:12px 14px;min-width:0}
+.th-box h4{margin:0 0 8px;font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.th-box.warn{border-left:3px solid var(--bad-line)}
+.th-box.ok{border-left:3px solid var(--ok-line)}
+.th-terms{margin:0;display:grid;gap:7px}
+.th-terms dt{font-family:var(--f-mono);font-size:13px;font-weight:600;color:var(--accent)}
+.th-terms dd{margin:0 0 0 0;font-size:14px}
+.th-next{font-size:14px;color:var(--muted);margin:0}
 .narr{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin-bottom:16px}
 .ctrl{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:12px}
 .ctrl button{font:inherit;font-size:14px;border:1px solid var(--line);background:var(--soft);color:var(--ink);border-radius:7px;padding:6px 12px;cursor:pointer}
@@ -184,6 +208,10 @@ button:focus-visible,select:focus-visible,summary:focus-visible{outline:2px soli
     <div class="head"><span class="no" id="no"></span><h2 id="title"></h2>
       <div class="topnav"><button id="ptopic">‹ Prev topic</button><button id="ntopic">Next topic ›</button></div></div>
     <p class="idea" id="idea"></p>
+    <details class="card theory" id="theoryCard">
+      <summary><span class="th-sum">Theory: start here</span><span class="th-meta" id="thMeta"></span></summary>
+      <div class="theory-body" id="theory"></div>
+    </details>
 
     <section class="narr" aria-live="polite">
       <div class="ctrl">
@@ -4174,6 +4202,653 @@ T2: y = 1; r2 = x;</pre>Can r1 == 0 and r2 == 0?`,[`No: at least one sees 1`,`On
 };
 </script>
 <script>
+/* ---------- theory: a from-zero explanation per topic.
+   TH(one-line idea, intro html, [[term, meaning]], [how it works steps], [in real projects], [common mistakes]) ---------- */
+const THEORY = {};
+const TH = (one, intro, terms, steps, practice, mistakes) => ({one, intro, terms, steps, practice, mistakes});
+Object.assign(THEORY, {
+'1.1': TH(`Java code is compiled twice: once by you into portable bytecode, and again by the JVM into fast machine code for the parts that run most.`,
+`<p>A computer's CPU only understands <b>machine code</b>, and every kind of CPU (Intel, ARM) has its own. If Java compiled straight to machine code, you'd need a different build for every machine. Instead, <code>javac</code> compiles your <code>.java</code> files into <b>bytecode</b>: instructions for an imaginary computer called the <b>Java Virtual Machine</b>. Each real machine runs a JVM that understands that bytecode. That's "write once, run anywhere".</p>
+<p>Think of bytecode as a recipe written in a universal language, and the JVM as a local chef who reads it. At first the chef reads the recipe line by line (the <b>interpreter</b>): it works immediately, but slowly. The chef notices which recipes are cooked hundreds of times and memorises them as muscle memory: that's the <b>JIT (Just-In-Time) compiler</b> turning hot bytecode into native machine code while the program runs.</p>`,
+[[`JDK`,`Java Development Kit: everything to build and run Java (javac, jar, debugging tools, the runtime).`],[`JRE`,`Java Runtime Environment: the JVM plus the standard library. Enough to run, not to compile. No longer shipped separately since Java 11.`],[`JVM`,`The program that loads bytecode, checks it, runs it, compiles hot parts and manages memory.`],[`Bytecode`,`Compact, CPU-independent instructions stored in .class files.`],[`JIT`,`The compiler inside the JVM that turns frequently used bytecode into machine code at run time. HotSpot has two: C1 (fast to compile) and C2 (slower, highly optimised).`]],
+[`You write <code>Hello.java</code>; <code>javac</code> produces <code>Hello.class</code> (bytecode).`,`<code>java Hello</code> starts a JVM, which loads and verifies the class.`,`The interpreter starts executing immediately and counts how often each method and loop runs.`,`Code that gets "hot" is compiled by C1, and later by C2 using the profile it collected (which types appear, which branches are taken).`,`If an assumption C2 made turns out wrong, the JVM throws that compiled code away (deoptimises) and recompiles later.`],
+[`The first requests after a deploy are slower (warm-up). Some teams send warm-up traffic before putting a pod into the load balancer.`,`Measure performance with JMH, not a hand-written loop with <code>System.nanoTime</code>.`,`For fast startup (serverless, CLIs), look at CDS, GraalVM native image or Project Leyden.`],
+[`Benchmarking cold code and concluding Java is slow.`,`Thinking the JRE is a separate download you need in modern Java.`,`Assuming javac does the heavy optimisation; almost all of it happens in the JIT at run time.`]),
+
+'1.2': TH(`Classes aren't all loaded at startup; the JVM finds and loads each one the first time it's needed, through a chain of class loaders.`,
+`<p>Your program uses thousands of classes: yours, your libraries', and the JDK's. Loading all of them at startup would be slow, so the JVM loads a class <b>lazily</b>, the first time your code really uses it. The component that finds the <code>.class</code> bytes (in a JAR, a folder or even over the network) is a <b>class loader</b>.</p>
+<p>There's a hierarchy of loaders, like a chain of command. When a loader is asked for a class it first asks its <b>parent</b>; only if the parent can't find it does it look itself. This <b>parent delegation</b> guarantees that <code>java.lang.String</code> always comes from the JDK and can't be replaced by a fake one on your classpath.</p>`,
+[[`Bootstrap loader`,`Built into the JVM; loads core classes like java.lang.*.`],[`Platform loader`,`Loads other JDK modules (java.sql, …).`],[`Application loader`,`Loads your classes and libraries from the classpath.`],[`Linking`,`Verifying the bytecode is safe, preparing static fields with default values, and resolving references.`],[`Initialisation`,`Running static field initialisers and static { } blocks, exactly once, the first time the class is actively used.`]],
+[`Code mentions a class for the first time (e.g. <code>new Car()</code>).`,`The application loader delegates up to platform, then bootstrap; whoever can find it loads it.`,`The bytes are verified (no stack overflows, type-correct instructions).`,`Static fields get default values (0, null), then static initialisers run, once, in a thread-safe way.`,`The class's identity is its name <b>plus</b> the loader that defined it.`],
+[`App servers and plugin systems use separate loaders per app, so two versions of a library can coexist.`,`<code>ClassNotFoundException</code> = you asked by name and it isn't there. <code>NoClassDefFoundError</code> = it was there when compiling but missing (or failed to initialise) at run time: check your deployed JARs.`,`Changing a <code>static final</code> constant in a library needs the callers recompiled, because constants are copied into them.`],
+[`Doing heavy work or calling remote services in a static block; if it fails, the class is unusable for the rest of the JVM's life.`,`Assuming two classes with the same name are the same type, even when different loaders loaded them.`]),
+
+'1.3': TH(`Every thread gets its own stack for method calls and local variables; all objects live in one shared heap.`,
+`<p>When a method runs, it needs scratch space for its parameters and local variables. Java gives each thread a <b>stack</b>: a pile of <b>frames</b>, one per method call in progress. Calling a method pushes a frame; returning pops it, instantly freeing its locals. It's like a stack of sticky notes: you only ever add or remove the top one.</p>
+<p>Objects are different: they may need to outlive the method that created them, and several threads may use them. So every <code>new</code> object goes on the <b>heap</b>, a big shared area managed by the garbage collector. A local variable such as <code>Car c = new Car()</code> is a small <b>reference</b> on the stack pointing at the object on the heap.</p>`,
+[[`Stack frame`,`Memory for one method call: its local variables and an operand stack for calculations.`],[`Heap`,`Shared memory where all objects and arrays live; cleaned by the GC.`],[`Reference`,`A pointer-like value that tells the JVM where an object is.`],[`Metaspace`,`Native memory (outside the heap) holding class metadata: method code, field layouts.`],[`Escape analysis`,`A JIT optimisation: if an object never leaves a method, it may not need a heap allocation at all.`]],
+[`<code>main</code> starts: one frame on the main thread's stack.`,`Each call pushes a frame with its own locals; primitives are stored directly in it.`,`<code>new</code> allocates the object on the heap and stores a reference in the frame.`,`Return pops the frame; the object stays on the heap until nothing references it.`],
+[`Local variables are naturally thread-safe; shared objects on the heap need coordination.`,`Deep or infinite recursion → <code>StackOverflowError</code>. Too many live objects → <code>OutOfMemoryError: Java heap space</code>. Too many generated classes → <code>OutOfMemoryError: Metaspace</code>.`,`<code>-Xmx</code> sets the max heap; <code>-Xss</code> sets each thread's stack size.`],
+[`Thinking "objects passed to methods are on the stack": only the reference is.`,`Sizing a container's memory as just -Xmx: stacks, Metaspace and native buffers need room too.`]),
+
+'1.4': TH(`The garbage collector finds objects your program can no longer reach and reclaims their memory, so you never call free().`,
+`<p>In C you must free memory yourself; forget and you leak, free too early and you crash. Java does it for you. Periodically, the <b>garbage collector (GC)</b> starts from a set of <b>roots</b> (local variables on every thread's stack, static fields, and a few others) and follows every reference. Anything it can reach is alive; everything else is garbage, even if those garbage objects still point at each other.</p>
+<p>Most objects die young (a temporary string, an iterator). So the heap is split into a <b>young generation</b>, collected often and cheaply, and an <b>old generation</b> for objects that survived several collections. It's like a desk inbox that's cleared daily, with only important papers moving to the filing cabinet.</p>`,
+[[`GC roots`,`Starting points for reachability: thread stacks, static fields, JNI references.`],[`Young generation`,`Eden (where new objects are born) plus survivor spaces.`],[`Old generation`,`Long-lived objects, collected less often.`],[`Stop-the-world pause`,`A moment when application threads are paused so the GC can work safely.`],[`G1 / ZGC`,`G1 is the default collector (region-based, aims for a pause target). ZGC keeps pauses around a millisecond on huge heaps.`]],
+[`New objects are allocated in Eden (very fast, just bumping a pointer).`,`When Eden fills, a young GC copies the few live objects to a survivor space and wipes Eden.`,`Objects that survive several young GCs are promoted to the old generation.`,`When the old generation fills up, a concurrent or full collection reclaims it.`],
+[`A "memory leak" in Java means objects that are still reachable but useless, such as entries in a static map that's never cleared.`,`Diagnose with GC logs (<code>-Xlog:gc</code>), a heap dump, and the dominator tree in Eclipse MAT.`,`Most services need no tuning beyond heap size; pick ZGC if long pauses hurt latency.`],
+[`Calling <code>System.gc()</code> to "help".`,`Raising -Xmx to hide a leak; it only delays the crash.`,`Believing reference cycles leak in Java; they don't.`]),
+
+'1.5': TH(`Besides normal (strong) references, Java has soft, weak and phantom references that let the GC reclaim an object even while you still point at it.`,
+`<p>A normal variable is a <b>strong</b> reference: as long as it exists, the object stays alive. Sometimes you want to <i>remember</i> an object without <i>keeping it alive</i>, for example a cache entry or metadata attached to an object owned by someone else. The <code>java.lang.ref</code> classes wrap an object in a weaker kind of reference that the GC is allowed to break.</p>
+<p>Analogy: a strong reference is holding someone's hand; a weak reference is knowing their phone number. If everyone else lets go, they can leave, and the number stops working.</p>`,
+[[`Strong`,`Normal reference. Never cleared while reachable.`],[`Soft`,`Cleared when memory is tight, always before OutOfMemoryError.`],[`Weak`,`Cleared at the next GC once no strong or soft references remain.`],[`Phantom`,`Never returns the object; only tells you it has been collected, for cleanup.`],[`WeakHashMap`,`A map whose keys are weak: entries disappear once the key is otherwise unreachable.`]],
+[`Wrap the object: <code>new WeakReference&lt;&gt;(obj)</code>.`,`<code>ref.get()</code> returns the object, or null once it has been cleared.`,`Optionally register a ReferenceQueue to be told when a reference is cleared.`,`<code>Cleaner</code> (built on phantom references) runs cleanup code after an object dies.`],
+[`Rarely needed directly; use a bounded cache like Caffeine instead of soft-reference caches.`,`WeakHashMap is useful for attaching data to objects whose lifetime you don't control.`,`ThreadLocal uses weak keys internally, which matters for its leak behaviour (4.12).`],
+[`A WeakHashMap value that references its own key: the entry can never be cleared.`,`Using soft references as a cache: under pressure many are cleared at once, causing GC churn.`]),
+
+'1.6': TH(`Java always passes a copy of the variable's value into a method; for objects that value is a reference, so the method can change the object but not the caller's variable.`,
+`<p>When you call <code>m(x)</code>, Java copies whatever is in <code>x</code> into the parameter. For an <code>int</code> that's the number. For an object, the variable doesn't hold the object itself; it holds a <b>reference</b> (an address), so the address is copied.</p>
+<p>Analogy: I give you a <b>photocopy of my house's address</b>. You can go to the house and repaint it (I'll see the new colour), but if you scribble a different address on your copy, my copy doesn't change.</p>`,
+[[`Pass-by-value`,`The callee receives a copy of the argument's value.`],[`Reference`,`The value stored in an object variable: it says where the object is.`],[`Mutation`,`Changing the object's fields through a reference; visible to everyone holding that reference.`],[`Reassignment`,`Pointing a variable at a different object; only affects that variable.`]],
+[`Caller has <code>Car car</code> → object A.`,`Calling <code>m(car)</code> copies the reference: parameter <code>c</code> also → A.`,`<code>c.name = "x"</code> changes A, which the caller sees.`,`<code>c = new Car()</code> points only <code>c</code> at a new object B; the caller still sees A.`],
+[`Methods that need to "return two things" should return a small result object or record.`,`Defensive copies: if a method stores a list you pass in, it may want to copy it so your later changes don't affect it.`],
+[`Saying "objects are passed by reference" in an interview: the precise answer is "references are passed by value".`,`Expecting a <code>swap(a, b)</code> method to swap the caller's variables.`]),
+
+'1.7': TH(`Primitives (int, long…) are plain values; wrappers (Integer, Long…) are objects. Java converts between them automatically, which is convenient but has traps.`,
+`<p>Collections and generics only work with objects, so Java has a wrapper class for every primitive: <code>Integer</code> for <code>int</code>, and so on. <b>Autoboxing</b> converts <code>int → Integer</code> for you, and <b>unboxing</b> converts back. It makes <code>List&lt;Integer&gt; list; list.add(5)</code> just work.</p>
+<p>Because wrappers are objects, <code>==</code> compares <b>identities</b>, not numbers. To save memory, <code>Integer.valueOf</code> keeps a cache of the values -128 to 127, so small numbers happen to be the same object and <code>==</code> seems to work. Then 128 comes along and it stops working.</p>`,
+[[`Autoboxing`,`Automatic int → Integer, using Integer.valueOf.`],[`Unboxing`,`Automatic Integer → int, using intValue(). Throws NPE if the Integer is null.`],[`Integer cache`,`Shared Integer objects for -128..127.`],[`equals`,`Compares the numeric values of two wrappers.`]],
+[`<code>Integer a = 100;</code> becomes <code>Integer.valueOf(100)</code>, a cached object.`,`<code>Integer b = 1000;</code> creates a new object each time.`,`Arithmetic (<code>a + b</code>) unboxes both to ints first.`,`Assigning a null Integer to an int (or using it in arithmetic) unboxes null → NullPointerException.`],
+[`Compare wrappers with <code>equals</code> or <code>Objects.equals</code>, never ==.`,`Use <code>map.getOrDefault(key, 0)</code> instead of unboxing a possibly-null <code>get</code>.`,`Avoid boxing in hot loops (e.g. <code>Long sum</code>); it creates garbage.`],
+[`<code>list.remove(1)</code> on a List&lt;Integer&gt; removes index 1, not the value 1.`,`A ternary mixing Integer and int unboxes and can throw NPE.`]),
+
+'1.8': TH(`Strings are immutable objects; identical literals are shared through a pool, and == compares references, not text.`,
+`<p>A <code>String</code> can never change after it's created. Methods like <code>toUpperCase()</code> return a <b>new</b> String. Because of that, the JVM can safely share one copy of each literal: <code>"hello"</code> written in ten places points to the same object in the <b>String pool</b>.</p>
+<p>That's why <code>==</code> sometimes "works" for strings (two literals are the same pooled object) and sometimes doesn't (a string built at run time is a new object). Always compare text with <code>equals</code>.</p>`,
+[[`Immutable`,`Its contents can't change once created.`],[`String pool`,`A JVM-wide table of shared string instances for literals and interned strings.`],[`intern()`,`Returns the pooled copy of a string, adding it if needed.`],[`StringBuilder`,`A mutable buffer for building strings efficiently.`]],
+[`Literals and compile-time constants (<code>"a" + "b"</code>, final constants) are put in the pool.`,`Strings built at run time (<code>s + t</code>, <code>new String</code>, reading input) are new heap objects.`,`<code>s1 == s2</code> is true only if both point to the same object; <code>equals</code> compares characters.`,`Each <code>+=</code> creates a whole new String, copying the old contents.`],
+[`Build strings in loops with <code>StringBuilder</code>.`,`Immutability makes Strings safe as HashMap keys and safe to share between threads.`,`Use <code>String.join</code>, <code>formatted()</code> or text blocks for readability.`],
+[`Comparing user input with == to a literal.`,`<code>s += x</code> inside a large loop: O(n²) copying.`]),
+
+'1.9': TH(`static means "belongs to the class, not to an object", final means "can't be reassigned", and a class can be nested inside another, statically or not.`,
+`<p><b>static</b>: a static field has one copy shared by the whole class, instead of one per object, like a counter on the classroom wall rather than in each student's notebook. Static methods don't have a <code>this</code>, so they can't touch instance fields.</p>
+<p><b>final</b>: a final variable can be assigned only once. A final method can't be overridden; a final class can't be extended. Careful: a final <i>reference</i> to a list can't point to another list, but the list itself can still change.</p>
+<p><b>Nested classes</b>: a <code>static</code> nested class is just a class placed inside another for organisation. A non-static <b>inner</b> class secretly holds a reference to the outer object that created it.</p>`,
+[[`static field`,`One value shared by all instances.`],[`static method`,`Called on the class; no this; can't be overridden (only hidden).`],[`final`,`Assign-once variable, non-overridable method, or non-extendable class.`],[`Inner class`,`Non-static nested class; each instance holds Outer.this.`],[`Static nested class`,`A nested class without a hidden outer reference.`]],
+[`Static fields are created and initialised when the class is initialised.`,`Calling a static method through a variable is resolved by the variable's declared type.`,`final instance fields get special memory-model guarantees: once constructed, other threads see their values.`,`Creating an inner class instance stores a reference to the outer instance inside it.`],
+[`Use static for constants (<code>static final</code>) and pure utility methods.`,`Prefer static nested classes for builders, nodes, DTOs.`,`Make fields final by default; it documents intent and helps thread safety.`],
+[`Mutable static state shared by all requests in a web app.`,`Inner classes (or anonymous classes) captured by long-lived listeners, leaking the outer object.`]),
+
+'1.10': TH(`An immutable object never changes after construction, which makes it simple and thread-safe; money must use exact decimal types, never double.`,
+`<p>An <b>immutable</b> object, like <code>String</code> or <code>LocalDate</code>, is set up once in its constructor and never changes. "Changing" it gives you a new object. You never have to wonder who modified it, and you can share it between threads without locks.</p>
+<p><b>Money</b> needs exact decimals. <code>double</code> stores numbers in binary, which can't represent 0.1 exactly (like 1/3 in decimal), so <code>0.1 + 0.2</code> becomes 0.30000000000000004. Use <code>BigDecimal</code> created from a String, or store whole <b>minor units</b> (cents) in a <code>long</code>.</p>`,
+[[`Immutable class`,`final class, private final fields, no setters, defensive copies in and out.`],[`Defensive copy`,`Copying a mutable argument so the caller can't change your internals later.`],[`BigDecimal`,`Arbitrary-precision decimal number with an explicit scale.`],[`Scale / RoundingMode`,`Number of decimal places, and how to round when dividing.`]],
+[`Make the class final and all fields private final.`,`In the constructor, copy any mutable inputs (lists, arrays, dates).`,`Don't expose mutable internals; return copies or unmodifiable views.`,`For changes, return a new instance ("withers": <code>withAmount(...)</code>).`],
+[`Records are a concise way to write immutable data carriers.`,`Store money as BigDecimal or long cents; always specify RoundingMode when dividing.`,`Compare BigDecimals with compareTo, because equals also compares the scale (2.0 ≠ 2.00).`],
+[`<code>new BigDecimal(0.1)</code>: it captures the double's error. Use <code>new BigDecimal("0.1")</code> or <code>BigDecimal.valueOf(0.1)</code>.`,`Storing a caller's list directly in an "immutable" object.`]),
+
+'1.11': TH(`Copying an object can copy just the outer object (shallow) or everything it contains (deep); the difference decides whether changes leak between copies.`,
+`<p>Imagine photocopying a folder's cover page but not the documents inside: both "copies" still share the same documents. That's a <b>shallow copy</b>: a new outer object whose fields point to the <i>same</i> inner objects. A <b>deep copy</b> also duplicates the inner mutable objects, so the copies are fully independent.</p>`,
+[[`Shallow copy`,`New top-level object; nested objects shared.`],[`Deep copy`,`Nested mutable objects copied too.`],[`clone()`,`Object's built-in copy: shallow by default, skips constructors, awkward to use.`],[`Copy constructor`,`A constructor that takes another instance and copies it explicitly.`]],
+[`Decide which fields are mutable (lists, arrays, Dates, your own mutable classes).`,`Copy each mutable field: new list, and copies of its elements if they're mutable too.`,`Immutable fields (String, Integer, LocalDate, records of immutables) can be shared safely.`,`For object graphs with cycles, track already-copied objects to avoid infinite recursion.`],
+[`Prefer copy constructors or static factories (<code>Order.copyOf(o)</code>) over Cloneable.`,`The best fix is often immutability: if nothing can change, sharing is safe.`],
+[`Assuming <code>new ArrayList&lt;&gt;(other)</code> is a deep copy: it copies references to the same elements.`,`Using clone() on classes with mutable fields without overriding it.`]),
+});
+</script>
+<script>
+Object.assign(THEORY, {
+'2.1': TH(`The Collections Framework gives you ready-made containers: lists, sets, maps and queues. Picking the right one is mostly about how you'll access the data.`,
+`<p>Programs constantly hold groups of things: orders, users, prices. Java provides interfaces describing <i>what</i> a container does and classes describing <i>how</i>:</p>
+<ul><li><b>List</b>: ordered, allows duplicates, access by position (a playlist).</li><li><b>Set</b>: no duplicates (a guest list).</li><li><b>Map</b>: key → value lookups (a phone book).</li><li><b>Queue / Deque</b>: take items from the front or back (a ticket line).</li></ul>
+<p>Each has several implementations with different speeds. Ask yourself: do I look things up by key? Need sorting? Need order of insertion? Will several threads touch it?</p>`,
+[[`ArrayList`,`Resizable array. The default List.`],[`HashMap / HashSet`,`Hash table: O(1) average lookup, no order.`],[`TreeMap / TreeSet`,`Sorted (red-black tree): O(log n), range queries.`],[`LinkedHashMap`,`HashMap that remembers insertion or access order.`],[`ArrayDeque`,`Fast stack/queue.`],[`PriorityQueue`,`Always gives you the smallest (or best) element next.`]],
+[`Need lookup by key → Map. Need uniqueness → Set. Need order/position → List.`,`Need sorted order or ranges → Tree*. Need insertion order → LinkedHash*.`,`Need "best next" → PriorityQueue. Stack or queue → ArrayDeque.`,`Shared between threads → the java.util.concurrent versions (4.16).`],
+[`Declare variables by interface (<code>List&lt;Order&gt; orders = new ArrayList&lt;&gt;()</code>) so you can swap the implementation.`,`Default choices: ArrayList, HashMap, HashSet, ArrayDeque.`,`Return immutable collections (<code>List.of</code>, <code>List.copyOf</code>) from APIs.`],
+[`Using LinkedList by default "because inserts are O(1)".`,`Using Vector/Hashtable/Stack (legacy, synchronized) in new code.`]),
+
+'2.2': TH(`A HashMap turns each key into a number (its hash), uses that number to pick a bucket in an array, and so finds values in about constant time.`,
+`<p>Looking for a name in an unsorted list means checking every entry. A <b>hash table</b> avoids that. It calls <code>key.hashCode()</code> to get an int, squeezes it into an array index, and stores the entry in that <b>bucket</b>. To find the key later it computes the same index and looks only there. Like a library where a book's title tells you exactly which shelf it's on.</p>
+<p>Two different keys can land in the same bucket (a <b>collision</b>), so each bucket holds a small linked list, which becomes a tree if it grows large. When the map gets too full, it doubles its array (<b>resize</b>) and redistributes entries.</p>`,
+[[`hashCode()`,`An int summarising the key. Equal keys must return equal hash codes.`],[`Bucket`,`One slot of the internal array.`],[`Collision`,`Different keys mapping to the same bucket.`],[`Load factor`,`How full the map may get before resizing (0.75 by default).`],[`Treeify`,`Turning a long bucket list (8+) into a red-black tree.`]],
+[`<code>put(k, v)</code>: compute hash, spread its bits, index = hash & (capacity − 1).`,`Empty bucket → store the entry. Otherwise walk the bucket comparing with <code>equals</code>; replace the value if the key exists, else append.`,`If size exceeds capacity × 0.75, double the array and move entries.`,`<code>get(k)</code>: same index, then equals to find the exact entry.`],
+[`Keys must have correct, consistent <code>equals</code> and <code>hashCode</code> (2.3). Records and Strings do.`,`Pre-size big maps (<code>HashMap.newHashMap(n)</code>) to avoid repeated resizes.`,`HashMap is not thread-safe; use ConcurrentHashMap for shared maps.`],
+[`Mutable keys: changing a key after inserting it loses the entry.`,`Relying on iteration order; HashMap has none.`]),
+
+'2.3': TH(`equals decides whether two objects mean the same thing; hashCode must agree with it, or hash-based collections break.`,
+`<p>By default, <code>equals</code> asks "are these the very same object in memory?". For value-like classes (Money, Email, a composite key) you usually want "do these have the same contents?", so you override <code>equals</code>.</p>
+<p>Hash collections first use <code>hashCode</code> to pick a bucket and only then call <code>equals</code>. If two equal objects return different hash codes, the set looks in the wrong bucket and never finds the match. Hence the rule: <b>override both together, using the same fields</b>.</p>`,
+[[`equals contract`,`Reflexive, symmetric, transitive, consistent, and x.equals(null) is false.`],[`hashCode contract`,`Equal objects ⇒ equal hash codes. (Unequal objects may still collide.)`],[`Value object`,`An object identified by its contents, not its identity.`]],
+[`Choose the fields that define identity (e.g. id, or email).`,`Implement equals comparing exactly those fields.`,`Implement hashCode from the same fields (<code>Objects.hash(...)</code>).`,`Or use a <code>record</code>, which generates both correctly.`],
+[`Make key classes immutable so their hash can't change while in a map.`,`JPA entities need care: generated ids are null before persist.`,`IDEs and records generate correct implementations; prefer them to hand-written ones.`],
+[`Overriding equals but not hashCode.`,`Mutating a field used in hashCode while the object is a key in a HashMap or HashSet.`,`Adding a field to equals in a subclass, which breaks symmetry.`]),
+
+'2.4': TH(`LinkedHashMap keeps entries in a predictable order (insertion or recent access), which makes an LRU cache trivial; TreeMap keeps keys sorted and answers "nearest key" questions.`,
+`<p>A plain HashMap has no order. <b>LinkedHashMap</b> adds a doubly linked list through its entries, so it remembers the order they were inserted, or, with <code>accessOrder = true</code>, the order they were last used. That second mode gives you an <b>LRU (least recently used) cache</b>: the head of the list is the entry nobody has touched for longest, so evict it.</p>
+<p><b>TreeMap</b> stores keys in a balanced binary tree, always sorted. It can answer questions a hash table can't: "the highest price ≤ 25k" (floor), "the next appointment after 10:00" (ceiling), "all keys between A and B" (subMap).</p>`,
+[[`LRU`,`Evict the entry that was used least recently.`],[`removeEldestEntry`,`Hook LinkedHashMap calls after each insert; return true to evict the head.`],[`floor / ceiling`,`Greatest key ≤ x / smallest key ≥ x.`],[`Red-black tree`,`Self-balancing tree giving O(log n) operations.`]],
+[`LRU: <code>new LinkedHashMap&lt;&gt;(cap, 0.75f, true)</code> moves each accessed entry to the tail.`,`Override <code>removeEldestEntry</code> to return <code>size() &gt; cap</code>.`,`TreeMap: put/get/remove walk the tree in O(log n); the tree rebalances itself.`,`Navigation methods (floorKey, headMap, tailMap) use the sorted structure.`],
+[`For production caches use Caffeine (thread-safe, size/time limits, stats); LinkedHashMap LRU is fine for single-threaded or small cases.`,`TreeMap is great for time-based or price-range lookups.`],
+[`Sharing a LinkedHashMap LRU across threads without a lock: even get() modifies it.`,`A TreeMap comparator that returns 0 for different keys merges them into one entry.`]),
+
+'2.5': TH(`ArrayList stores elements in one array (fast access by index); LinkedList chains separate nodes (fast only at a position you already hold). In practice ArrayList wins almost always.`,
+`<p><b>ArrayList</b> is like seats in a row: seat 500 is found instantly by arithmetic. Inserting in the middle means shifting everyone after it, but the CPU does that very quickly with one memory copy. When the array is full, it allocates a bigger one (about 1.5×) and copies.</p>
+<p><b>LinkedList</b> is like a treasure hunt where each clue points to the next: to reach item 500 you follow 500 pointers. Inserting is cheap only once you're already there. Each node also costs extra memory and is scattered around the heap, which is slow for CPU caches.</p>`,
+[[`Random access`,`Getting element i directly: O(1) for arrays.`],[`Amortised O(1)`,`Occasionally expensive (resize), cheap on average.`],[`Cache locality`,`Data stored together is read much faster by the CPU.`]],
+[`ArrayList.get(i): direct index into the array.`,`ArrayList.add at the end: write into spare capacity; grow and copy when full.`,`ArrayList.add(i, x): shift the tail one place right (System.arraycopy).`,`LinkedList.get(i): walk from the nearer end, node by node.`],
+[`Default to ArrayList. For queues and stacks, use ArrayDeque.`,`If you know the size, pass it to the constructor to avoid resizes.`],
+[`Choosing LinkedList for "frequent inserts" without measuring.`,`Calling <code>remove(0)</code> repeatedly on a big ArrayList (O(n²) overall); use a deque.`]),
+
+'2.6': TH(`Most collection iterators detect if the collection is changed behind their back and throw ConcurrentModificationException, to avoid silently returning wrong results.`,
+`<p>A for-each loop uses an <b>Iterator</b> under the hood. If you add or remove elements from the list directly while iterating, the iterator's position no longer matches the data. To catch this bug early, collections keep a counter, <code>modCount</code>, that increases on every structural change. The iterator remembers the value it started with and checks it on each <code>next()</code>. A mismatch throws <b>ConcurrentModificationException</b> (despite the name, it usually happens on a single thread).</p>`,
+[[`Iterator`,`Object that walks a collection: hasNext(), next(), remove().`],[`modCount`,`Counter of structural modifications.`],[`Fail-fast`,`Throw as soon as a concurrent change is detected (best-effort, not guaranteed).`],[`Weakly consistent`,`Concurrent collections' iterators: never throw, may or may not show recent changes.`]],
+[`The for-each loop creates an iterator with expectedModCount = modCount.`,`<code>list.remove(x)</code> inside the loop increments modCount.`,`The next <code>next()</code> sees the mismatch and throws.`,`<code>iterator.remove()</code> updates both counters, so it's safe.`],
+[`Remove with <code>list.removeIf(predicate)</code> or an explicit <code>Iterator.remove()</code>.`,`Or collect results into a new list instead of modifying while iterating.`],
+[`Catching ConcurrentModificationException instead of fixing the loop.`,`Assuming fail-fast always triggers; removing the second-to-last element skips the last one silently.`]),
+
+'2.7': TH(`Sorting needs a rule for "which comes first". Comparable puts one natural rule inside the class; a Comparator is a separate rule you can pass in.`,
+`<p>Sorting numbers is obvious; sorting Cars isn't. By price? By year? A class can implement <b>Comparable</b> to define its one <i>natural</i> order (<code>compareTo</code>), the way Strings sort alphabetically. When you need other orders, you write a <b>Comparator</b>, an external rule like "by price, highest first, then by id", and pass it to <code>sort</code>, a TreeMap, or a PriorityQueue.</p>
+<p>A compare method returns a negative number if a comes first, zero if they're equal in this ordering, and positive if b comes first.</p>`,
+[[`Comparable&lt;T&gt;`,`compareTo(other) inside the class: the natural order.`],[`Comparator&lt;T&gt;`,`compare(a, b) outside the class: any order.`],[`Stable sort`,`Equal elements keep their original relative order (Java's object sort is stable).`]],
+[`Build comparators fluently: <code>Comparator.comparing(Car::price).reversed().thenComparing(Car::id)</code>.`,`Use <code>Integer.compare(a, b)</code> rather than <code>a - b</code>.`,`Pass the comparator to <code>list.sort(...)</code>, <code>new TreeMap&lt;&gt;(cmp)</code>, etc.`],
+[`Add a unique tie-breaker (like id) when using comparators in TreeSet/TreeMap, or equal-ranked items will be treated as duplicates.`,`Keep compareTo consistent with equals where possible.`],
+[`<code>return a.price - b.price;</code>: overflow for large values.`,`Comparators that aren't transitive, which can make sorting throw.`]),
+
+'2.8': TH(`A PriorityQueue always hands you the smallest (or highest-priority) element next, using a binary heap stored in an array.`,
+`<p>Sometimes you don't need everything sorted; you just need "the next most important item", again and again: the next task by deadline, the cheapest route so far, the highest bid. A <b>heap</b> does exactly that cheaply. It's a tree where every parent is smaller than its children, so the root is always the minimum. It's stored compactly in an array: the children of index i are at 2i+1 and 2i+2.</p>`,
+[[`Min-heap`,`Parent ≤ children; root is the smallest.`],[`Sift up / sift down`,`Moving an element up or down to restore heap order.`],[`peek / poll / offer`,`Look at the top / remove the top / add an element.`]],
+[`<code>offer(x)</code>: put x at the end of the array, then swap it upward while it's smaller than its parent.`,`<code>poll()</code>: take the root, move the last element to the root, swap it downward with its smaller child.`,`Both take O(log n); <code>peek()</code> is O(1).`],
+[`Max-heap: <code>new PriorityQueue&lt;&gt;(Comparator.reverseOrder())</code>.`,`Top-K largest of a big stream: keep a min-heap of size K and evict the smallest.`,`Scheduling, Dijkstra's shortest path and merging sorted streams all use heaps.`],
+[`Expecting <code>toString()</code> or iteration to be sorted.`,`Changing an element's priority while it's in the queue; remove and re-add it instead.`]),
+
+'2.9': TH(`Java has several kinds of "read-only" lists that behave very differently: fixed-size views, unmodifiable views, and truly immutable copies.`,
+`<p><code>Arrays.asList(array)</code> gives a <b>fixed-size view</b> over an array: you can <code>set</code> elements (which writes to the array) but not add or remove. <code>Collections.unmodifiableList(list)</code> gives a <b>read-only view</b>: you can't change it through the view, but if someone changes the original list, the view shows it. <code>List.of(...)</code> and <code>List.copyOf(...)</code> give a <b>truly immutable</b> list that nothing can ever change.</p>
+<p>Analogy: a view is a window onto someone else's room; an immutable copy is a photograph.</p>`,
+[[`View`,`An object that presents another collection's data without copying it.`],[`Unmodifiable`,`Can't be changed through this reference.`],[`Immutable`,`Can't be changed by anyone, ever.`],[`UnsupportedOperationException`,`Thrown when you call a modifying method a collection doesn't support.`]],
+[`Arrays.asList: backed by the array, fixed size, allows nulls.`,`unmodifiableList: wraps the list; mutators throw; still reflects source changes.`,`List.of / copyOf: own storage, all mutators throw, nulls rejected.`],
+[`Return <code>List.copyOf(internal)</code> from getters to keep internals safe.`,`Use <code>new ArrayList&lt;&gt;(Arrays.asList(...))</code> if you need a growable list.`],
+[`Assuming unmodifiableList is a snapshot.`,`Putting null into List.of, or calling <code>contains(null)</code> on it (both throw).`]),
+
+'2.10': TH(`Generics let you write one class or method that works with many types while the compiler checks you don't mix them up; at run time the type information is erased.`,
+`<p>Before generics, a List held plain Objects and you cast everything coming out, so mistakes appeared at run time. With <code>List&lt;String&gt;</code> the compiler knows what the list holds, rejects <code>add(42)</code>, and inserts the casts for you.</p>
+<p>Java implements generics by <b>erasure</b>: after checking, the compiler removes the type arguments, so at run time a <code>List&lt;String&gt;</code> is just a List. That's why you can't do <code>new T()</code> or <code>instanceof List&lt;String&gt;</code>.</p>
+<p><b>Wildcards</b> make APIs flexible. <code>? extends Number</code> means "some list of a Number subtype: I'll read from it". <code>? super Integer</code> means "a list that can hold Integers: I'll write into it". Remember <b>PECS</b>: Producer Extends, Consumer Super.</p>`,
+[[`Type parameter`,`A placeholder like T in class Box&lt;T&gt;.`],[`Erasure`,`Generic types are removed after compilation; casts are inserted.`],[`Invariance`,`List&lt;Integer&gt; is not a List&lt;Number&gt;.`],[`Wildcard`,`? extends X (read), ? super X (write), ? (unknown).`],[`Raw type`,`Using List without &lt;…&gt;; disables checks.`]],
+[`You declare <code>class Box&lt;T&gt; { T value; }</code>.`,`The compiler checks every use (<code>Box&lt;String&gt;</code> only takes Strings).`,`It erases T to Object (or its bound) and adds casts where values come out.`,`Wildcards let a method accept a family of related generic types safely.`],
+[`Use generics in your own utilities and APIs: <code>Result&lt;T&gt;</code>, <code>Page&lt;T&gt;</code>.`,`Collections.copy, addAll and similar library methods use PECS in their signatures.`],
+[`Raw types, which compile with warnings and fail later with ClassCastException.`,`Expecting <code>List&lt;Dog&gt;</code> to be passable as <code>List&lt;Animal&gt;</code>.`]),
+
+'2.11': TH(`Exceptions move control from where a problem happens to the code that can handle it; finally and try-with-resources make sure cleanup always runs.`,
+`<p>When something goes wrong (a file is missing, input is invalid), the code that notices often can't decide what to do. It <b>throws</b> an exception, and Java unwinds the call stack until it finds a matching <b>catch</b>. A <b>finally</b> block runs whether or not an exception happened, which is ideal for cleanup.</p>
+<p><b>Checked</b> exceptions (like IOException) must be declared or caught, so the compiler forces you to think about them. <b>Unchecked</b> ones (RuntimeException and its subclasses, like NullPointerException) usually mean a programming bug or an unrecoverable condition.</p>
+<p><b>try-with-resources</b> (<code>try (var in = open()) { … }</code>) closes resources automatically, in reverse order, even if the body throws.</p>`,
+[[`throw / throws`,`Raise an exception / declare that a method may raise it.`],[`Checked exception`,`Subclass of Exception (not RuntimeException); must be handled or declared.`],[`Unchecked exception`,`RuntimeException or Error; not enforced by the compiler.`],[`Suppressed exception`,`A close() failure attached to the main exception in try-with-resources.`],[`Cause`,`The original exception wrapped inside a new one.`]],
+[`An exception is thrown; the rest of the try block is skipped.`,`Java looks for a catch matching the exception type, in this method and then up the call stack.`,`finally blocks run on the way out, whether it was caught or not.`,`If nothing catches it, the thread ends and the stack trace is printed.`],
+[`Catch where you can actually handle it (retry, fallback, translate to an HTTP status), not everywhere.`,`When wrapping, keep the cause: <code>throw new ServiceException("msg", e)</code>.`,`Always use try-with-resources for streams, connections, locks you wrap.`],
+[`Empty catch blocks that hide failures.`,`return or throw inside finally, which swallows the real exception.`,`Catching Exception (or Throwable) broadly and continuing as if nothing happened.`]),
+
+'2.12': TH(`A lambda is a short anonymous function you can pass around as a value; a method reference is an even shorter way to point at an existing method.`,
+`<p>Many APIs need "a piece of behaviour": how to compare two items, what to do with each element, how to create something. Before Java 8 you wrote an anonymous class for that. A <b>lambda</b> (<code>(a, b) -&gt; a.price() - b.price()</code>) expresses just the logic.</p>
+<p>A lambda can be used wherever a <b>functional interface</b> is expected: an interface with exactly one abstract method, like <code>Comparator</code>, <code>Runnable</code> or <code>Function</code>. A <b>method reference</b> (<code>String::length</code>, <code>System.out::println</code>) is shorthand for a lambda that just calls one method.</p>`,
+[[`Functional interface`,`An interface with one abstract method (Function, Predicate, Supplier, Consumer…).`],[`Capture`,`A lambda using a local variable from the enclosing method.`],[`Effectively final`,`A local that's never reassigned, which lambdas are allowed to capture.`],[`Method reference`,`Class::staticMethod, obj::method, Class::instanceMethod, Class::new.`]],
+[`The compiler checks the lambda's shape matches the interface's single method.`,`Captured locals are copied into the lambda, which is why they must not change.`,`<code>this</code> inside a lambda means the enclosing object (unlike an anonymous class).`,`At run time the JVM creates the lambda object via invokedynamic, often reusing one instance.`],
+[`Use lambdas with streams, Optional, CompletableFuture, comparators and callbacks.`,`Keep lambdas short; move complex logic into a named method and use a method reference.`],
+[`Trying to modify a captured local (<code>count++</code>) inside a lambda.`,`Long, multi-line lambdas that hide business logic.`]),
+
+'2.13': TH(`A Stream is a pipeline for processing a sequence of elements declaratively (filter, map, collect), and it does no work until you ask for a result.`,
+`<p>Instead of writing loops with temporary lists, you describe <i>what</i> you want: "from these orders, keep the paid ones, take their totals, sum them". <code>orders.stream().filter(Order::isPaid).mapToLong(Order::total).sum()</code>.</p>
+<p>Streams are <b>lazy</b>: <code>filter</code> and <code>map</code> only build the pipeline. Nothing runs until a <b>terminal operation</b> like <code>collect</code>, <code>sum</code>, <code>findFirst</code> or <code>forEach</code>. Then elements flow through one at a time, like items on an assembly line, and operations like <code>findFirst</code> can stop early.</p>`,
+[[`Source`,`Where elements come from: a collection, array, file lines, a generator.`],[`Intermediate operation`,`filter, map, sorted…: returns a new stream, lazy.`],[`Terminal operation`,`collect, count, forEach, reduce…: triggers processing.`],[`Short-circuiting`,`findFirst, anyMatch, limit: may stop before reading everything.`],[`Stateful operation`,`sorted, distinct: must see many or all elements before emitting.`]],
+[`Build the pipeline: source → zero or more intermediate operations → one terminal operation.`,`The terminal operation pulls elements through the pipeline one by one.`,`Short-circuiting operations stop pulling once they have their answer.`,`A stream can be consumed only once.`],
+[`Great for transformations and aggregations: grouping (<code>Collectors.groupingBy</code>), summing, mapping to DTOs.`,`Parallel streams use the shared ForkJoin common pool: only for CPU-heavy work on large data, never for I/O.`],
+[`Side effects inside map/filter (e.g. adding to an external list).`,`Reusing a stream after a terminal operation.`,`Using streams where a simple loop is clearer.`]),
+
+'2.14': TH(`Modern Java (8–21) added tools that make intent explicit: Optional for "maybe no value", records for data classes, sealed types and pattern matching for closed sets of cases.`,
+`<p><b>Optional&lt;T&gt;</b> is a box that's either empty or holds one value. A method returning Optional says "there may be no result", so callers handle that case instead of getting a surprise null.</p>
+<p><b>Records</b> (<code>record Money(long cents, String ccy) {}</code>) are compact immutable data classes: constructor, accessors, equals, hashCode and toString are generated.</p>
+<p><b>Sealed</b> interfaces list exactly which classes may implement them. Combined with <b>pattern matching</b> in <code>switch</code>, the compiler can check you handled every case.</p>`,
+[[`Optional`,`Container for zero or one value; use map, orElse, orElseGet, orElseThrow.`],[`Record`,`Immutable data carrier with generated boilerplate.`],[`Compact constructor`,`Record constructor without parameters list, for validation.`],[`Sealed / permits`,`Restricts which classes can extend a type.`],[`Pattern matching`,`instanceof and switch that test a type and bind a variable at once.`]],
+[`Return <code>Optional.ofNullable(x)</code>; callers use <code>.map(...).orElse(default)</code>.`,`Declare a record; validate inputs in its compact constructor.`,`Declare <code>sealed interface Shape permits Circle, Square</code>.`,`<code>switch (shape) { case Circle c -&gt; …; case Square s -&gt; …; }</code> needs no default, and fails to compile if a case is missing.`],
+[`Use Optional for return values, not for fields or parameters.`,`Records are perfect for DTOs, events, value objects and composite keys.`,`Sealed types fit domain states and results (Success / Failure).`],
+[`<code>optional.get()</code> without checking: use orElseThrow with a clear message.`,`<code>orElse(expensiveCall())</code>: it runs even when a value is present; use orElseGet.`]),
+});
+</script>
+<script>
+Object.assign(THEORY, {
+'3.1': TH(`Object-oriented programming bundles data with the code that uses it; the four pillars are encapsulation, abstraction, inheritance and polymorphism.`,
+`<p>Instead of passing raw data to separate functions, OOP builds <b>objects</b> that hold their own data (fields) and know how to work with it (methods). An <code>Account</code> knows its balance and how to withdraw safely.</p>
+<ul><li><b>Encapsulation</b>: hide the data and expose only safe operations, so nobody can set a negative balance directly.</li><li><b>Abstraction</b>: callers depend on <i>what</i> something does (an interface), not <i>how</i>.</li><li><b>Inheritance</b>: a class can extend another and reuse or specialise its behaviour.</li><li><b>Polymorphism</b>: one call, <code>v.describe()</code>, does the right thing for whatever object v really is.</li></ul>
+<p>The mechanism behind polymorphism is <b>dynamic dispatch</b>: at run time the JVM looks at the object's actual class to choose which method to run.</p>`,
+[[`Class / object`,`Blueprint / one instance built from it.`],[`Interface`,`A contract: a list of methods a class promises to provide.`],[`Override`,`A subclass providing its own version of an inherited method.`],[`Dynamic dispatch`,`Choosing the method at run time from the object's real class (via a vtable).`]],
+[`<code>Vehicle v = new Car();</code>: the variable's type is Vehicle, the object is a Car.`,`<code>v.describe()</code> compiles because Vehicle declares describe().`,`At run time the JVM looks up describe() in Car's method table and runs Car's version.`,`Calls from inside Vehicle to overridable methods (this.wheels()) also go to Car's versions.`],
+[`Program to interfaces (<code>PaymentGateway</code>), so implementations can be swapped and mocked.`,`Keep fields private; expose behaviour, not setters for everything.`],
+[`Getter and setter for every field ("anaemic" objects with no behaviour).`,`Deep inheritance trees where behaviour is hard to follow.`]),
+
+'3.2': TH(`Overloading is several methods with the same name but different parameters, picked by the compiler; overriding is a subclass replacing a parent's method, picked at run time.`,
+`<p><b>Overloading</b> is a convenience: <code>print(int)</code>, <code>print(String)</code>, <code>print(Object)</code>. The <b>compiler</b> chooses one based on the <i>declared</i> types of the arguments. It never looks at the actual objects at run time.</p>
+<p><b>Overriding</b> is polymorphism: <code>Car</code> redefines <code>Vehicle.describe()</code>. The <b>JVM</b> chooses at run time based on the actual object.</p>`,
+[[`Signature`,`Method name plus parameter types.`],[`Overload resolution`,`Compiler tries exact/widening matches, then boxing, then varargs.`],[`Covariant return`,`An override may return a subtype of the original return type.`],[`Hiding`,`Static methods with the same signature in a subclass hide, not override.`]],
+[`Compile time: collect methods with that name, pick the most specific match for the static argument types.`,`Run time: for an instance method, find the override in the object's class.`,`Static methods and private methods never use run-time dispatch.`],
+[`Add <code>@Override</code> on every override: the compiler then catches typos that would silently create an overload.`,`Avoid overloads that differ only by boxed vs primitive or by null-friendly types; they confuse callers.`],
+[`Expecting an overload to be chosen by the run-time type of an argument.`,`Override rules: you can't reduce visibility or throw broader checked exceptions.`]),
+
+'3.3': TH(`Creating an object runs code in a fixed order: static setup once per class, then for each object the parent's fields and constructor before the child's.`,
+`<p>When you write <code>new Child()</code>, a lot happens. First, if the classes haven't been initialised yet, their <b>static</b> initialisers run, parent first, then child, exactly once. Then the object's memory is allocated with every field zeroed (0, false, null). Then construction runs from the top of the hierarchy down: parent field initialisers, parent constructor body, child field initialisers, child constructor body.</p>
+<p>A child is built like a house: foundation (parent) first, then the upper floors (child).</p>`,
+[[`Static initialiser`,`static { … } and static field initialisers; run once per class.`],[`Instance initialiser`,`Field initialisers and { … } blocks; run for every object, after super().`],[`super(...)`,`Call to the parent constructor; always first, implicit if omitted.`]],
+[`Load and initialise Parent's statics, then Child's statics (first use only).`,`Allocate the object; all fields have default values.`,`Child's constructor calls super(); Parent's field initialisers and constructor body run.`,`Back in Child: its field initialisers run, then the rest of its constructor body.`],
+[`Keep constructors simple: assign fields, validate, nothing more.`,`Use static factories or builders when construction logic grows.`],
+[`Calling an overridable method from a constructor: it runs in the child before the child's fields are set.`,`Letting <code>this</code> escape from a constructor (registering a listener, starting a thread).`]),
+
+'3.4': TH(`Inheritance ("is-a") reuses a parent's code but couples you to its internals; composition ("has-a") builds behaviour by holding other objects, and is usually more flexible.`,
+`<p>Inheritance looks like free reuse: extend <code>HashSet</code>, override <code>add</code>, done. But your subclass now depends on <i>how</i> the parent works internally, like which of its methods call which. If HashSet's <code>addAll</code> internally calls <code>add</code>, your counting is doubled. This is the <b>fragile base class</b> problem.</p>
+<p>With <b>composition</b> your class <i>has</i> a Set field and forwards calls to it, adding its own behaviour around them. It depends only on the Set's public contract, and the inner object can be swapped, even for a fake in tests.</p>`,
+[[`is-a`,`Inheritance relationship (Car is a Vehicle).`],[`has-a`,`Composition relationship (Car has an Engine).`],[`Forwarding`,`Passing a call on to a wrapped object.`],[`Fragile base class`,`Changes in a parent's internals breaking subclasses.`]],
+[`Ask "is it truly a subtype that can be used anywhere the parent is?" If not, compose.`,`Hold the collaborator in a private final field, injected through the constructor.`,`Implement the same interface and forward calls, adding behaviour where needed.`],
+[`Spring services are composition: a service holds repositories and clients, injected by constructor.`,`Use inheritance for genuine type hierarchies and frameworks designed for it (with documented hooks).`],
+[`Extending a concrete library class to tweak one method.`,`Creating a subclass for every combination of features (class explosion); compose features instead.`]),
+
+'3.5': TH(`An interface describes what a type can do; an abstract class is a partial implementation that can hold shared state. Since Java 8 interfaces can have default methods, which brings rules for conflicts.`,
+`<p>An <b>interface</b> is a contract: "anything that is <code>Comparable</code> has compareTo". A class can implement many interfaces. Interfaces can't hold instance fields.</p>
+<p>An <b>abstract class</b> can't be instantiated; it provides shared fields and some implemented methods, leaving others abstract for subclasses. A class can extend only one.</p>
+<p><b>Default methods</b> let interfaces ship method bodies. If two interfaces give a class the same default method, Java needs rules to resolve the conflict.</p>`,
+[[`Abstract method`,`Declared without a body; subclasses must implement it.`],[`Default method`,`An interface method with a body.`],[`X.super.m()`,`Syntax to call a specific interface's default implementation.`]],
+[`Rule 1: a method from a class (or superclass) beats any interface default.`,`Rule 2: a more specific interface (one that extends the other) wins.`,`Rule 3: otherwise the class must override the method and may call <code>A.super.m()</code>.`],
+[`Prefer interfaces for public contracts; use abstract classes for shared skeletons inside a module.`,`Default methods are mainly for evolving interfaces without breaking implementations.`],
+[`Putting mutable shared state in constants on interfaces.`,`Using abstract classes where an interface plus composition would do.`]),
+
+'3.6': TH(`SOLID is five design principles that keep code easy to change: single responsibility, open/closed, Liskov substitution, interface segregation and dependency inversion.`,
+`<ul><li><b>S – Single responsibility</b>: a class should have one reason to change. Pricing logic and PDF generation don't belong together.</li><li><b>O – Open/Closed</b>: add new behaviour by adding code (a new class), not by editing a growing if/switch.</li><li><b>L – Liskov substitution</b>: a subclass must work anywhere its parent is expected, without surprises.</li><li><b>I – Interface segregation</b>: many small, focused interfaces beat one big one that forces classes to implement methods they can't support.</li><li><b>D – Dependency inversion</b>: high-level code depends on abstractions (interfaces), and the concrete classes are plugged in from outside.</li></ul>
+<p>They aren't laws; they're warning lights. When a change ripples through many files, one of them is usually being broken.</p>`,
+[[`Responsibility`,`A reason for a class to change (a business rule, a format, a storage).`],[`Abstraction`,`An interface that hides which implementation is used.`],[`Dependency injection`,`Passing collaborators in, usually through the constructor.`]],
+[`Spot the smell: a class that changes for unrelated reasons, a switch that grows, an override that throws, an interface with unused methods, a <code>new ConcreteThing()</code> deep in business code.`,`Apply the matching fix: split the class, introduce a strategy interface, rethink the hierarchy, split the interface, inject the dependency.`],
+[`Spring's DI is dependency inversion in practice.`,`A list of rule beans injected into a service is open/closed: new rule = new bean.`],
+[`Applying every principle everywhere, which creates needless layers.`,`Square extends Rectangle: the classic Liskov violation.`]),
+
+'3.7a': TH(`A Singleton guarantees exactly one instance of a class and gives global access to it.`,
+`<p>Some things should exist once: a configuration registry, a connection pool. The Singleton pattern makes the constructor private and exposes one shared instance. The challenge is creating it <b>once</b> even when several threads ask at the same moment, and preventing tricks (reflection, serialization) from creating a second one.</p>`,
+[[`Eager singleton`,`Instance created when the class loads.`],[`Lazy singleton`,`Created on first use.`],[`Holder idiom`,`A nested static class holds the instance; the JVM creates it lazily and thread-safely.`],[`Enum singleton`,`enum X { INSTANCE }: the simplest, safest form.`]],
+[`Make the constructor private.`,`Provide a static accessor returning the single instance.`,`For laziness plus thread-safety, use the holder idiom or an enum (double-checked locking needs volatile).`,`Guard against serialization creating a copy (readResolve), or use an enum.`],
+[`In Spring apps you rarely write singletons: beans are singletons by default, and DI makes them easy to replace in tests.`],
+[`Global mutable state hidden in a singleton.`,`Singletons that are hard to replace in tests.`]),
+
+'3.7b': TH(`A Factory hides which concrete class gets created, so callers only depend on an interface.`,
+`<p>If code does <code>new StripeProcessor()</code> everywhere, switching providers means editing all of it. A <b>factory</b> centralises creation: callers ask <code>factory.forType("stripe")</code> and receive a <code>PaymentProcessor</code>. They don't know or care which class it is.</p>
+<p>An <b>Abstract Factory</b> goes further: it creates a whole family of objects that must match, like a UI theme producing buttons and checkboxes that look alike.</p>`,
+[[`Factory method`,`A method that returns an object of some interface type.`],[`Abstract factory`,`An object that creates a family of related objects.`],[`Registry`,`A map from keys to implementations, used to look up the right one.`]],
+[`Define the product interface (PaymentProcessor).`,`Implement concrete products.`,`Give the factory one method that picks and returns the right implementation.`,`In Spring, inject <code>Map&lt;String, PaymentProcessor&gt;</code> to get every implementation keyed by bean name.`],
+[`Static factory methods (<code>List.of</code>, <code>Integer.valueOf</code>) can cache instances and have meaningful names.`],
+[`A factory switch that grows with every new type (that breaks open/closed); prefer a registry.`]),
+
+'3.7c': TH(`A Builder constructs a complex object step by step with readable, named calls, then validates and creates it in one go.`,
+`<p>Constructors with many parameters are hard to read and easy to get wrong: <code>new Car("VW", "Golf", 2020, 5, true, false, "red")</code>. Which boolean is which? A <b>builder</b> lets you write <code>Car.builder().make("VW").model("Golf").year(2020).color("red").build()</code>. Optional values can be skipped, and <code>build()</code> checks the combination is valid before creating an immutable object.</p>`,
+[[`Telescoping constructors`,`Many overloaded constructors with growing parameter lists.`],[`Fluent interface`,`Methods returning this, so calls can be chained.`],[`build()`,`Validates all values and creates the final object.`]],
+[`A static nested Builder class holds the same fields, all mutable.`,`Each setter-like method sets a field and returns this.`,`<code>build()</code> validates cross-field rules and calls the target's private constructor.`,`The result has final fields and no setters.`],
+[`Lombok's <code>@Builder</code> generates builders; <code>toBuilder()</code> makes modified copies.`,`Test data builders make tests readable.`],
+[`Builders for classes with two or three fields; a constructor or record is clearer.`,`Skipping validation in build().`]),
+
+'3.7d': TH(`Strategy puts interchangeable algorithms behind one interface, so you can choose or swap them at run time.`,
+`<p>Pricing might be "regular", "festival discount" or "surge". Instead of an if/else inside the pricing service, each rule becomes its own class implementing <code>PricingStrategy</code>. The service just calls <code>strategy.price(order)</code> on whichever strategy it was given.</p>
+<p>Any functional interface is a strategy slot: the <code>Comparator</code> you pass to <code>sort</code> is a strategy, and a lambda is the lightest way to write one.</p>`,
+[[`Strategy`,`An interface for an algorithm, with several implementations.`],[`Context`,`The class that uses a strategy without knowing which one.`]],
+[`Define the strategy interface.`,`Write one implementation per algorithm.`,`The context receives a strategy (constructor, parameter, or lookup map) and delegates to it.`],
+[`Spring: inject all strategy beans as a Map and pick by key, e.g. per country or customer tier.`,`Keep strategies stateless so a single bean can serve every thread.`],
+[`Mutable fields in a strategy bean shared by all requests.`,`Confusing with State: in Strategy the caller chooses; in State the object switches itself.`]),
+
+'3.7e': TH(`State turns each status of an object (scheduled, live, closed) into a class that knows which actions are allowed and what the next state is.`,
+`<p>An auction behaves differently depending on its status: you can bid when it's LIVE but not when it's CLOSED. Writing <code>if (status == …)</code> in every method gets messy fast. In the <b>State</b> pattern each status is a class implementing all the events (<code>placeBid</code>, <code>close</code>). The auction delegates to its current state object, and the state decides whether the action is legal and which state comes next.</p>`,
+[[`State machine`,`A set of states and allowed transitions between them.`],[`Transition`,`Moving from one state to another in response to an event.`],[`Context`,`The object whose behaviour depends on its current state.`]],
+[`List the states and events; draw the allowed transitions.`,`Create a state class per state; each implements every event, rejecting illegal ones.`,`The context delegates events to the current state and replaces it on transitions.`,`Persist the state (e.g. a status column) and guard transitions in the DB.`],
+[`Orders, payments, auctions and tickets are all state machines.`,`In the database, make transitions atomic with <code>UPDATE … WHERE status = 'LIVE'</code> (a compare-and-set).`],
+[`Transitions checked in Java but not guarded in the DB, which races across pods.`,`State logic scattered across services instead of one place.`]),
+
+'3.7f': TH(`Observer lets one object announce events while any number of listeners react, without the publisher knowing who they are.`,
+`<p>When an order is placed, many things should happen: send an email, update analytics, notify the warehouse. If OrderService called each of them directly, it would grow with every new feature. Instead it <b>publishes</b> an "OrderPlaced" event, and each interested component <b>subscribes</b>. Adding a reaction means adding a listener; the publisher never changes.</p>`,
+[[`Publisher / subject`,`The object that emits events.`],[`Listener / observer`,`Code that reacts to an event.`],[`Synchronous vs asynchronous`,`Listeners run in the publisher's thread, or later on another thread.`]],
+[`Define an event (a small immutable record).`,`Listeners register interest (in Spring: <code>@EventListener</code> methods).`,`The publisher calls <code>publishEvent(event)</code>; the framework calls every matching listener.`],
+[`Use <code>@TransactionalEventListener(phase = AFTER_COMMIT)</code> for side effects that should only happen once the data is saved.`,`Across services, publish events to a broker (Kafka) using the Outbox pattern.`],
+[`Slow or failing synchronous listeners that slow down or break the publisher.`,`Sending emails before the transaction commits.`]),
+
+'3.7g': TH(`A Decorator wraps an object with the same interface and adds one extra behaviour around it; decorators can be stacked.`,
+`<p>You want a client that logs, retries and caches. Rather than one huge class, wrap the basic client in a <code>RetryingClient</code>, wrap that in a <code>LoggingClient</code>, and so on. Each wrapper implements the same interface, does its bit, and passes the call inward. Like layers of clothing, they can be added or removed independently, and their order matters.</p>`,
+[[`Wrapper`,`An object that holds another of the same type and delegates to it.`],[`Delegation`,`Forwarding a call to the wrapped object.`]],
+[`Implement the same interface as the object you wrap.`,`Take the wrapped object in the constructor.`,`In each method, add behaviour before or after calling the inner object.`],
+[`Java I/O is decorators: <code>new BufferedReader(new InputStreamReader(in))</code>.`,`Collections.unmodifiableList and synchronizedList are decorators.`,`HTTP client interceptors and filters follow the same idea.`],
+[`Forgetting that wrapping order changes behaviour (logging each retry vs once).`,`Closing only the inner stream and losing buffered data.`]),
+
+'3.7h': TH(`A Proxy stands in for another object with the same interface and controls access to it: lazily, with caching, security, or by adding transactions.`,
+`<p>A proxy looks exactly like the real object to callers, but intercepts calls. It might delay creating an expensive object until it's needed, check permissions, cache results, or call a remote server. Java can even generate proxies at run time (<b>dynamic proxies</b>) that send every method call to one handler, and that's how Spring adds <code>@Transactional</code>, <code>@Cacheable</code> and <code>@Async</code> behaviour to your beans.</p>`,
+[[`Dynamic proxy`,`A class generated at run time that implements interfaces and routes calls to an InvocationHandler.`],[`CGLIB proxy`,`A generated subclass that overrides methods (for proxying classes).`],[`Self-invocation`,`A bean calling its own method via this, which skips the proxy.`]],
+[`Spring creates your bean, then wraps it in a proxy if it has annotations needing interception.`,`Other beans get the proxy injected.`,`A call goes through the proxy: start transaction → call your method → commit/rollback.`,`Calls from inside the bean (<code>this.method()</code>) go straight to the object, skipping that logic.`],
+[`To make an annotation apply on an internal call, move the method to another bean.`,`Proxies can't intercept private, final or static methods.`],
+[`Expecting @Transactional to work on a private method or through this.save().`]),
+
+'3.7i': TH(`An Adapter makes an existing class with the wrong interface usable where your code expects a different one, by translating calls.`,
+`<p>Your code expects <code>PaymentGateway.charge(Money)</code>; the vendor's SDK offers <code>pay(int cents, String currency)</code> and throws its own exceptions. An <b>adapter</b> implements your interface, holds the SDK object, and translates arguments, results and errors in both directions. Like a travel plug adapter: neither the socket nor the device changes.</p>`,
+[[`Target interface`,`The interface your code wants to use.`],[`Adaptee`,`The existing class with an incompatible interface.`],[`Anti-corruption layer`,`A boundary of adapters that keeps external models out of your domain.`]],
+[`Define the interface your domain needs.`,`Implement it in an adapter class that wraps the vendor client.`,`Convert inputs, call the vendor, convert outputs, and map vendor exceptions to your own.`],
+[`Switching vendors means writing a new adapter, with no domain changes.`,`Treat timeouts as "unknown outcome", not "failed", in payment adapters.`],
+[`Letting vendor types and exceptions leak into business code.`]),
+
+'3.7j': TH(`Template Method fixes the steps of an algorithm in a base class and lets subclasses fill in specific steps.`,
+`<p>Many processes share the same outline with small variations: every report is "load data → format → export". The base class has a <code>final</code> method that runs the steps in order, calling abstract methods (required steps) and hooks (optional steps with defaults). Subclasses supply only what differs. The base class calls the subclass, not the other way round: "don't call us, we'll call you".</p>`,
+[[`Template method`,`The final method that defines the sequence of steps.`],[`Abstract step`,`A step subclasses must implement.`],[`Hook`,`A step with a default implementation subclasses may override.`]],
+[`Write the skeleton method in an abstract base class and mark it final.`,`Make varying steps abstract or hooks.`,`Subclasses implement the steps; callers just call the template method.`],
+[`Spring's JdbcTemplate and RestTemplate use a callback variant: you pass the varying part as a lambda instead of subclassing.`],
+[`Deep hierarchies of templates; prefer passing a strategy when possible.`]),
+});
+</script>
+<script>
+Object.assign(THEORY, {
+'4.1': TH(`A process is a running program with its own memory; threads are independent paths of execution inside one process that share that memory.`,
+`<p>When you start a Java application, the OS creates a <b>process</b>: it gets its own memory space, isolated from other programs. Inside it, work is done by <b>threads</b>. Each thread has its own call stack and its own "where am I in the code" pointer, but all threads in the process share the same heap.</p>
+<p>Analogy: a process is a restaurant kitchen; threads are the cooks. Each cook follows their own recipe (stack), but they share the fridge and the counters (heap). Sharing makes cooperation fast, and it's also why two cooks can grab the same ingredient at once.</p>`,
+[[`Process`,`An isolated running program with its own address space.`],[`Thread`,`A unit of execution with its own stack and program counter, sharing the process's heap.`],[`Context switch`,`The OS pausing one thread and resuming another.`],[`Concurrency vs parallelism`,`Dealing with many tasks interleaved / actually running them at the same time on several cores.`]],
+[`The JVM starts a main thread plus helper threads (GC, JIT).`,`You create more threads (or use pools) to do work concurrently.`,`The OS scheduler gives each thread CPU time slices, possibly in parallel on several cores.`,`Threads read and write shared objects on the heap; local variables stay private to each thread.`],
+[`A web server handles each request on a thread, so request handling code must be safe when run concurrently.`,`CPU-bound work: about one thread per core. I/O-bound work: many threads, or virtual threads (4.17).`],
+[`Assuming code runs in the order you see it across threads.`,`Sharing mutable objects between threads without synchronization.`]),
+
+'4.2': TH(`You give a thread work by passing it a Runnable (no result) or Callable (returns a result), and in real code you submit that work to an executor rather than creating threads by hand.`,
+`<p>A <code>Thread</code> object represents an OS thread. Calling <code>start()</code> asks the OS to create it, and the new thread runs your task's <code>run()</code> method. Calling <code>run()</code> directly just runs the code on <i>your</i> thread, which is a common mistake.</p>
+<p><b>Runnable</b> is "do this" (no return value). <b>Callable&lt;V&gt;</b> is "compute this and give me a V" (may throw). Executors manage a pool of reusable threads; you submit tasks and get back a <b>Future</b> to collect the result.</p>`,
+[[`Runnable`,`void run(); no result, no checked exceptions.`],[`Callable&lt;V&gt;`,`V call() throws Exception.`],[`ExecutorService`,`A pool of threads that runs submitted tasks.`],[`Future&lt;V&gt;`,`Handle to a result that will be available later.`],[`Daemon thread`,`A background thread that doesn't keep the JVM alive.`]],
+[`Write the task as a lambda: <code>() -&gt; work()</code>.`,`Submit it: <code>Future&lt;R&gt; f = executor.submit(task)</code>.`,`Do other work, then <code>f.get()</code> to wait for the result.`,`Shut the executor down when the application stops.`],
+[`In Spring, define executors as beans; don't create threads ad hoc.`,`Name your threads (ThreadFactory) so thread dumps are readable.`],
+[`Calling run() instead of start().`,`Starting a thread twice (IllegalThreadStateException).`,`Unbounded <code>new Thread</code> per request.`]),
+
+'4.3': TH(`A Java thread moves through a few states (NEW, RUNNABLE, BLOCKED, WAITING, TIMED_WAITING, TERMINATED), and knowing them is how you read a thread dump.`,
+`<p>A thread is <b>NEW</b> until <code>start()</code>. Then it's <b>RUNNABLE</b>: running or ready to run. It becomes <b>BLOCKED</b> if it wants a <code>synchronized</code> lock another thread holds, <b>WAITING</b> if it's waiting for a signal with no time limit (wait, join, park), and <b>TIMED_WAITING</b> when there is a limit (sleep, wait(ms)). When run() ends, it's <b>TERMINATED</b>.</p>
+<p>In a thread dump (from <code>jstack</code> or <code>jcmd Thread.print</code>), these states tell you what each thread is stuck on.</p>`,
+[[`BLOCKED`,`Waiting to enter a synchronized block or method.`],[`WAITING`,`Waiting indefinitely for another thread's action.`],[`TIMED_WAITING`,`Waiting with a timeout.`],[`Thread dump`,`Snapshot of every thread's state and stack trace.`]],
+[`start() → RUNNABLE.`,`Hits a held monitor → BLOCKED until it's free.`,`Calls wait() → releases the lock → WAITING. After notify, it must re-acquire the lock (BLOCKED) before running again.`,`sleep(ms) → TIMED_WAITING, keeping any locks it holds.`],
+[`Many threads BLOCKED on one lock → lock contention. Many WAITING in a pool's getConnection → pool exhaustion.`,`A thread doing socket I/O shows as RUNNABLE even though it's waiting.`],
+[`Confusing wait() (releases the lock) with sleep() (keeps it).`,`Using sleep() to "wait for" another thread instead of proper signalling.`]),
+
+'4.4': TH(`A race condition happens when the result depends on the timing of threads; the classic example is two threads incrementing the same counter and losing updates.`,
+`<p><code>count++</code> looks like one step, but it's three: <b>read</b> the value, <b>add</b> one, <b>write</b> it back. If two threads both read 5 before either writes, both write 6, and one increment is lost. Nothing crashes, the number is just wrong, sometimes.</p>
+<p>The other common shape is <b>check-then-act</b>: "if the seat is free, book it". Two threads can both see "free" and both book. Any time a decision is made from a value another thread might change before you act on it, you have a race.</p>`,
+[[`Race condition`,`Correctness depends on thread interleaving.`],[`Atomic`,`Happens as one indivisible step; no one sees it half done.`],[`Critical section`,`Code that must not run in two threads at once.`],[`Thread-safe`,`Behaves correctly when used from many threads.`]],
+[`Identify shared mutable state.`,`Identify compound actions on it (read-modify-write, check-then-act).`,`Make each compound action atomic (lock, atomic class, or a single atomic operation like putIfAbsent), or stop sharing.`],
+[`Prefer immutable objects and thread confinement (each thread has its own data).`,`Across multiple servers, the same races happen in the database; use conditional updates or optimistic locking (6.1).`],
+[`Believing a race is unlikely because tests pass; it's rare per run and certain at scale.`,`"Fixing" a race with volatile, which doesn't make ++ atomic.`]),
+
+'4.5': TH(`synchronized lets only one thread at a time run a block of code guarded by a given object's lock, and guarantees that thread sees the previous holder's writes.`,
+`<p>Every Java object has a built-in lock called a <b>monitor</b>. Wrapping code in <code>synchronized (obj) { … }</code> means "acquire obj's lock, run this, release it". If another thread holds it, you wait (BLOCKED). Like a single-occupancy bathroom with one key: only the person holding the key is inside.</p>
+<p>A synchronized instance method locks <code>this</code>; a static synchronized method locks the Class object. Releasing a lock also <b>publishes</b> all writes made inside it to the next thread that takes the same lock.</p>`,
+[[`Monitor`,`The lock every object has.`],[`Re-entrant`,`A thread already holding a lock can take it again (nested calls) without deadlocking.`],[`Entry set`,`Threads blocked waiting to acquire the monitor.`],[`Contention`,`Many threads competing for the same lock.`]],
+[`Thread reaches synchronized: if the monitor is free it takes it, otherwise it blocks.`,`It runs the critical section; nested synchronized calls on the same lock just increase a counter.`,`On exit (even via exception) the lock is released and writes are made visible.`,`One of the blocked threads (in no guaranteed order) gets the lock next.`],
+[`Keep critical sections small; never do I/O while holding a lock.`,`Lock on a private final object, not on <code>this</code> or a String literal.`],
+[`Static and instance synchronized methods guarding the same data with different locks.`,`Locking on a field that gets reassigned.`]),
+
+'4.6': TH(`Without synchronization, one thread may never see another's writes, or see them in a surprising order; volatile fixes visibility and ordering for a single variable, but not atomicity.`,
+`<p>CPUs and the JIT reorder and cache memory operations for speed. Within one thread you can't tell, but across threads it shows: thread A sets <code>running = false</code> and thread B, looping on <code>while (running)</code>, may never notice, because its read was cached or hoisted out of the loop.</p>
+<p>The <b>Java Memory Model</b> defines when a write is guaranteed visible: when there's a <b>happens-before</b> relationship between the write and the read. Unlocking then locking the same lock creates one. So does writing then reading a <code>volatile</code> field.</p>`,
+[[`Visibility`,`Whether one thread sees another's write.`],[`Reordering`,`Compiler/CPU executing operations in a different order than written.`],[`Happens-before`,`The JMM rule guaranteeing that one action's effects are visible to another.`],[`volatile`,`Field modifier: reads and writes go to main memory in order; no atomic ++.`]],
+[`Thread A writes data, then writes a volatile flag.`,`Thread B reads the volatile flag and sees it set.`,`Everything A wrote before the flag is now guaranteed visible to B.`,`Without volatile (or a lock) there's no such guarantee.`],
+[`Use volatile for simple flags and for safely publishing an immutable object.`,`Use locks or atomics for compound updates.`,`Double-checked locking needs the instance field to be volatile.`],
+[`A plain boolean stop flag: the loop may never stop.`,`Using volatile for counters.`]),
+
+'4.7': TH(`Atomic classes update a value without locks using compare-and-swap (CAS): "set it to X only if it's still what I last saw".`,
+`<p>Locks make other threads wait. For a single variable there's a faster way. The CPU offers a <b>compare-and-swap</b> instruction: "if this memory still holds 5, change it to 6; otherwise tell me it failed". A thread reads the value, computes the new one, and tries CAS. If someone else changed it in between, the CAS fails and the thread simply retries with the fresh value. No thread is ever blocked.</p>`,
+[[`CAS`,`Atomic compare-and-set instruction.`],[`AtomicInteger / AtomicLong / AtomicReference`,`Classes wrapping a value with atomic operations.`],[`LongAdder`,`A counter split across cells to reduce contention.`],[`ABA problem`,`A value changes and changes back, fooling a CAS.`]],
+[`Read the current value.`,`Compute the new value.`,`compareAndSet(old, new): succeeds only if nobody changed it.`,`On failure, loop and try again (incrementAndGet does this for you).`],
+[`<code>AtomicInteger.incrementAndGet()</code> for counters and ids; <code>LongAdder</code> for hot metrics counters.`,`<code>AtomicReference.updateAndGet</code> to swap immutable state objects.`],
+[`Combining two atomic variables and expecting the pair to be atomic.`,`Heavy contention on one AtomicLong; use LongAdder.`]),
+
+'4.8': TH(`wait/notify lets a thread sleep until some condition becomes true and another thread wakes it, all while sharing one object's lock.`,
+`<p>A consumer wants to take from a buffer, but it's empty. Spinning in a loop wastes CPU. Instead, while holding the buffer's lock, it calls <code>wait()</code>: it releases the lock and sleeps. A producer later adds an item and calls <code>notifyAll()</code> to wake the sleepers. A woken thread must re-acquire the lock and <b>re-check</b> the condition, because another consumer may have taken the item first.</p>`,
+[[`wait()`,`Release the monitor and sleep until notified.`],[`notify() / notifyAll()`,`Wake one / all threads waiting on this monitor.`],[`Spurious wakeup`,`Waking up without a notify; another reason to re-check.`],[`Condition`,`Lock-based equivalent with separate wait sets.`]],
+[`Acquire the lock (synchronized).`,`<code>while (!condition) wait();</code>`,`Act on the state.`,`The other side changes the state and calls notifyAll() while holding the lock.`],
+[`In real code use higher-level tools: BlockingQueue for producer/consumer, CountDownLatch, CompletableFuture.`],
+[`Calling wait/notify without holding the lock (IllegalMonitorStateException).`,`Using if instead of while around wait().`,`notify() waking the wrong kind of waiter.`]),
+
+'4.9': TH(`A deadlock is threads waiting on each other forever; livelock is threads busy reacting to each other without progress; starvation is one thread never getting a turn.`,
+`<p>Thread 1 holds lock A and waits for B. Thread 2 holds B and waits for A. Neither will ever let go: a <b>deadlock</b>. Like two cars meeting on a one-lane bridge, each waiting for the other to back up.</p>
+<p>A deadlock needs four conditions: mutual exclusion, hold-and-wait, no preemption, and <b>circular wait</b>. Break any one and it can't happen. The practical fix is breaking circular wait: always take locks in the same global order.</p>`,
+[[`Deadlock`,`A cycle of threads, each holding a lock the next needs.`],[`Livelock`,`Threads keep changing state in response to each other, making no progress.`],[`Starvation`,`A thread never gets the resource because others always win.`],[`Lock ordering`,`Always acquiring multiple locks in a consistent order.`]],
+[`Spot code that takes more than one lock.`,`Define an order (e.g. lower account id first) and always follow it.`,`Or use tryLock with a timeout and back off on failure.`,`Diagnose a hang with a thread dump: the JVM reports Java-level deadlocks.`],
+[`Databases have the same problem with row locks; they detect it and abort one transaction, so retry.`,`Avoid calling external code (listeners, callbacks) while holding a lock.`],
+[`Nested synchronized blocks in different orders in different methods.`,`Adding random sleeps instead of fixing the ordering.`]),
+
+'4.10': TH(`The java.util.concurrent locks do what synchronized does plus more: timeouts, interruptibility, fairness, read/write separation and optimistic reads.`,
+`<p><b>ReentrantLock</b> is an explicit lock object: <code>lock()</code> ... <code>unlock()</code> in a finally block. Unlike synchronized, you can <code>tryLock(1, SECONDS)</code> and give up, be interrupted while waiting, or ask for fairness.</p>
+<p><b>ReadWriteLock</b> lets many readers in at once but only one writer, which suits data that's read constantly and changed rarely. <b>StampedLock</b> adds an optimistic read: read without locking, then check whether a write happened in between.</p>`,
+[[`ReentrantLock`,`Explicit, re-entrant mutual-exclusion lock.`],[`tryLock`,`Acquire if possible (optionally within a timeout), else return false.`],[`ReadWriteLock`,`Shared read lock, exclusive write lock.`],[`StampedLock`,`Lock with optimistic reads validated by a stamp.`],[`Condition`,`A wait set attached to a lock (await/signal).`]],
+[`<code>lock.lock(); try { … } finally { lock.unlock(); }</code>`,`For timeouts: <code>if (lock.tryLock(1, SECONDS)) { try { … } finally { lock.unlock(); } } else { fallback }</code>`,`For read-mostly data: readers take readLock(), writers take writeLock().`],
+[`Use synchronized for simple cases; reach for these when you need their extra features.`,`Virtual threads (pre-JDK 24) prefer ReentrantLock over synchronized to avoid pinning.`],
+[`Forgetting unlock() in finally.`,`Trying to upgrade a read lock to a write lock (deadlock).`]),
+
+'4.11': TH(`Synchronizers coordinate groups of threads: a latch waits for N events, a barrier waits for N threads to meet, and a semaphore limits how many can be inside at once.`,
+`<ul><li><b>CountDownLatch(N)</b>: a gate that opens once <code>countDown()</code> has been called N times. One-shot. "Wait until all 3 services have started."</li><li><b>CyclicBarrier(N)</b>: N threads each call <code>await()</code>; all are released together when the last one arrives. Reusable. "Everyone finish phase 1 before phase 2."</li><li><b>Semaphore(N)</b>: N permits; <code>acquire()</code> takes one (waiting if none), <code>release()</code> gives it back. "At most 10 concurrent calls to this API."</li></ul>`,
+[[`Latch`,`One-time countdown gate.`],[`Barrier`,`Rendezvous point for a fixed group of threads.`],[`Semaphore`,`Counter of permits limiting concurrent access.`],[`Permit`,`A token you must hold to proceed; not tied to a thread.`]],
+[`Create the synchronizer with N.`,`Workers call countDown / await / acquire.`,`Waiting threads block until the condition is met.`,`Always countDown/release in a finally block.`],
+[`Semaphores are a simple bulkhead for fragile downstream services.`,`Latches are handy in tests to wait for async work.`],
+[`Forgetting release() on an exception path, so permits leak until everything blocks.`,`Using a latch where you need a reusable barrier.`]),
+
+'4.12': TH(`ThreadLocal gives each thread its own private copy of a variable, which is handy for per-request context, and dangerous in thread pools if not cleaned up.`,
+`<p>Sometimes many methods need the same contextual value (the current user, a transaction, a request id) and passing it as a parameter everywhere is clumsy. A <b>ThreadLocal</b> is like a locker with each thread's name on it: <code>set()</code> puts a value in your thread's locker, <code>get()</code> reads only yours.</p>
+<p>The value is actually stored in a map inside the Thread object. In a thread pool, threads are reused for the next request, so a value you forget to remove is still there for the next user.</p>`,
+[[`ThreadLocal&lt;T&gt;`,`A per-thread variable.`],[`remove()`,`Clears the value for the current thread.`],[`InheritableThreadLocal`,`Copied to child threads when they're created.`],[`MDC`,`Logging context (e.g. request id) built on ThreadLocal.`]],
+[`At the start of a request: <code>CTX.set(value)</code>.`,`Anywhere in that thread: <code>CTX.get()</code>.`,`At the end, in finally: <code>CTX.remove()</code>.`,`Work handed to another thread (async, pools) doesn't see the value unless you pass it.`],
+[`Spring Security's SecurityContext and @Transactional's current transaction use ThreadLocals.`,`For async work, copy context explicitly (TaskDecorator) or use Scoped Values (final since JDK 25).`],
+[`Not calling remove() in pooled threads: data leaks between users, and memory leaks.`,`Expecting values to appear in CompletableFuture or @Async code.`]),
+
+'4.13': TH(`A thread pool keeps a fixed set of reusable threads and a queue of tasks, so you don't pay for creating threads and can limit how much runs at once.`,
+`<p>Creating a thread is expensive, and creating one per request can exhaust the machine. A <b>thread pool</b> (ExecutorService) starts some worker threads and keeps them alive. You submit tasks; idle workers take them from a <b>queue</b>. Like a restaurant with a fixed number of waiters and a waiting list at the door.</p>
+<p><code>ThreadPoolExecutor</code> has a core size, a max size, a queue and a rejection policy. A new task first goes to a core thread, then into the queue, and only when the queue is full are extra threads (up to max) created. After that, tasks are rejected.</p>`,
+[[`Core pool size`,`Threads kept alive even when idle.`],[`Max pool size`,`Upper limit, used only when the queue is full.`],[`Work queue`,`Where tasks wait; should be bounded.`],[`Rejection policy`,`What happens when everything is full (throw, run on caller, discard…).`]],
+[`Task submitted → if fewer than core threads, start one for it.`,`Otherwise put it in the queue.`,`Queue full → start an extra thread if under max.`,`At max with a full queue → reject.`],
+[`Use bounded queues and CallerRunsPolicy for natural back-pressure.`,`Separate pools for CPU work and for blocking I/O.`,`Always shut pools down on application stop.`],
+[`<code>Executors.newFixedThreadPool</code> in servers: its queue is unbounded, so overload becomes memory growth.`,`Exceptions from <code>submit()</code> silently stored in a Future nobody reads.`]),
+
+'4.14': TH(`A Future is a placeholder for a result that isn't ready yet; CompletableFuture adds the ability to chain, combine and recover without blocking.`,
+`<p>When you start an asynchronous task you get a <b>Future</b>: an IOU for the result. A plain Future only offers <code>get()</code>, which blocks until the result arrives.</p>
+<p><b>CompletableFuture</b> lets you describe what to do <i>when</i> the result arrives: <code>thenApply</code> (transform), <code>thenCompose</code> (start another async step), <code>thenCombine</code> (join two results), <code>exceptionally</code> (fallback on error). You can fire off several independent calls at once and combine them, so the total time is roughly that of the slowest call.</p>`,
+[[`supplyAsync`,`Start an async task that returns a value.`],[`thenApply / thenCompose`,`Transform a result / chain another async call.`],[`thenCombine / allOf`,`Combine two / wait for many futures.`],[`exceptionally / handle`,`Recover from errors.`],[`orTimeout`,`Fail the future if it doesn't complete in time.`]],
+[`Start independent calls with supplyAsync(…, ioExecutor).`,`Combine them (thenCombine / allOf).`,`Add timeouts and fallbacks.`,`Only at the very edge, join() to get the value (or return the future to the framework).`],
+[`Fan-out to several services for one page, then combine.`,`Always pass your own executor for blocking calls; the default common pool is small and shared.`],
+[`Calling get()/join() inside tasks running on the same pool (starvation, 6.3).`,`Forgetting that orTimeout doesn't stop the underlying work.`]),
+
+'4.15': TH(`ForkJoinPool runs divide-and-conquer tasks on all cores and keeps them busy by letting idle threads steal work from busy ones.`,
+`<p>Big problems (sum a huge array, process a tree) can be split in half, and each half split again, until pieces are small enough to do directly. Each worker thread in a <b>ForkJoinPool</b> has its own deque of tasks. It pushes the halves it forks and pops them itself; when a worker runs out, it <b>steals</b> a task from the other end of someone else's deque, typically a big, old one.</p>`,
+[[`RecursiveTask / RecursiveAction`,`Fork/join task with / without a result.`],[`fork()`,`Push a subtask to be run asynchronously.`],[`join()`,`Wait for a subtask's result (while helping with other work).`],[`Work stealing`,`Idle threads taking tasks from busy threads' queues.`],[`Common pool`,`A JVM-wide ForkJoinPool used by parallel streams and async defaults.`]],
+[`If the task is small enough, compute directly.`,`Otherwise split: fork() the left half, compute() the right half yourself.`,`join() the left half and combine the results.`],
+[`Parallel streams use this under the hood.`,`Keep the common pool CPU-only: no blocking I/O.`],
+[`Splitting too finely, so overhead dominates.`,`Blocking calls inside parallel streams.`]),
+
+'4.16': TH(`Concurrent collections are built to be used from many threads at once, without one big lock and without ConcurrentModificationException.`,
+`<p>Wrapping a HashMap in <code>synchronized</code> makes every operation wait for one lock. <b>ConcurrentHashMap</b> instead locks only the bucket being changed (and uses lock-free CAS for empty buckets), and reads don't lock at all. It also offers <b>atomic compound operations</b> (<code>merge</code>, <code>compute</code>, <code>putIfAbsent</code>) so you don't have to combine get and put yourself.</p>
+<p>Other tools: <b>CopyOnWriteArrayList</b> (reads are free, every write copies the array, great for rarely changed listener lists) and <b>BlockingQueue</b> (put waits when full, take waits when empty, perfect for producer/consumer).</p>`,
+[[`ConcurrentHashMap`,`Thread-safe hash map with fine-grained locking.`],[`Atomic compound operation`,`merge/compute/putIfAbsent: the check and the update happen as one step.`],[`CopyOnWriteArrayList`,`Read-optimised list that copies on write.`],[`BlockingQueue`,`Queue with blocking put/take and optional capacity.`],[`Weakly consistent iterator`,`Never throws CME; may or may not reflect concurrent changes.`]],
+[`Choose by access pattern: map → CHM; read-mostly list → COW; hand-off between threads → BlockingQueue.`,`Use the atomic methods for compound updates (<code>map.merge(word, 1, Integer::sum)</code>).`],
+[`Caches, counters per key, registries and work queues.`],
+[`<code>if (!map.containsKey(k)) map.put(k, v)</code> on a CHM: still a race.`,`Putting null in a CHM (not allowed).`,`Slow functions inside computeIfAbsent (they hold the bucket lock).`]),
+
+'4.17': TH(`Virtual threads (Java 21) are lightweight threads managed by the JVM, so you can have millions of them and write simple blocking code that still scales.`,
+`<p>A classic (platform) thread maps to an OS thread: heavy, with a big stack, so you can have a few thousand at most. Web apps spend most of their time <i>waiting</i> on databases and HTTP calls, holding a thread that does nothing.</p>
+<p>A <b>virtual thread</b> is a cheap Java object. It runs on a small pool of OS "carrier" threads. When it blocks on I/O, the JVM <b>unmounts</b> it and the carrier runs another virtual thread. When the I/O completes, it's mounted again. You write plain blocking code, and you get the scalability of async code.</p>`,
+[[`Platform thread`,`A Java thread backed 1:1 by an OS thread.`],[`Virtual thread`,`A lightweight thread scheduled by the JVM onto carrier threads.`],[`Carrier thread`,`The platform thread a virtual thread is currently running on.`],[`Pinning`,`A virtual thread that can't unmount (e.g. blocking inside synchronized before JDK 24).`]],
+[`Create one per task: <code>Executors.newVirtualThreadPerTaskExecutor()</code>, or Spring Boot's <code>spring.threads.virtual.enabled=true</code>.`,`Each request runs on its own virtual thread with ordinary blocking code.`,`On blocking I/O the virtual thread parks and frees the carrier.`],
+[`Big win for I/O-heavy services; no gain for CPU-heavy work.`,`Still limit access to scarce resources (DB connections) with pools or semaphores.`],
+[`Pooling virtual threads.`,`Expecting them to make CPU-bound code faster.`,`Long blocking calls inside synchronized on older JDKs (pinning).`]),
+
+'4.18': TH(`Classic interview puzzles (alternating odd/even printing, a thread-safe lazy singleton) test whether you can combine locks, conditions and visibility correctly.`,
+`<p><b>Odd/even</b>: two threads must print 1, 2, 3… in turn. They share a counter and a lock; each waits until it's its turn, prints, increments, and wakes the other. The tricky bits are the loop condition and the final exit (the last thread must still wake the other, or it waits forever).</p>
+<p><b>Lazy singleton</b>: create the instance only when first needed, exactly once, even with many threads. Double-checked locking works only with a volatile field; the holder idiom and enums are simpler.</p>`,
+[[`Turn-taking`,`Threads alternating based on shared state.`],[`Double-checked locking`,`Check, lock, check again, create; needs volatile.`],[`Holder idiom`,`Lazy init through a nested class.`]],
+[`Shared state (counter, whose turn), one lock.`,`Each thread: <code>while (notMyTurn) wait();</code> then act, update state, notifyAll().`,`Make sure both threads exit cleanly at the end.`],
+[`Real code would use a SynchronousQueue, semaphores or CompletableFuture rather than wait/notify.`,`When something hangs, take several thread dumps and compare them.`],
+[`Missing the final notifyAll.`,`Double-checked locking without volatile.`]),
+});
+</script>
+<script>
+Object.assign(THEORY, {
+'5.1': TH(`Instead of your classes creating their own collaborators, Spring creates them and hands them in: that's Inversion of Control, and the handing-in is Dependency Injection.`,
+`<p>Without a framework, <code>OrderService</code> would do <code>new PaymentClient(new HttpClient(...))</code>, deciding and building everything it needs. That ties it to specific classes and makes testing hard.</p>
+<p>With <b>Inversion of Control</b>, a container (Spring's ApplicationContext) is in charge of creating objects, called <b>beans</b>. Your class just declares what it needs in its constructor, and Spring <b>injects</b> matching beans. Like a hotel: you don't bring your own bed, you state what you need and the hotel provides it.</p>`,
+[[`Bean`,`An object created and managed by Spring.`],[`ApplicationContext`,`Spring's container that holds all beans.`],[`@Component / @Service / @Repository`,`Mark a class to be discovered and created as a bean.`],[`@Bean`,`A method in a @Configuration class that creates a bean (for third-party classes).`],[`@Qualifier / @Primary`,`Choose between several beans of the same type.`]],
+[`At startup Spring scans packages for annotated classes and reads @Bean methods.`,`It builds a definition for each bean and works out who depends on whom.`,`It creates beans in dependency order, passing dependencies into constructors.`,`Your code receives ready-to-use objects; in tests you pass fakes instead.`],
+[`Use constructor injection with final fields (no @Autowired needed with one constructor).`,`Depend on interfaces so implementations can change.`,`Inject <code>List&lt;X&gt;</code> or <code>Map&lt;String, X&gt;</code> to get all implementations.`],
+[`Field injection, which hides dependencies and needs reflection in tests.`,`Circular dependencies, a sign two classes should be redesigned.`]),
+
+'5.2': TH(`Every Spring bean goes through a lifecycle (created, wired, initialised, possibly proxied, used, destroyed), and its scope decides how many instances exist.`,
+`<p>Spring doesn't just call <code>new</code>. It instantiates the bean, injects dependencies, calls initialisation callbacks (<code>@PostConstruct</code>), lets <b>BeanPostProcessors</b> wrap it (that's where proxies for @Transactional are created), and later calls <code>@PreDestroy</code> on shutdown.</p>
+<p><b>Scope</b> decides sharing. The default <b>singleton</b> means one instance for the whole application, used by every thread, so it must not keep per-request data in fields. <b>prototype</b> means a new instance each time it's requested; <b>request</b> and <b>session</b> scopes give one per HTTP request or session.</p>`,
+[[`@PostConstruct`,`Runs after injection, before the bean is used.`],[`@PreDestroy`,`Runs on context shutdown (singletons only).`],[`BeanPostProcessor`,`Hook that can modify or wrap beans; creates AOP proxies.`],[`Scope`,`singleton, prototype, request, session…`]],
+[`Instantiate (constructor) → inject → Aware callbacks → @PostConstruct.`,`BeanPostProcessors run; the bean may be replaced by a proxy.`,`The bean is ready and shared (singleton).`,`On shutdown: @PreDestroy, then destroy.`],
+[`Keep singletons stateless; put per-request data in method parameters.`,`Need a fresh prototype each call from a singleton? Inject <code>ObjectProvider&lt;T&gt;</code>.`,`Warm caches after startup with an ApplicationReadyEvent listener.`],
+[`Calling @Transactional methods from @PostConstruct (the proxy doesn't exist yet).`,`Storing the current user in a singleton's field.`]),
+
+'5.3': TH(`AOP (aspect-oriented programming) adds cross-cutting behaviour (transactions, caching, security, logging) around your methods without changing them, using proxies.`,
+`<p>Many concerns cut across every service: open a transaction, check permissions, log timing. Copying that code into every method is messy. With <b>AOP</b> you write it once as an <b>aspect</b> and say <i>where</i> it applies (a <b>pointcut</b>, e.g. "methods annotated @Transactional"). Spring then wraps matching beans in <b>proxies</b> that run the aspect's code (<b>advice</b>) before and after your method.</p>
+<p>Because it's done by a proxy, it only applies to calls that <b>go through the proxy</b>, meaning calls from other beans.</p>`,
+[[`Aspect`,`A module of cross-cutting behaviour.`],[`Advice`,`The code that runs: @Before, @After, @Around.`],[`Pointcut`,`Expression choosing which methods are affected.`],[`Join point`,`A point where advice can run (a method call in Spring AOP).`],[`Proxy`,`The wrapper object Spring injects in place of your bean.`]],
+[`Spring sees a bean matches a pointcut.`,`It creates a proxy (CGLIB subclass by default in Boot) around the bean.`,`Other beans receive the proxy.`,`A call enters the proxy → interceptor chain (transaction, cache…) → your method → back out.`],
+[`Use built-in aspects via annotations (@Transactional, @Cacheable, @Async, @PreAuthorize).`,`Write custom @Around aspects for timing, auditing, rate limiting.`],
+[`Self-invocation (<code>this.method()</code>) bypasses the proxy and the annotation.`,`Annotations on private, final or static methods do nothing.`]),
+
+'5.4': TH(`@Transactional makes a method run inside a database transaction (all its changes commit together or roll back together), and propagation decides what happens when transactional methods call each other.`,
+`<p>A <b>transaction</b> groups database operations so they're all-or-nothing: debit one account and credit another, or neither. <code>@Transactional</code> tells Spring's proxy to begin a transaction before your method, commit if it returns normally, and roll back if it throws an unchecked exception.</p>
+<p><b>Propagation</b> answers "what if a transaction is already running?". <b>REQUIRED</b> (default) joins it. <b>REQUIRES_NEW</b> pauses it and starts an independent one (on a separate connection). <b>NESTED</b> uses a savepoint inside the same one.</p>`,
+[[`Commit / rollback`,`Make changes permanent / undo them.`],[`Propagation`,`How a method's transaction relates to an existing one.`],[`Rollback-only`,`A shared transaction marked to roll back because an inner part failed.`],[`Isolation`,`How much concurrent transactions see of each other (READ COMMITTED…).`]],
+[`Proxy gets a connection from the pool and turns off auto-commit.`,`Your method runs; repositories use the same connection (bound to the thread).`,`Normal return → commit. RuntimeException → rollback. Checked exception → commit (by default).`,`The connection goes back to the pool.`],
+[`Put @Transactional on service methods, keep transactions short, and never call slow remote services inside them (6.4).`,`Use <code>rollbackFor = Exception.class</code> if checked exceptions should roll back.`,`Use REQUIRES_NEW for audit logs that must survive a rollback.`],
+[`Catching an inner exception and expecting the outer transaction to commit (UnexpectedRollbackException).`,`@Transactional on private methods or self-invoked methods.`]),
+
+'5.5': TH(`JPA maps Java objects to database tables; Hibernate tracks the objects you load and automatically writes changes back, which is powerful but has traps like N+1 queries.`,
+`<p>With JPA you annotate classes as <b>entities</b> (<code>@Entity</code>), and Hibernate turns <code>find</code>, <code>persist</code> and queries into SQL. Within a transaction, loaded entities are <b>managed</b>: Hibernate keeps a snapshot, and at <b>flush</b> time (before commit or before a query) it compares and issues UPDATEs for anything you changed. That's <b>dirty checking</b>: you never call update().</p>
+<p>Relationships can be loaded <b>lazily</b> (when first accessed). Loading 100 orders and touching each one's items triggers 1 + 100 queries: the <b>N+1 problem</b>.</p>`,
+[[`Entity`,`A class mapped to a table.`],[`Persistence context`,`The set of managed entities in the current transaction (first-level cache).`],[`Entity states`,`transient (new), managed, detached, removed.`],[`Flush`,`Sending pending changes to the database as SQL.`],[`Lazy / eager`,`Load a relationship on first access / immediately.`],[`@Version`,`Optimistic locking column.`]],
+[`<code>find(id)</code> → SELECT; the entity becomes managed and a snapshot is taken.`,`You change fields with setters.`,`At flush, Hibernate diffs against the snapshot and runs UPDATEs (inserts, then updates, then deletes).`,`After the transaction ends, entities become detached.`],
+[`Fix N+1 with JOIN FETCH, @EntityGraph or batch fetching; watch SQL logs in development.`,`Make @ManyToOne LAZY explicitly (it's eager by default).`,`Use @Version to detect concurrent edits.`],
+[`LazyInitializationException from touching lazy fields after the transaction.`,`Returning entities from controllers (lazy loading during JSON serialisation).`]),
+
+'5.6': TH(`Spring Boot starts your app from one main method and configures common infrastructure automatically based on what's on the classpath, while letting your own beans win.`,
+`<p>Plain Spring needs lots of configuration. <b>Spring Boot</b> looks at your dependencies and properties and creates sensible beans for you: add the web starter and you get an embedded Tomcat and JSON support; add the JPA starter and a datasource URL and you get a DataSource, EntityManager and transaction manager.</p>
+<p>Each auto-configuration is guarded by <b>conditions</b>, like "only if this class is on the classpath" or "only if the user hasn't defined their own bean". So you can override anything just by declaring your own bean.</p>`,
+[[`@SpringBootApplication`,`@Configuration + @EnableAutoConfiguration + @ComponentScan.`],[`Starter`,`A dependency bundle (spring-boot-starter-web…).`],[`Auto-configuration`,`Boot's conditional @Configuration classes.`],[`@ConditionalOnMissingBean`,`Apply only if you haven't defined that bean.`]],
+[`main() calls SpringApplication.run.`,`Boot prepares the environment (properties, profiles).`,`It scans your packages from the main class's package downward.`,`It evaluates auto-configurations and applies those whose conditions match.`,`It creates beans, starts the web server and publishes ApplicationReadyEvent.`],
+[`Keep the main class in the root package.`,`Run with <code>--debug</code> to see which auto-configurations applied and why.`],
+[`Main class in a sub-package, so components aren't found.`,`Fighting auto-configuration instead of defining your own bean or setting a property.`]),
+
+'5.7': TH(`Spring Boot reads configuration from many sources (files, environment variables, command line) in a fixed priority order, and profiles switch sets of settings per environment.`,
+`<p>The same JAR runs in dev, test and prod with different database URLs and timeouts. Boot collects properties from <code>application.yml</code>, profile files like <code>application-prod.yml</code>, environment variables, command-line arguments and more. When the same key appears in several places, the higher-priority source wins: command line beats environment variables, which beat profile files, which beat the base file.</p>
+<p><b>Profiles</b> (<code>spring.profiles.active=prod</code>) activate extra files and beans for an environment.</p>`,
+[[`Property source`,`A place properties come from.`],[`Profile`,`A named set of configuration (dev, prod…).`],[`Relaxed binding`,`PAYMENT_TIMEOUT_MS env var → payment.timeout-ms.`],[`@ConfigurationProperties`,`Binds a group of properties to a typed class.`]],
+[`Boot loads every property source in order of precedence.`,`For each key the first (highest-priority) value wins.`,`Values are bound to @Value fields and @ConfigurationProperties classes at startup.`,`Missing required values fail startup.`],
+[`Use @ConfigurationProperties records with @Validated for grouped, checked settings.`,`Keep secrets out of files: environment variables, Vault, or Kubernetes secrets.`],
+[`Hard-coding environment-specific values.`,`A property defined only in a profile file, so startup fails without that profile.`]),
+
+'5.8': TH(`An HTTP request travels through servlet filters, Spring's DispatcherServlet, interceptors, argument binding and validation to your controller, and the result is converted to JSON on the way back.`,
+`<p>When a request like <code>POST /cars</code> arrives, the embedded server hands it to a chain of <b>filters</b> (security, logging, CORS). Then Spring's <b>DispatcherServlet</b> finds the controller method matching the URL and HTTP method, runs <b>interceptors</b>, converts the JSON body into a Java object, validates it (<code>@Valid</code>), and calls your method. The return value is converted back to JSON by a message converter (Jackson).</p>
+<p>Exceptions anywhere in the controller layer can be turned into proper HTTP error responses in one place with <code>@RestControllerAdvice</code>.</p>`,
+[[`Filter`,`Servlet-level component that sees every request.`],[`DispatcherServlet`,`Spring MVC's front controller that routes requests.`],[`HandlerInterceptor`,`Runs around controller handlers.`],[`@Valid`,`Triggers Bean Validation on a request body.`],[`@RestControllerAdvice`,`Global exception-to-response mapping.`]],
+[`Filters (security first) → DispatcherServlet.`,`Handler mapping finds the controller method.`,`Interceptors' preHandle → argument resolution and validation → controller.`,`Return value → JSON via Jackson → response.`,`Errors → @ExceptionHandler → error JSON with the right status.`],
+[`Return DTOs (records), not JPA entities.`,`Validate input with annotations (@NotNull, @Size) on DTOs.`,`Return correct status codes (201 Created, 400, 404, 409).`],
+[`Business logic in controllers.`,`try/catch in every controller instead of central error handling.`]),
+
+'5.9': TH(`Spring Security is a chain of filters that authenticates who you are and authorises what you can do; with JWT, the client sends a signed token on every request.`,
+`<p><b>Authentication</b> answers "who are you?"; <b>authorisation</b> answers "are you allowed?". With <b>JWT</b>, after login the server issues a token containing claims (user id, roles, expiry) and signs it. The client sends it in the <code>Authorization: Bearer …</code> header. On each request a filter verifies the signature and expiry, builds an <code>Authentication</code> object, and stores it in the SecurityContext for the rest of the request.</p>
+<p>The server doesn't need to store sessions (stateless), but it also can't easily revoke a token before it expires.</p>`,
+[[`JWT`,`Base64URL-encoded header.payload.signature; signed, not encrypted.`],[`SecurityFilterChain`,`The ordered filters that process security.`],[`SecurityContext`,`Holds the current user's Authentication (thread-bound).`],[`401 vs 403`,`Not authenticated vs authenticated but forbidden.`],[`Refresh token`,`Long-lived token used to get new short-lived access tokens.`]],
+[`Request arrives → the JWT filter reads the header.`,`Verify signature and expiry with the expected algorithm and key.`,`Create an Authentication with the user's authorities.`,`Authorisation rules (URL rules, @PreAuthorize) check roles.`,`Missing/invalid token → 401; insufficient role → 403.`],
+[`Keep access tokens short-lived (minutes) and use refresh tokens.`,`Never put secrets in the payload; anyone can decode it.`,`Prefer a standard resource-server setup (spring-boot-starter-oauth2-resource-server) to hand-written filters.`],
+[`Accepting tokens without checking the algorithm.`,`Long-lived tokens with no revocation plan.`]),
+
+'5.10': TH(`Spring adds common production features with annotations: caching results, running scheduled jobs, running methods asynchronously, and retrying failures.`,
+`<ul><li><b>@Cacheable</b>: the first call runs the method and stores the result; later calls with the same arguments return it from the cache.</li><li><b>@Scheduled</b>: runs a method on a timer or cron expression.</li><li><b>@Async</b>: runs the method on another thread and returns immediately.</li><li><b>@Retryable</b> (Spring Retry): re-runs a failed call with backoff.</li></ul>
+<p>All are implemented with proxies, so they share the proxy rules (5.3), and each has a multi-instance pitfall once you run several pods.</p>`,
+[[`Cache provider`,`Caffeine (in-memory, per pod) or Redis (shared).`],[`TTL`,`Time-to-live before a cache entry expires.`],[`Distributed lock`,`A lock shared by all pods (e.g. ShedLock).`],[`Backoff + jitter`,`Growing, randomised delays between retries.`]],
+[`Enable features with @EnableCaching / @EnableScheduling / @EnableAsync.`,`Annotate methods; configure a cache provider and executors.`,`Set TTLs and sizes for caches; bounded executors for @Async.`,`Make retried operations idempotent.`],
+[`A @Scheduled job runs on every pod; use ShedLock if it must run once.`,`Local caches differ per pod; choose short TTLs or a shared cache.`],
+[`@Async with the default executor and no error handling.`,`Retrying non-idempotent operations like payments without an idempotency key.`]),
+
+'5.11': TH(`Spring Data JPA generates repository implementations for you: you declare an interface, and query methods are derived from their names.`,
+`<p>Instead of writing DAO classes, you write <code>interface CarRepository extends JpaRepository&lt;Car, Long&gt;</code> and get save, findById, findAll, delete and paging for free. A method like <code>findByMakeAndYearGreaterThan(String make, int year)</code> is parsed at startup into a query. For anything complex you write <code>@Query</code> with JPQL or SQL.</p>`,
+[[`Repository`,`Interface for data access to one entity type.`],[`Derived query`,`Query generated from a method name.`],[`Pageable / Page / Slice`,`Paging request; page with total count; page without count.`],[`@Modifying`,`Marks an update/delete @Query.`],[`Specification`,`Composable dynamic filters.`]],
+[`At startup Spring creates a proxy implementation for each repository interface.`,`Method names are parsed into queries (a typo fails startup).`,`Calls run inside the current transaction using the EntityManager.`],
+[`Use Page for UIs that need totals, Slice for infinite scroll; keyset pagination for deep pages.`,`Projections (interfaces or records) to fetch only needed columns.`],
+[`Very long derived method names; switch to @Query.`,`Bulk @Modifying updates leaving stale entities in the persistence context.`]),
+
+'5.12': TH(`Test a Spring app at several levels: fast plain unit tests for logic, "slice" tests for one layer, and a few full-context integration tests.`,
+`<p>Most tests should be plain JUnit tests of your classes with dependencies passed in (constructor injection makes this easy). For a single layer, Spring offers <b>slice</b> tests that load only part of the app: <code>@WebMvcTest</code> for controllers (with MockMvc), <code>@DataJpaTest</code> for repositories. <code>@SpringBootTest</code> loads everything and is the slowest. Testcontainers runs a real database in Docker for realistic tests.</p>`,
+[[`Unit test`,`Tests one class in isolation, no Spring.`],[`Slice test`,`Loads only one layer's beans.`],[`MockMvc`,`Calls controllers through the MVC pipeline without a server.`],[`@MockBean / @MockitoBean`,`Replaces a bean in the Spring context with a mock.`],[`Testcontainers`,`Throwaway Docker containers (PostgreSQL, Kafka) for tests.`]],
+[`Write unit tests for services with mocks or fakes.`,`Write @WebMvcTest tests for status codes, validation and JSON.`,`Write @DataJpaTest + Testcontainers tests for queries.`,`A few @SpringBootTest tests for end-to-end wiring.`],
+[`Keep test configuration consistent so Spring can reuse cached contexts.`,`Test against the same database engine as production.`],
+[`Everything as @SpringBootTest (slow suites).`,`H2 passing tests that fail on PostgreSQL.`]),
+
+'5.13a': TH(`When a downstream service is slow or failing, timeouts stop you waiting forever, retries handle brief glitches, and a circuit breaker stops calling it for a while so failures don't cascade.`,
+`<p>In microservices, your service calls others over the network, and they <i>will</i> sometimes be slow or down. Without protection, your threads pile up waiting, and you go down too: a <b>cascading failure</b>.</p>
+<p>A <b>circuit breaker</b> works like the one in your house. While calls succeed it's <b>CLOSED</b> (current flows). If too many fail, it trips <b>OPEN</b> and fails calls immediately without trying, giving the other service time to recover. After a wait it goes <b>HALF_OPEN</b> and lets a few test calls through; if they succeed, it closes again.</p>`,
+[[`Timeout`,`Maximum time to wait for a call.`],[`Retry with backoff`,`Try again after increasing, randomised delays.`],[`Circuit breaker`,`Stops calls to a failing dependency for a while.`],[`Fallback`,`What to return when the call can't be made (cached value, default).`],[`Bulkhead`,`Limits concurrent calls to one dependency.`]],
+[`Every remote call gets a timeout.`,`A few retries with backoff and jitter, only for idempotent calls.`,`The breaker tracks failures in a sliding window and trips at a threshold.`,`While OPEN, return the fallback immediately; probe in HALF_OPEN.`],
+[`Resilience4j with Spring Boot annotations (@CircuitBreaker, @Retry, @TimeLimiter, @Bulkhead).`,`Monitor breaker state changes; they're early warnings.`],
+[`Retries at every layer, multiplying load.`,`No timeouts (some HTTP clients wait forever by default).`]),
+
+'5.13b': TH(`A saga replaces one big distributed transaction with a series of local transactions plus "undo" steps; the outbox pattern makes saving data and publishing an event reliable.`,
+`<p>An order touches several services, each with its own database: create order, charge payment, reserve stock. There's no single transaction across them. A <b>saga</b> runs each step as a local transaction. If a later step fails, it runs <b>compensations</b> for the earlier ones in reverse: refund the payment, cancel the order.</p>
+<p>Services usually communicate through events. But "save to my DB" and "publish to Kafka" are two systems, so one can succeed while the other fails. The <b>outbox pattern</b> writes the event into an <code>outbox</code> table <i>in the same DB transaction</i> as the data; a separate relay reads that table and publishes to the broker.</p>`,
+[[`Saga`,`Sequence of local transactions with compensating actions.`],[`Compensation`,`A business "undo" (refund, release stock).`],[`Orchestration / choreography`,`A central coordinator / services reacting to each other's events.`],[`Outbox`,`Table of events written in the same transaction as business data.`],[`At-least-once`,`Messages may be delivered more than once, never lost.`]],
+[`Step 1 commits locally and emits an event (via the outbox).`,`The next service reacts, does its local transaction, emits its event.`,`A failure triggers compensations for completed steps, in reverse order.`,`Consumers deduplicate by event id because delivery is at-least-once.`],
+[`Expose intermediate states to users (PENDING, CONFIRMED).`,`Make compensations idempotent and retryable.`],
+[`Publishing to Kafka inside a DB transaction and assuming both happen.`,`Consumers that can't handle duplicate events.`]),
+
+'5.13c': TH(`An idempotency key lets a client safely retry a request (like a payment) without the server doing it twice.`,
+`<p>A client sends "charge $50", the network times out, and the client doesn't know whether it worked. Retrying might charge twice. The fix: the client generates a unique <b>idempotency key</b> per logical operation and sends it with the request. The server records the key with the result. If the same key arrives again, it returns the stored result instead of charging again.</p>`,
+[[`Idempotent`,`Doing it once or many times has the same effect.`],[`Idempotency key`,`Client-generated unique id for one logical operation.`],[`Unique constraint`,`Database rule that rejects duplicate keys atomically.`]],
+[`Client creates a key (UUID) and sends it in a header.`,`Server inserts the key (status IN_PROGRESS); a unique constraint means only one request wins.`,`Server performs the operation, stores the response with the key.`,`A retry with the same key gets the stored response; a concurrent duplicate waits or gets 409.`],
+[`Stripe and most payment APIs work this way; pass the key on to downstream providers.`,`Store a hash of the request body to reject the same key used with different data.`,`Expire keys after a retention period, and reconcile any stuck IN_PROGRESS ones.`],
+[`Checking for the key and then inserting it (a race), instead of relying on the unique constraint.`,`Keeping keys in one pod's memory.`]),
+
+'6.1': TH(`When several app instances update the same database row, Java locks can't protect it; the database must make "check and update" one atomic step.`,
+`<p>In production you run several copies of your service (pods) for scale and resilience. Each is a separate JVM, so <code>synchronized</code> in one doesn't affect the others. If two pods both read "stock = 1", both decide there's enough, and both write, you sell the item twice.</p>
+<p>The shared state lives in the database, so the guarantee must come from the database: a conditional UPDATE (<code>WHERE stock &gt;= 1</code>), optimistic locking (<code>@Version</code>), or a row lock (<code>SELECT … FOR UPDATE</code>).</p>`,
+[[`Horizontal scaling`,`Running several instances of the same service.`],[`Conditional update`,`UPDATE … WHERE (condition); rows affected tells you if it applied.`],[`Optimistic locking`,`Detect conflicts with a version column; retry on failure.`],[`Pessimistic locking`,`Lock the row while you work on it.`]],
+[`Replace "read, check in Java, write" with one SQL statement that checks and writes.`,`Check rows affected: 1 = success, 0 = condition failed (sold out).`,`Add a CHECK constraint as a safety net.`],
+[`Inventory, seat booking, coupon redemption, account balances.`],
+[`Assuming one pod forever; autoscaling will add a second.`,`Using JPA read-modify-write for counters without @Version.`]),
+
+'6.2': TH(`A memory leak in Java is data that stays reachable but is never used again; you find it by watching GC behaviour and analysing a heap dump.`,
+`<p>The GC frees only objects nothing points to. If a long-lived object (often a static collection or cache) keeps adding entries and never removes them, memory grows until the JVM spends all its time collecting and finally throws OutOfMemoryError.</p>
+<p>The tell-tale sign is that the amount of memory still in use <i>right after a full GC</i> keeps rising over time. To find the cause, take a <b>heap dump</b> and look at the <b>dominator tree</b>: it shows which objects keep the most memory alive, and the path from GC roots shows why.</p>`,
+[[`Leak`,`Reachable but useless objects accumulating.`],[`Heap dump`,`A snapshot of every object in the heap (.hprof).`],[`Dominator tree`,`Objects ranked by how much memory they keep alive.`],[`Retained size`,`Memory freed if that object were removed.`]],
+[`Confirm: memory after full GC rises over hours or days.`,`Capture: <code>jcmd &lt;pid&gt; GC.heap_dump</code> (or HeapDumpOnOutOfMemoryError).`,`Analyse in Eclipse MAT or IntelliJ: dominator tree, then path to GC roots.`,`Fix: bound, expire or remove the data; add a metric and alert.`],
+[`Common sources: unbounded caches, ThreadLocals in pools, listeners never removed, unbounded queues.`],
+[`Restarting pods on a schedule instead of fixing the leak.`,`Taking no evidence before restarting.`]),
+
+'6.3': TH(`If tasks in a thread pool block waiting for other tasks queued in the same pool, every thread can end up waiting and nothing runs: thread-pool starvation.`,
+`<p>A pool has a fixed number of threads. Suppose each task submits a subtask to the <i>same</i> pool and then blocks waiting for it. If all threads are busy doing that, the subtasks sit in the queue forever: there's no free thread to run them, and no thread will free up until they run. Unlike a lock deadlock, the JVM can't detect this; you just see a hang with idle CPUs.</p>`,
+[[`Starvation deadlock`,`Tasks waiting for work that can't get a thread.`],[`Non-blocking composition`,`Chaining futures (thenCombine) instead of waiting with join/get.`],[`Bulkhead`,`Separate pools so one kind of work can't starve another.`]],
+[`Never call join()/get() inside a pool task on work queued to the same pool.`,`Compose futures so no thread waits.`,`Use separate, bounded pools for blocking I/O and CPU work.`,`Add timeouts so a stuck dependency fails instead of hanging.`],
+[`Watch for nested parallel streams, nested @Async calls with .get(), and supplyAsync without an executor.`],
+[`Increasing the pool size as the "fix"; it only raises the threshold.`]),
+
+'6.4': TH(`A database transaction holds a connection from the pool until it commits; doing slow remote calls inside it can use up every connection and take down the whole service.`,
+`<p>Connection pools (HikariCP) hold a small number of DB connections, often 10. <code>@Transactional</code> takes one at the first query and keeps it until commit. If the method then calls a slow payment API, the connection sits idle but unavailable. Under load, all connections get held this way, and every other request that needs the database, even simple reads and health checks, waits and times out.</p>
+<p><b>Little's law</b> tells you how many you need: connections in use = requests per second × seconds each one holds a connection.</p>`,
+[[`Connection pool`,`A reusable set of DB connections (HikariCP).`],[`Little's law`,`L = λ × W: items in the system = arrival rate × time each spends.`],[`Open-in-view`,`Spring setting that keeps the persistence context open for the whole web request.`],[`After-commit side effect`,`An action (email, message) done only once the transaction succeeds.`]],
+[`Keep transactions to the database work only (milliseconds).`,`Do remote calls outside transactions.`,`Send emails and messages after commit (@TransactionalEventListener or the outbox).`,`Set HTTP timeouts and circuit breakers; set <code>spring.jpa.open-in-view=false</code>.`],
+[`Monitor hikaricp_connections_active, pending, and usage time.`,`Size pools from the database's connection limit across all pods.`],
+[`"Fixing" it by making the pool bigger.`,`Sending emails inside the transaction.`]),
+
+'6.5': TH(`When a popular cache entry expires, all the requests that arrive before it's reloaded go to the database at once: a cache stampede.`,
+`<p>Caches protect the database by serving repeated reads from memory. But when a hot key expires, the next request misses and starts reloading. Until it finishes, every other request for that key also misses. With high traffic that's hundreds or thousands of identical expensive queries at once, which slow the database down, which makes the miss window even longer.</p>
+<p>The fix is <b>request coalescing</b> ("single-flight"): only one request reloads the key; the others wait for its result.</p>`,
+[[`Cache hit / miss`,`Value found / not found in the cache.`],[`TTL`,`How long an entry lives.`],[`Single-flight`,`One loader per key; everyone else waits on it.`],[`Refresh-ahead`,`Reload in the background while still serving the old value.`],[`Cache penetration`,`Requests for keys that don't exist, always missing.`]],
+[`On a miss, atomically register "I'm loading key K" (putIfAbsent of a future).`,`The winner loads and fills the cache; others wait on its future.`,`Add random jitter to TTLs so keys don't expire together.`,`For hot keys, refresh in the background before expiry.`],
+[`Caffeine's <code>get(key, loader)</code> already coalesces within one JVM; refreshAfterWrite gives refresh-ahead.`,`Cache "not found" results briefly.`],
+[`Identical TTLs for everything warmed at the same time.`,`Slow loaders inside ConcurrentHashMap.computeIfAbsent.`]),
+
+'6.6': TH(`Some common classes keep internal state in fields and aren't safe to share between threads; sharing one in a singleton silently corrupts results.`,
+`<p>Spring beans are singletons, so their fields are shared by every request thread. If a bean holds a <code>SimpleDateFormat</code>, a <code>HashMap</code> that's written to, or a <code>StringBuilder</code>, threads overwrite each other's work. <code>SimpleDateFormat</code> is a classic: <code>parse()</code> uses an internal Calendar, so two concurrent parses can return each other's dates, with no exception.</p>
+<p>The fix is to use immutable, thread-safe replacements (<code>DateTimeFormatter</code>, java.time types), or not share the object at all.</p>`,
+[[`Thread-safe`,`Correct when used from several threads at once.`],[`Immutable`,`Can't change, so it's always safe to share.`],[`Thread confinement`,`Each thread uses its own instance.`]],
+[`Review static fields and singleton bean fields.`,`For each mutable, non-thread-safe object, replace it with an immutable alternative or create it per use.`,`Test concurrency-sensitive code with many threads, not only single-threaded unit tests.`],
+[`java.time (DateTimeFormatter, LocalDate) for dates; ConcurrentHashMap for shared maps; ThreadLocalRandom for random numbers.`],
+[`Assuming a class is thread-safe because it's in the JDK.`,`Trusting single-threaded unit tests for concurrency bugs.`]),
+});
+</script>
+<script>
 /* ---------- flatten parts, resolve inheritance between steps ---------- */
 const T = [];
 PARTS.sort((a,b)=> a.no.localeCompare(b.no));
@@ -4183,6 +4858,7 @@ T.forEach(t=>{
   t.id = 't' + t.no.replace(/\./g,'-');
   t.quiz = QUIZ[t.no] || [];
   t.quizAdv = QUIZ_ADV[t.no] || [];
+  t.theory = THEORY[t.no] || null;
   let prev = {th:[], g:[], log:[], d:null, cv:'a'};
   const ids = [];
   t.R = t.steps.map(s=>{
@@ -4248,6 +4924,7 @@ function render(){
   $('pick').value = ti;
   $('crumb').textContent = `Part ${t.part.no} · ${t.part.title}`;
   $('no').textContent = t.no; $('title').textContent = t.title; $('idea').innerHTML = t.idea;
+  if (theoryFor !== ti) renderTheory();
   $('ptopic').disabled = ti===0; $('ntopic').disabled = ti===T.length-1;
   $('count').textContent = `Step ${si+1} / ${t.R.length}`;
   $('prev').disabled = si===0; $('next').disabled = si===t.R.length-1;
@@ -4362,6 +5039,31 @@ function graphSVG(t, d){
     out += `</g>`;
   });
   return out + '</svg>';
+}
+
+/* ---------- theory card: open by default, the reader's open/closed choice is remembered ---------- */
+const TKEY = 'jv-theory-open-v1';
+let theoryFor = -1;
+try { const v = localStorage.getItem(TKEY); $('theoryCard').open = v === null ? true : v === '1'; } catch(e){ $('theoryCard').open = true; }
+$('theoryCard').addEventListener('toggle', ()=>{ try { localStorage.setItem(TKEY, $('theoryCard').open ? '1' : '0'); } catch(e){} });
+function renderTheory(){
+  const t = T[ti], th = t.theory;
+  theoryFor = ti;
+  $('theoryCard').hidden = !th;
+  if (!th) return;
+  const text = [th.one, th.intro, ...th.terms.flat(), ...th.steps, ...th.practice, ...th.mistakes].join(' ').replace(/<[^>]+>/g,' ');
+  const mins = Math.max(1, Math.round(text.split(/\s+/).length / 200));
+  $('thMeta').textContent = `${mins} min read · no prior knowledge needed`;
+  $('theory').innerHTML =
+    `<p class="th-one">${th.one}</p>` +
+    `<div>${th.intro}</div>` +
+    `<div class="th-grid">` +
+      `<div class="th-box"><h4>Key terms</h4><dl class="th-terms">${th.terms.map(([k,v])=>`<div><dt>${k}</dt><dd>${v}</dd></div>`).join('')}</dl></div>` +
+      `<div class="th-box"><h4>How it works</h4><ol>${th.steps.map(x=>`<li>${x}</li>`).join('')}</ol></div>` +
+      `<div class="th-box ok"><h4>In real projects</h4><ul>${th.practice.map(x=>`<li>${x}</li>`).join('')}</ul></div>` +
+      `<div class="th-box warn"><h4>Common mistakes</h4><ul>${th.mistakes.map(x=>`<li>${x}</li>`).join('')}</ul></div>` +
+    `</div>` +
+    `<p class="th-next">Next: step through the walkthrough below to see it happen, then check yourself with the quiz at the bottom.</p>`;
 }
 
 /* ---------- quiz: Core / Advanced set, level filter, one answer per question.
