@@ -13,7 +13,7 @@ Step-by-step visual walkthroughs of core Java interview topics, like stepping th
 | 5. Spring Boot, JPA, microservices | DI, bean lifecycle, AOP proxies, @Transactional, Hibernate, Boot internals, security, circuit breaker, saga/outbox, idempotency |
 | 6. Real-world scenarios | flash-sale overselling across pods, production memory leak (heap dump → fix), thread-pool starvation, long @Transactional draining the connection pool, cache stampede, shared SimpleDateFormat |
 
-Every topic ends with a 3-question quiz that explains each answer. Your best score per topic is kept in your browser and shown in the topic list.
+Every topic ends with a quiz: 3 core questions plus 2 advanced ones (JMM edge cases, GC tuning, Hibernate flush ordering, multi-pod failure modes), 400 in total. Each question is tagged Easy, Medium or Hard, and you can filter by set and level. Wrong options are real misconceptions, and every answer is explained. Best scores are kept in your browser and shown in the topic list (✓ core, ★ core + advanced).
 
 Keys: `←` `→` step, `space` play, `[` `]` previous/next topic.
 
