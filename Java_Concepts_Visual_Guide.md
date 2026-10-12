@@ -2,16 +2,465 @@
 
 Core Java interview topics taught as **concept → picture → example → gotcha** instead of Q&A. Every section has an interactive step-by-step version in the [Java Visualizer](https://adityamalu.github.io/java-visualizer/).
 
+- Part 0: Java basics
 - Part 1: Java platform, memory, types
 - Part 2: Collections, generics, exceptions, Java 8+
 - Part 3: OOP, SOLID, design patterns
 - Part 4: Multithreading and concurrency
 - Part 5: Spring Boot, JPA, microservices
 - Part 6: Real-world scenarios
+- Part 7: Language features in depth
+- Part 8: Data and messaging
+- Part 9: Testing and production tooling
+- Part 10: Reactive programming
+- Part 11: Data structures and algorithms in Java
 
 New to a topic? Start with its **Theory: start here** section: the idea in one sentence, a plain-language explanation with an everyday analogy, key terms, how it works step by step, how it shows up in real projects, and common mistakes. No prior knowledge is assumed.
 
 Then, how to read each concept's notes: the **idea** in 1–2 lines → the **picture** (diagram) → the **example** (code) → **Gotcha** (what interviewers trip you on) → **Say it** (your 15-second answer).
+
+---
+
+# Part 0: Java basics
+
+## 0.1 Your first Java program
+
+*Interview priority: beyond typical interviews.* Write, compile and run `Hello.java`, and see what every word of `public static void main` means.
+
+#### Theory: start here
+
+**In one sentence:** A Java program is a set of classes; you compile it with javac and run it with java, and execution starts in the main method.
+
+Programming means writing instructions for a computer. In Java you write them in `.java` text files, organised into **classes**. The compiler `javac` checks them and translates them into **bytecode** (`.class` files), and the `java` command starts a Java Virtual Machine that runs that bytecode.
+
+The JVM needs to know where to begin, so it looks for a method with the exact signature `public static void main(String[] args)`. Think of it as the front door of your program.
+
+**Key terms**
+
+- **Source file**: A .java text file you write.
+- **Compiler (javac)**: Checks your code and produces .class bytecode.
+- **JVM (java)**: Runs bytecode on your machine.
+- **main method**: The entry point the JVM calls first.
+- **Statement**: One instruction, usually ending with a semicolon.
+
+**How it works**
+
+1. Write `Hello.java` containing `public class Hello`.
+2. Run `javac Hello.java`; fix any compile errors it reports.
+3. Run `java Hello`; the JVM loads the class and calls main.
+4. main runs top to bottom; when it returns, the program ends.
+
+**In real projects**
+
+- Real projects use a build tool (Maven or Gradle) and an IDE (IntelliJ IDEA) that compile for you.
+- Use `jshell` to try snippets quickly.
+
+**Common mistakes**
+
+- A public class name that doesn't match the file name.
+- Misspelling main's signature, so the JVM can't find the entry point.
+
+#### Code
+
+```java
+// File: Hello.java  (the file name must match the public class)
+public class Hello {
+  public static void main(String[] args) {
+    String name = args.length > 0 ? args[0] : "world";
+    System.out.println("Hello, " + name + "!");
+  }
+}
+// $ javac Hello.java          -> creates Hello.class
+// $ java Hello Ana            -> Hello, Ana!
+// $ java Hello.java Ana       -> Java 11+: compile and run in one step
+```
+
+#### Remember
+
+- A program is classes; execution starts at `public static void main(String[] args)`.
+- javac compiles .java → .class (bytecode); java runs it on the JVM.
+- Public class name = file name; compile errors appear before anything runs.
+
+## 0.2 Variables, types and operators
+
+*Interview priority: good to know.* The eight primitive types, and the arithmetic surprises every interviewer loves: integer division, overflow, `i++` vs `++i`, casts and short-circuiting.
+
+#### Theory: start here
+
+**In one sentence:** Variables are named, typed boxes for values; Java's eight primitive types hold plain numbers, characters and booleans, and operators combine them with some surprising rules.
+
+A variable has a **type**, a **name** and a **value**: `int age = 30;`. Java is **statically typed**: the type is fixed when you write the code, and the compiler stops you putting a String into an int.
+
+The eight **primitive** types are byte, short, int, long (whole numbers), float, double (decimals), char (a character) and boolean (true/false). Everything else is an object. Operators (`+ - * / %`, comparisons, `&& ||`) work on them, but integer math has rules that catch people out: division drops the fraction, and results that don't fit wrap around silently.
+
+**Key terms**
+
+- **Primitive**: A built-in value type (int, double, boolean…), not an object.
+- **Literal**: A value written directly in code: 42, 3.5, 'A', "text", 10L.
+- **Integer division**: int / int discards the remainder.
+- **Overflow**: A result too big for its type wraps around.
+- **Cast**: Explicit conversion, e.g. (int) 3.9 → 3.
+- **Short-circuit**: && and || skip the right side when the left decides.
+
+**How it works**
+
+1. Declare a variable with a type, optionally with a starting value.
+2. Expressions are evaluated using the operand types (int math if both are ints).
+3. Widening (int → long → double) happens automatically; narrowing needs a cast.
+4. `var` (Java 10+) lets the compiler infer a local variable's type.
+
+**In real projects**
+
+- Use int by default, long for ids, timestamps and counters that can grow, BigDecimal or long cents for money (1.10).
+- Use `Math.addExact` / `multiplyExact` where overflow must never go unnoticed.
+
+**Common mistakes**
+
+- Expecting `7 / 2` to be 3.5.
+- Computing large values in int before storing in long.
+- Confusing `=` (assign) with `==` (compare).
+
+#### Code
+
+```java
+int apples = 7, people = 2;
+int each = apples / people;            // integer division
+int left = apples % people;            // remainder
+double exact = apples / 2.0;           // one double → double math
+long big = Integer.MAX_VALUE + 1;      // overflow happens in int first!
+long fixed = Integer.MAX_VALUE + 1L;   // 1L makes it long math
+int i = 5;
+int a = i++;                           // use, then add
+int b = ++i;                           // add, then use
+byte small = (byte) 200;               // narrowing cast wraps around
+boolean ok = people != 0 && apples / people > 1;  // && short-circuits
+char c = 'A' + 1;                      // chars are numbers
+```
+
+#### Remember
+
+- int / int drops the fraction; % is the remainder; one double makes it double math.
+- int arithmetic overflows silently before widening: use 1L, long, or Math.addExact.
+- i++ returns the old value, ++i the new; && / || short-circuit; narrowing casts wrap.
+
+## 0.3 Control flow: if, switch and loops
+
+*Interview priority: beyond typical interviews.* Make decisions with `if` and `switch`, repeat with loops, and steer them with `break` and `continue`. Then the classic switch fall-through bug.
+
+#### Theory: start here
+
+**In one sentence:** Control flow decides which statements run: if and switch choose between paths, loops repeat code, and break/continue change a loop's course.
+
+By default statements run top to bottom. **if** runs a block only when a condition is true; add **else if** and **else** for alternatives. **switch** chooses among many cases based on one value; modern switch *expressions* with arrows are concise and safe.
+
+**Loops** repeat work: `for` when you know the count, `while` while a condition holds, `do-while` to run at least once, and the enhanced `for (item : collection)` to visit every element. `break` leaves a loop; `continue` jumps to its next pass.
+
+**Key terms**
+
+- **Condition**: An expression that's true or false.
+- **Block**: Statements inside { }.
+- **Switch expression**: switch that produces a value, with -> cases.
+- **Fall-through**: Old switch behaviour: without break, execution continues into the next case.
+- **Enhanced for**: for (T x : items): loops over every element.
+
+**How it works**
+
+1. Evaluate the condition.
+2. Run the matching branch (or skip it).
+3. For loops: initialise, check the condition, run the body, update, repeat.
+4. break exits the loop; continue jumps to the update step.
+
+**In real projects**
+
+- Prefer early returns over deeply nested ifs.
+- Use switch expressions with enums and sealed types so the compiler checks every case.
+- Prefer streams or enhanced for over manual index loops when you don't need the index.
+
+**Common mistakes**
+
+- Missing break in a classic switch.
+- Off-by-one loop bounds (`<=` vs `<`).
+- Infinite loops whose condition never changes.
+
+#### Code
+
+```java
+int score = 82;
+String grade;
+if (score >= 90)      grade = "A";
+else if (score >= 75) grade = "B";
+else                  grade = "C";
+
+String msg = switch (grade) {        // switch expression (Java 14+)
+  case "A" -> "Excellent";
+  case "B", "C" -> "Good";
+  default -> "Unknown";
+};
+
+int sum = 0;
+for (int n = 1; n <= 10; n++) {
+  if (n % 2 == 0) continue;          // skip even numbers
+  if (n > 7) break;                  // leave the loop
+  sum += n;
+}
+```
+
+#### Remember
+
+- if/else if picks the first true branch; switch expressions (->) never fall through and must be exhaustive.
+- continue skips to the next pass; break leaves the loop.
+- Old colon-style switch falls through without break: a classic bug.
+
+## 0.4 Arrays
+
+*Interview priority: good to know.* Fixed-size, indexed containers. See default values, two variables sharing one array, copying, out-of-bounds errors, and why printing an array shows gibberish.
+
+#### Theory: start here
+
+**In one sentence:** An array stores a fixed number of values of the same type in numbered slots, starting at index 0.
+
+When you need many values of the same kind (ten scores, a grid of cells), an **array** keeps them together. You choose the size when creating it, and it never changes. Each slot has an **index**: the first is 0 and the last is `length - 1`. Reading or writing a slot by index is instant.
+
+Arrays are objects, so an array variable holds a reference. Two variables can point to the same array, and changes through one are seen through the other.
+
+**Key terms**
+
+- **Index**: Position of a slot, from 0 to length − 1.
+- **length**: Number of slots (a field: arr.length).
+- **Default values**: 0, false or null until you assign something.
+- **Arrays utility**: java.util.Arrays: sort, copyOf, toString, equals, fill, binarySearch.
+
+**How it works**
+
+1. Create: `new int[5]` or `int[] a = {3, 1, 2};`.
+2. Access: `a[i]` for reading and writing.
+3. Loop: `for (int i = 0; i < a.length; i++)` or `for (int x : a)`.
+4. Grow: create a bigger array and copy, or use ArrayList.
+
+**In real projects**
+
+- Use ArrayList in most application code; arrays for fixed-size data, performance-critical code and coding interviews.
+- `Arrays.asList` and `List.of` bridge arrays and lists (2.9).
+
+**Common mistakes**
+
+- Index out of bounds (often `i <= a.length`).
+- Printing an array directly instead of Arrays.toString.
+- Comparing arrays with == instead of Arrays.equals.
+
+#### Code
+
+```java
+int[] prices = new int[4];             // 4 slots, all 0
+prices[0] = 300; prices[3] = 120;
+int[] alias = prices;                  // same array, second name
+alias[1] = 999;                        // prices[1] is 999 too
+int[] bigger = Arrays.copyOf(prices, 6); // a new, longer array
+System.out.println(prices.length);     // 4 (a field, not a method)
+Arrays.sort(prices);                   // sorts in place
+System.out.println(prices);            // [I@1b6d3586
+System.out.println(Arrays.toString(prices)); // [0, 120, 300, 999]
+prices[4] = 1;                         // index 4 doesn't exist
+int[][] grid = new int[3][2];          // 3 rows of 2
+```
+
+#### Remember
+
+- Fixed size, indexes 0..length-1, default values 0/false/null.
+- Arrays are objects: assignment copies the reference; Arrays.copyOf makes a new one.
+- Print with Arrays.toString, compare with Arrays.equals; bad index → ArrayIndexOutOfBoundsException.
+
+## 0.5 Methods, recursion and the call stack
+
+*Interview priority: good to know.* How a method call works: arguments in, a new stack frame, a return value out. Then follow `factorial(3)` as the stack grows and unwinds.
+
+#### Theory: start here
+
+**In one sentence:** A method is a named, reusable block of code with inputs (parameters) and an optional output (return value); each call gets its own stack frame.
+
+Methods let you split a program into small named steps: `calculateTax(order)` reads better than 30 lines of arithmetic. You define parameters (inputs) and a return type (output, or `void` for none).
+
+When a method is called, Java creates a **stack frame** for it on the thread's call stack, holding its parameters and local variables. When it returns, the frame is removed. **Recursion** is a method calling itself to solve a smaller version of the same problem; it needs a **base case** that stops the chain.
+
+**Key terms**
+
+- **Parameter / argument**: The variable in the definition / the value passed in the call.
+- **Return type**: The type of value the method gives back (void = nothing).
+- **Stack frame**: Memory for one call: parameters and locals.
+- **Recursion**: A method calling itself.
+- **Base case**: The condition where recursion stops.
+
+**How it works**
+
+1. The caller evaluates the arguments.
+2. A new frame is pushed; argument values are copied into parameters.
+3. The body runs; return sends a value back and pops the frame.
+4. The caller continues from where it paused.
+
+**In real projects**
+
+- Keep methods short and named after what they do.
+- Prefer iteration for deep recursion in Java (no tail-call optimisation).
+- Many coding-interview problems (trees, backtracking) are naturally recursive.
+
+**Common mistakes**
+
+- Recursion without a correct base case → StackOverflowError.
+- Expecting a method to change the caller's variables by reassigning parameters.
+
+#### Code
+
+```java
+static int factorial(int n) {
+  if (n <= 1) return 1;            // base case: stop here
+  return n * factorial(n - 1);     // recursive case
+}
+
+static void greet(String name, int times) {   // parameters
+  for (int i = 0; i < times; i++) System.out.println("Hi " + name);
+}
+
+public static void main(String[] args) {
+  int r = factorial(3);            // 6
+  greet("Ana", 2);
+}
+```
+
+#### Remember
+
+- Each call gets its own stack frame with its own parameters and locals; return pops it.
+- Recursion = a method calling itself; always needs a base case or you get StackOverflowError.
+- Arguments are copied into parameters (pass-by-value).
+
+## 0.6 Classes, objects and constructors
+
+*Interview priority: good to know.* A class is a blueprint; `new` builds objects from it. Follow two accounts being created, a deposit, and two variables pointing at the same object.
+
+#### Theory: start here
+
+**In one sentence:** A class is a blueprint that defines data (fields) and behaviour (methods); objects are individual things built from it with new, and constructors set them up.
+
+Real programs model things: accounts, orders, cars. A **class** describes what every account has (owner, balance) and can do (deposit, withdraw). An **object** is one specific account. You can create as many as you like with `new`, and each has its own field values.
+
+A **constructor** is special code that runs once when an object is created, to put it in a valid starting state. Making fields `private` and offering methods that check their inputs keeps objects valid: this is **encapsulation**.
+
+**Key terms**
+
+- **Class**: The definition: fields + constructors + methods.
+- **Object / instance**: One thing created from a class.
+- **Field**: A variable belonging to each object.
+- **Constructor**: Initialises a new object; same name as the class, no return type.
+- **this**: Reference to the current object.
+- **static**: Belongs to the class itself, not to each object.
+
+**How it works**
+
+1. `new Account("Ana")` allocates memory on the heap with default field values.
+2. The constructor runs and sets the fields.
+3. A reference to the object is returned and stored in a variable.
+4. Calling `a.deposit(500)` runs the method with `this` = a.
+
+**In real projects**
+
+- Keep fields private; expose behaviour, not raw setters.
+- Validate in constructors and methods so an object can't get into an invalid state.
+- Use records for simple immutable data classes.
+
+**Common mistakes**
+
+- Thinking `b = a` copies an object (it copies the reference).
+- Comparing objects with == when you mean equals.
+
+#### Code
+
+```java
+public class Account {
+  private final String owner;          // fields: the object's data
+  private long balance;
+
+  public Account(String owner) {       // constructor: sets up a new object
+    this.owner = owner;                // this = the object being built
+  }
+  public void deposit(long amount) {   // method: behaviour
+    if (amount <= 0) throw new IllegalArgumentException("amount");
+    balance += amount;
+  }
+  public long balance() { return balance; }
+}
+
+Account a = new Account("Ana");
+Account b = new Account("Raj");
+a.deposit(500);
+Account c = a;                         // a and c: the same object
+c.deposit(100);
+// a.balance() → 600, b.balance() → 0, a == c → true, a == b → false
+```
+
+#### Remember
+
+- Class = blueprint (fields + methods); new creates an object on the heap and runs the constructor.
+- Object variables hold references: assignment shares the object; == compares identity.
+- Private fields + public methods that check inputs = encapsulation.
+
+## 0.7 Packages, imports and access modifiers
+
+*Interview priority: good to know.* How code is organised into packages, how you use classes from other packages, and the four access levels that decide who can see what.
+
+#### Theory: start here
+
+**In one sentence:** Packages organise classes into namespaces, imports let you refer to them by short names, and access modifiers control who can use each class and member.
+
+As a codebase grows, you need structure. **Packages** group related classes (`com.shop.order`, `com.shop.payment`) and match folders on disk. Two classes can have the same simple name in different packages.
+
+**Access modifiers** decide visibility: `public` (everyone), `protected` (same package and subclasses), package-private (no keyword: same package only) and `private` (same class only). Hiding details lets you change them later without breaking other code.
+
+**Key terms**
+
+- **Package**: Namespace + folder for related classes.
+- **Fully qualified name**: Package + class, e.g. java.util.List.
+- **import**: Lets you use the short class name.
+- **Package-private**: Default access when no modifier is written.
+- **Module**: Java 9+ unit that exports selected packages.
+
+**How it works**
+
+1. Declare the package at the top of each file.
+2. Import the classes you use from other packages.
+3. Choose the most restrictive access that works.
+4. Expose a small public API; keep the rest private or package-private.
+
+**In real projects**
+
+- Typical layout: package by feature (order, payment) rather than by layer.
+- Spring scans components from the main class's package downward (5.6).
+
+**Common mistakes**
+
+- Making everything public "just in case".
+- Wildcard imports hiding which classes are actually used.
+
+#### Code
+
+```java
+// file: src/main/java/com/shop/order/Order.java
+package com.shop.order;
+
+import java.util.List;                  // a class from another package
+import com.shop.pay.PaymentClient;
+
+public class Order {                    // visible everywhere
+  private long id;                      // only inside Order
+  int itemCount;                        // package-private: com.shop.order only
+  protected void audit() { }            // same package + subclasses
+  public long id() { return id; }       // everyone
+}
+```
+
+#### Remember
+
+- Package = folder + namespace; import is only a naming shortcut.
+- public > protected (package + subclasses) > package-private > private.
+- Fields private, expose behaviour through methods: encapsulation.
 
 ---
 
@@ -4318,6 +4767,1521 @@ The fix is to use immutable, thread-safe replacements (`DateTimeFormatter`, java
 
 - Assuming a class is thread-safe because it's in the JDK.
 - Trusting single-threaded unit tests for concurrency bugs.
+
+---
+
+# Part 7: Language features in depth
+
+## 7.1 Enums with fields and behaviour
+
+*Interview priority: must-know.* An enum is a class with a fixed set of instances. Give it fields and logic, switch over it exhaustively, store it safely, and use EnumMap.
+
+#### Theory: start here
+
+**In one sentence:** An enum defines a type with a fixed, named set of values, and each value is a real object that can hold data and behaviour.
+
+Many things in a program have a small fixed set of possible values: order status, day of week, payment method. Using Strings ("PAID") or ints (2) for them invites typos and invalid values. An **enum** makes them a type: `OrderStatus.PAID` is checked by the compiler, and nothing else can be passed.
+
+Each enum constant is a single object created once, so you compare with `==`. Because enums are classes, constants can carry fields (like `isTerminal`) and methods (like `canMoveTo`), keeping related rules in one place.
+
+**Key terms**
+
+- **Constant**: One named instance of the enum (PAID).
+- **ordinal()**: Position in the declaration (0, 1, 2…).
+- **name() / valueOf()**: Constant → String / String → constant.
+- **EnumMap / EnumSet**: Fast collections specialised for enum keys.
+- **Exhaustive switch**: A switch expression covering every constant, checked by the compiler.
+
+**How it works**
+
+1. Declare constants, optionally with constructor arguments.
+2. Add fields, a (private) constructor and methods.
+3. Use constants directly, compare with ==, switch over them.
+4. Convert from text with valueOf (handle IllegalArgumentException).
+
+**In real projects**
+
+- Model statuses, types and modes as enums, with the business rules on them.
+- Persist with `@Enumerated(EnumType.STRING)`.
+- Use EnumMap for per-status counters or handlers.
+
+**Common mistakes**
+
+- Storing ordinals in the database.
+- Switching on enums with a default that silently swallows new constants.
+- Using valueOf on raw user input without handling bad values.
+
+#### Code
+
+```java
+public enum OrderStatus {
+  PENDING(false), PAID(false), SHIPPED(true), CANCELLED(true);
+
+  private final boolean terminal;               // enums can have fields
+  OrderStatus(boolean terminal) { this.terminal = terminal; }
+  public boolean isTerminal() { return terminal; }
+
+  public boolean canMoveTo(OrderStatus next) {  // and behaviour
+    return switch (this) {
+      case PENDING -> next == PAID || next == CANCELLED;
+      case PAID    -> next == SHIPPED || next == CANCELLED;
+      case SHIPPED, CANCELLED -> false;
+    };
+  }
+}
+OrderStatus s = OrderStatus.valueOf("PAID");    // from a String
+boolean same = (s == OrderStatus.PAID);         // == is safe for enums
+Map<OrderStatus, Long> counts = new EnumMap<>(OrderStatus.class);
+```
+
+#### Remember
+
+- Enum = class with a fixed set of singleton instances; can have fields, constructors, methods, implement interfaces.
+- Switch expressions over enums are exhaustive: adding a constant breaks unhandled switches at compile time.
+- Compare with ==; use EnumMap/EnumSet; persist with EnumType.STRING, never ORDINAL.
+
+## 7.2 Reflection and annotations
+
+*Interview priority: good to know.* Annotations are labels on code; reflection lets a program inspect and call its own classes at run time. Together they're how Spring, JPA and JUnit work. Build a tiny `@Timed` framework to see it.
+
+#### Theory: start here
+
+**In one sentence:** Annotations attach metadata to code; reflection lets a program read that metadata and inspect or call classes at run time. Frameworks combine the two.
+
+An **annotation** like `@Transactional` or `@Test` is a label. On its own it does nothing; it's information for some tool. That tool might be the compiler (`@Override`), an annotation processor that generates code (Lombok), or a framework that reads it while the program runs.
+
+**Reflection** is how a program examines itself at run time: list a class's methods and fields, read their annotations, create objects and call methods by name. Spring uses reflection at startup to find your `@Component` classes, inject constructors and decide which methods need proxies.
+
+**Key terms**
+
+- **@interface**: Declares an annotation type.
+- **@Retention**: SOURCE, CLASS or RUNTIME: how long the annotation is kept.
+- **@Target**: Where the annotation may be used.
+- **Class object**: Run-time description of a class (Foo.class).
+- **Method.invoke**: Calls a method reflectively.
+- **Annotation processor**: A compiler plugin that reads annotations and generates code.
+
+**How it works**
+
+1. Define an annotation with RUNTIME retention.
+2. Place it on classes, methods or fields.
+3. At run time, get the Class / Method / Field objects.
+4. Read annotations with getAnnotation and act on them (call, wrap, validate).
+
+**In real projects**
+
+- You'll rarely write reflection by hand; you'll use annotations that frameworks read.
+- Custom annotations + an aspect (5.3) are a clean way to add auditing, timing or rate limiting.
+
+**Common mistakes**
+
+- Forgetting RUNTIME retention, so the annotation is invisible.
+- Using reflection in hot paths.
+- Reflecting into private JDK internals (blocked since Java 17).
+
+#### Code
+
+```java
+@Retention(RetentionPolicy.RUNTIME)            // keep it at run time
+@Target(ElementType.METHOD)                    // only allowed on methods
+public @interface Timed { String value() default ""; }
+
+class ReportService {
+  @Timed("report.build")
+  public String build(int id) { return "report-" + id; }
+}
+
+// A tiny "framework" that reads the annotation
+Method m = ReportService.class.getMethod("build", int.class);
+Timed t = m.getAnnotation(Timed.class);        // null if absent
+long start = System.nanoTime();
+Object result = m.invoke(new ReportService(), 42);
+System.out.println(t.value() + " took " + (System.nanoTime() - start) + " ns");
+```
+
+#### Remember
+
+- Annotations are metadata; they do nothing until code reads them. Retention RUNTIME is needed for reflection.
+- Reflection: Class → getMethod / getDeclaredFields / getAnnotation → invoke. Flexible, but no compile-time checks and slower.
+- Spring, JPA, JUnit = annotations + reflection + proxies at startup; annotation processors do it at compile time.
+
+## 7.3 Collectors in depth: grouping, partitioning, toMap
+
+*Interview priority: must-know.* The stream collectors interviewers actually ask about, run on one small data set: groupingBy with downstream collectors, partitioningBy, the toMap duplicate-key trap, joining, and sorted results.
+
+#### Theory: start here
+
+**In one sentence:** Collectors describe how a stream's elements are gathered into a final result, such as a list, a grouped map, a count or a joined string.
+
+A stream pipeline ends with a terminal operation. `collect(collector)` is the most flexible one: the collector decides what to build. Simple ones: `toList()`, `toSet()`, `joining()`. Powerful ones build maps: `groupingBy` groups elements by a key, `partitioningBy` splits them into true/false, and `toMap` creates one entry per element.
+
+Grouping collectors take a second, **downstream** collector that decides what each group becomes: a count, a sum, a set of names. This is the Java equivalent of SQL's GROUP BY.
+
+**Key terms**
+
+- **Collector**: A recipe for accumulating elements into a result.
+- **groupingBy**: Map from key → elements (or a downstream result).
+- **Downstream collector**: What to do with each group (counting, summing, mapping…).
+- **partitioningBy**: Map with exactly two keys: true and false.
+- **Merge function**: toMap's rule for combining values with the same key.
+
+**How it works**
+
+1. Pick the shape you want: list, map, string, number.
+2. For maps: choose key function, then downstream or value function.
+3. Handle duplicates (toMap merge function) and choose the map type if order matters.
+4. Collect.
+
+**In real projects**
+
+- Reports and dashboards: totals per customer, counts per status.
+- Index a list by id: `toMap(User::id, identity())` when ids are unique.
+
+**Common mistakes**
+
+- toMap without a merge function on data that may contain duplicate keys.
+- Assuming groupingBy's map is sorted.
+- Building huge in-memory groupings that belong in a SQL query.
+
+#### Code
+
+```java
+record Order(String customer, String city, long amount, boolean paid) {}
+
+Map<String, List<Order>> byCity =
+    orders.stream().collect(groupingBy(Order::city));
+Map<String, Long> totalByCity =
+    orders.stream().collect(groupingBy(Order::city, summingLong(Order::amount)));
+Map<Boolean, Long> paidCount =
+    orders.stream().collect(partitioningBy(Order::paid, counting()));
+Map<String, Long> byCustomer =
+    orders.stream().collect(toMap(Order::customer, Order::amount));
+Map<String, Long> merged =
+    orders.stream().collect(toMap(Order::customer, Order::amount, Long::sum));
+String names = orders.stream().map(Order::customer).distinct()
+    .sorted().collect(joining(", ", "[", "]"));
+TreeMap<String, Long> countByCity = orders.stream()
+    .collect(groupingBy(Order::city, TreeMap::new, counting()));
+```
+
+#### Remember
+
+- groupingBy(key[, mapFactory][, downstream]) — downstream: counting, summingLong, mapping, toSet…
+- partitioningBy always has both true and false keys.
+- toMap throws on duplicate keys (and null values): pass a merge function.
+
+## 7.4 Date and time with java.time
+
+*Interview priority: good to know.* Instant, LocalDate, LocalDateTime and ZonedDateTime each mean something different. Watch a meeting fall into a daylight-saving gap, months clamp, and why servers store UTC.
+
+#### Theory: start here
+
+**In one sentence:** java.time separates exact moments (Instant) from calendar dates and wall-clock times (LocalDate, LocalDateTime) and from time zones (ZonedDateTime), and every type is immutable.
+
+Time is harder than it looks. "2026-03-29 02:30" means different moments in Berlin and Mumbai, and in Berlin on that day it doesn't exist at all because clocks jump forward for daylight saving. The old `Date` and `Calendar` classes mixed these ideas and were mutable.
+
+The **java.time** API (Java 8) gives each idea its own type: **Instant** for a precise moment, **LocalDate** for a calendar date, **LocalDateTime** for a date and time without a zone, **ZonedDateTime** for local time in a specific zone, **Duration** and **Period** for amounts of time.
+
+**Key terms**
+
+- **Instant**: A moment on the UTC timeline.
+- **LocalDate / LocalDateTime**: Calendar date / date-time without a zone.
+- **ZoneId**: A time zone with its rules, e.g. Europe/Berlin.
+- **DST**: Daylight saving time: clocks jump, creating gaps and overlaps.
+- **Duration / Period**: Exact time amount / calendar amount.
+- **ISO-8601**: Standard text format: 2026-03-31T09:15:00Z.
+
+**How it works**
+
+1. Capture moments as Instant (UTC).
+2. Keep dates without time as LocalDate.
+3. Convert to ZonedDateTime with the user's ZoneId only for display or local rules.
+4. Format and parse with DateTimeFormatter (ISO by default).
+
+**In real projects**
+
+- Database: timestamp with time zone (stored in UTC) for moments; date for plain dates.
+- Inject `Clock` into services so tests can fix "now".
+
+**Common mistakes**
+
+- Using LocalDateTime for timestamps across regions.
+- Scheduling at local times inside DST transitions.
+- Mixing old Date/SimpleDateFormat with java.time.
+
+#### Code
+
+```java
+Instant now = Instant.now();                          // a point on the timeline (UTC)
+LocalDate due = LocalDate.of(2026, 3, 31);            // a calendar date, no time zone
+LocalDateTime meeting = LocalDateTime.of(2026, 3, 29, 2, 30);   // no zone either!
+ZonedDateTime inBerlin = meeting.atZone(ZoneId.of("Europe/Berlin"));
+ZonedDateTime inIndia = inBerlin.withZoneSameInstant(ZoneId.of("Asia/Kolkata"));
+LocalDate nextMonth = due.plusMonths(1);
+Duration d = Duration.between(now, now.plusSeconds(5400));
+Period p = Period.between(LocalDate.of(1990, 5, 20), due);
+String s = due.format(DateTimeFormatter.ISO_LOCAL_DATE);
+```
+
+#### Remember
+
+- Instant = moment (UTC); LocalDate/LocalDateTime = wall calendar, no zone; ZonedDateTime = local time + zone rules.
+- Store UTC, convert at the edges; DST gaps/overlaps make some local times invalid or ambiguous.
+- java.time is immutable and thread-safe; Duration = exact, Period = calendar; inject a Clock for tests.
+
+## 7.5 I/O, NIO files and serialization
+
+*Interview priority: good to know.* Read and write files the modern way with Path and Files, avoid loading huge files into memory, close resources safely, and turn objects into JSON (and why Java's built-in serialization is risky).
+
+#### Theory: start here
+
+**In one sentence:** Java reads and writes data as streams of bytes or characters; the modern Files API handles files simply, and serialization turns objects into bytes or text such as JSON.
+
+Every program reads or writes data: files, network sockets, HTTP bodies. Java models these as **streams** (not the same as the Stream API): you read or write a sequence of bytes, or characters decoded with a charset. Resources like files and sockets must be **closed**, which try-with-resources guarantees.
+
+To save or send an object, you **serialize** it: turn it into JSON, binary or another format. Today that's usually JSON with Jackson. Java's built-in object serialization still exists but is discouraged for security and compatibility reasons.
+
+**Key terms**
+
+- **InputStream / OutputStream**: Byte-oriented I/O.
+- **Reader / Writer**: Character-oriented I/O using a charset.
+- **Path / Files**: Modern file API (NIO.2).
+- **Buffering**: Collecting data in memory to read/write in efficient chunks.
+- **Serialization**: Object → bytes/text; deserialization is the reverse.
+- **transient**: Field excluded from Java serialization.
+
+**How it works**
+
+1. Locate the file with Path.of.
+2. Small file: Files.readString / readAllLines. Big file: Files.lines or a BufferedReader, inside try-with-resources.
+3. Write with Files.writeString or a BufferedWriter.
+4. For objects, map to and from JSON with an ObjectMapper.
+
+**In real projects**
+
+- Process large CSV/log files line by line.
+- Configure Jackson once (dates as ISO, unknown properties policy) and share the ObjectMapper.
+
+**Common mistakes**
+
+- Reading huge files fully into memory.
+- Not closing streams (file descriptor leaks).
+- Deserializing untrusted data with ObjectInputStream.
+
+#### Code
+
+```java
+Path file = Path.of("orders.csv");
+List<String> all = Files.readAllLines(file);          // whole file in memory
+try (Stream<String> lines = Files.lines(file)) {      // lazy: one line at a time
+  long paid = lines.filter(l -> l.endsWith(",PAID")).count();
+}                                                     // file closed here
+try (BufferedWriter w = Files.newBufferedWriter(Path.of("out.txt"))) {
+  w.write("total=" + all.size());
+}                                                     // flushed + closed here
+
+record OrderDto(long id, String customer) {}
+String json = mapper.writeValueAsString(new OrderDto(7, "Ana"));
+OrderDto back = mapper.readValue(json, OrderDto.class);
+
+class Legacy implements Serializable {                // Java serialization
+  private static final long serialVersionUID = 1L;
+  private transient String password;                  // not written
+}
+```
+
+#### Remember
+
+- Use Path + Files; readAllLines only for small files, Files.lines (closed with try-with-resources) for big ones.
+- Always close streams/writers with try-with-resources; writers are buffered.
+- JSON (Jackson) for object serialization; avoid Java serialization of untrusted data; transient fields are skipped.
+
+## 7.6 What changed from Java 8 to Java 25
+
+*Interview priority: must-know.* The features interviewers ask about, version by version, and the same code written in Java 8 style versus modern Java.
+
+#### Theory: start here
+
+**In one sentence:** Java evolves every six months, with a long-term-support release every two years; knowing the headline features of 8, 11, 17, 21 and 25 shows you write modern Java.
+
+Java 8 (2014) introduced lambdas and streams and stayed dominant for years. Since 2017 Java has released a new version every six months, which made features arrive steadily instead of in huge jumps. Companies mostly run **LTS** versions: 11, 17, 21 and now 25.
+
+Modern Java code looks noticeably different from Java 8: records instead of boilerplate classes, `var`, text blocks, switch expressions, pattern matching, sealed types and virtual threads.
+
+**Key terms**
+
+- **LTS**: Long-Term Support release, maintained for years.
+- **Preview feature**: Included but not final; must be enabled with --enable-preview.
+- **JEP**: JDK Enhancement Proposal: the document describing a feature.
+- **jakarta.***: New package names for Java EE APIs, required by Spring Boot 3.
+
+**How it works**
+
+1. Know the headline features of each LTS.
+2. Know which version your framework needs (Spring Boot 3 → Java 17+).
+3. When upgrading: update build plugins and libraries, move javax.* to jakarta.*, fix illegal reflective access.
+
+**In real projects**
+
+- Use records, switch expressions, text blocks and pattern matching in new code.
+- Enable virtual threads in Spring Boot on Java 21+.
+
+**Common mistakes**
+
+- Claiming a feature from a preview version as standard.
+- Staying on Java 8 and missing years of GC and performance improvements.
+
+#### Code
+
+```java
+// Java 8 style
+List<String> names = Arrays.asList("Ana", "Raj");
+if (obj instanceof Order) { Order o = (Order) obj; total += o.amount(); }
+String sql = "SELECT *\n" + "FROM orders\n";
+
+// Modern Java
+var names2 = List.of("Ana", "Raj");                   // Java 9 / 10
+record Order(String id, long amount) {}               // Java 16
+if (obj instanceof Order o) total += o.amount();      // Java 16
+String sql2 = """
+    SELECT *
+    FROM orders
+    """;                                              // Java 15
+String label = switch (shape) {                       // Java 21
+  case Circle c -> "circle r=" + c.r();
+  case Square s -> "square " + s.side();
+};
+names2.getFirst();                                    // Java 21
+try (var exec = Executors.newVirtualThreadPerTaskExecutor()) { }  // Java 21
+```
+
+#### Remember
+
+- LTS: 8, 11, 17, 21, 25; a new release every 6 months.
+- 8: lambdas/streams/Optional/java.time · 11: var, HttpClient · 17: records, sealed, switch expr, text blocks · 21: virtual threads, pattern switch, sequenced collections.
+- 25: scoped values, compact source files, flexible constructor bodies. Spring Boot 3 needs Java 17+.
+
+---
+
+# Part 8: Data and messaging
+
+## 8.1 Transactions and isolation levels
+
+*Interview priority: must-know.* Three transactions run at once against one table. See dirty reads, non-repeatable reads and phantoms appear or disappear as the isolation level goes up, and what PostgreSQL and MySQL actually do.
+
+#### Theory: start here
+
+**In one sentence:** A transaction makes several database changes succeed or fail together; the isolation level decides how much concurrent transactions can see of each other's work.
+
+Moving money means two updates: subtract here, add there. If the system crashes in between, money vanishes. A **transaction** wraps both so they commit together or not at all. That's the A (atomicity) in **ACID**.
+
+Many transactions run at the same time. Perfect **isolation** would make each behave as if it ran alone, but that requires lots of locking or aborting. So databases offer levels: **READ COMMITTED** (never see uncommitted data), **REPEATABLE READ** (a stable snapshot for the whole transaction), **SERIALIZABLE** (as if one at a time). Each level rules out more **anomalies**.
+
+**Key terms**
+
+- **ACID**: Atomicity, Consistency, Isolation, Durability.
+- **Dirty read**: Reading another transaction's uncommitted change.
+- **Non-repeatable read**: The same row read twice gives different values.
+- **Phantom read**: A repeated range query returns new rows.
+- **MVCC**: Multi-version concurrency control: readers see a snapshot, writers create new versions.
+- **Serialization failure**: The DB aborts a transaction to keep a high isolation guarantee.
+
+**How it works**
+
+1. BEGIN starts a transaction (Spring does this for @Transactional).
+2. Reads see data according to the isolation level (statement-level or transaction-level snapshot).
+3. Writes take row locks; other writers to the same row wait.
+4. COMMIT makes changes durable and visible; ROLLBACK discards them.
+
+**In real projects**
+
+- Keep transactions short and use the default level unless you have a reason.
+- Protect read-modify-write with optimistic locking, conditional updates or SELECT … FOR UPDATE.
+- Retry transactions that fail with deadlock or serialization errors.
+
+**Common mistakes**
+
+- Assuming @Transactional alone prevents lost updates.
+- Long transactions holding locks and connections.
+- Not knowing your database's default level.
+
+#### Code
+
+```java
+-- account 1: balance 100, branch PUNE   (3 accounts in PUNE)
+T1: BEGIN;
+T1: SELECT balance FROM account WHERE id = 1;            -- read A
+T2: BEGIN; UPDATE account SET balance = 50 WHERE id = 1;
+T1: SELECT balance FROM account WHERE id = 1;            -- read B (T2 not committed)
+T2: COMMIT;
+T1: SELECT balance FROM account WHERE id = 1;            -- read C (T2 committed)
+T3: INSERT INTO account VALUES (9, 70, 'PUNE'); COMMIT;
+T1: SELECT count(*) FROM account WHERE branch = 'PUNE';  -- read D
+T1: COMMIT;
+```
+
+#### Remember
+
+- Anomalies: dirty read (uncommitted data), non-repeatable read (same row changes), phantom (new rows in a range).
+- READ UNCOMMITTED &lt; READ COMMITTED (Postgres default) &lt; REPEATABLE READ (MySQL default) &lt; SERIALIZABLE.
+- Higher levels can abort with serialization errors: retry. Usually: READ COMMITTED + optimistic locking / conditional updates.
+
+## 8.2 Indexes and query plans
+
+*Interview priority: must-know.* Why a query on 10 million rows takes seconds, and how a B-tree index makes it milliseconds. Then composite indexes, the leftmost-prefix rule, queries that can't use an index, and reading EXPLAIN.
+
+#### Theory: start here
+
+**In one sentence:** An index is a sorted lookup structure (usually a B-tree) that lets the database find matching rows without scanning the whole table.
+
+Without an index, finding "all orders of customer 42" means checking every row: a **full table scan**. An **index** on `customer_id` keeps those values sorted in a balanced tree with pointers back to the rows, so the database jumps straight to them in a handful of steps, like using a book's index instead of reading every page.
+
+Indexes aren't free: every insert, update and delete must also update each index, and they take space. The art is indexing the columns your important queries **filter, join and sort** by, and checking with **EXPLAIN**.
+
+**Key terms**
+
+- **Full table scan**: Reading every row (Seq Scan).
+- **B-tree**: Balanced sorted tree; the default index type.
+- **Composite index**: An index on several columns, in a specific order.
+- **Leftmost prefix**: A composite index helps queries using its first column(s).
+- **Selectivity**: How few rows a value matches; high selectivity = good index candidate.
+- **EXPLAIN ANALYZE**: Shows the plan the database chose and real timings.
+
+**How it works**
+
+1. Find slow queries (logs, APM, pg_stat_statements).
+2. Run EXPLAIN ANALYZE; look for Seq Scans on big tables and sort steps.
+3. Add an index matching the WHERE / JOIN / ORDER BY columns (most selective / equality columns first).
+4. Re-check the plan and the write cost.
+
+**In real projects**
+
+- Index foreign keys used in joins.
+- Composite index (customer_id, created_at) for "latest orders per customer" pages.
+- Declare indexes in migrations (Flyway/Liquibase); JPA @Index for documentation.
+
+**Common mistakes**
+
+- Indexing every column.
+- Functions on indexed columns in WHERE.
+- Composite indexes with columns in the wrong order.
+
+#### Code
+
+```java
+CREATE TABLE orders (id BIGINT PRIMARY KEY, customer_id BIGINT,
+                     status TEXT, created_at TIMESTAMPTZ, total NUMERIC);
+-- 10 million rows
+
+SELECT * FROM orders WHERE customer_id = 42;            -- before the index
+CREATE INDEX idx_orders_customer ON orders (customer_id);
+SELECT * FROM orders WHERE customer_id = 42;            -- after
+
+CREATE INDEX idx_cust_created ON orders (customer_id, created_at);
+SELECT * FROM orders WHERE customer_id = 42 ORDER BY created_at DESC LIMIT 20;
+SELECT * FROM orders WHERE created_at > now() - interval '1 day';
+SELECT * FROM orders WHERE lower(status) = 'paid';
+
+EXPLAIN ANALYZE SELECT * FROM orders WHERE customer_id = 42;
+```
+
+#### Remember
+
+- No index → full table scan; B-tree index → O(log n) lookups.
+- Composite index (a, b): helps filters on a, or a + b, and ORDER BY b within a; not b alone (leftmost prefix).
+- Functions on columns, leading wildcards and casts defeat indexes; use EXPLAIN ANALYZE. Indexes slow writes.
+
+## 8.3 JDBC, PreparedStatement and connection pooling
+
+*Interview priority: good to know.* What happens underneath JPA and JdbcTemplate: borrow a connection from the pool, run a parameterised query, read rows, give the connection back. Plus SQL injection and leaked connections.
+
+#### Theory: start here
+
+**In one sentence:** JDBC is Java's low-level API for relational databases: borrow a connection, run a prepared statement with parameters, read the result set, and give the connection back to the pool.
+
+Every Java database library, from JPA to Spring Data, uses **JDBC** underneath. The flow is always the same: get a **Connection** (a session with the database), create a **PreparedStatement** with `?` placeholders, bind values, execute, and read rows from the **ResultSet**.
+
+Opening a real connection is slow, so applications use a **connection pool** (HikariCP in Spring Boot) that keeps a few connections open and lends them out. "Closing" a pooled connection returns it to the pool.
+
+**Key terms**
+
+- **Driver**: Database-specific JDBC implementation.
+- **DataSource**: Factory for connections; in practice a pool.
+- **PreparedStatement**: Parameterised SQL; prevents injection.
+- **ResultSet**: Cursor over returned rows.
+- **SQL injection**: Attacker-controlled input changing the SQL itself.
+- **Connection leak**: A connection never returned to the pool.
+
+**How it works**
+
+1. Borrow a connection from the DataSource.
+2. Prepare SQL with placeholders and bind values.
+3. Execute; iterate the ResultSet and map rows.
+4. Close everything with try-with-resources (connection returns to the pool).
+
+**In real projects**
+
+- Prefer JdbcTemplate or JPA over raw JDBC; know JDBC to debug them.
+- Use batch updates for bulk inserts.
+- Configure pool size, connection timeout and leak detection.
+
+**Common mistakes**
+
+- Concatenating user input into SQL.
+- Forgetting to close connections.
+- Huge pools that overload the database.
+
+#### Code
+
+```java
+String sql = "SELECT id, total FROM orders WHERE customer_id = ?";
+try (Connection con = dataSource.getConnection();          // borrow from the pool
+     PreparedStatement ps = con.prepareStatement(sql)) {
+  ps.setLong(1, customerId);                               // bind the parameter
+  try (ResultSet rs = ps.executeQuery()) {
+    while (rs.next()) {
+      orders.add(new Order(rs.getLong("id"), rs.getBigDecimal("total")));
+    }
+  }
+}                                                          // returned to the pool
+
+// NEVER build SQL by concatenation:
+String bad = "SELECT * FROM users WHERE name = '" + name + "'";
+```
+
+#### Remember
+
+- Connection = expensive DB session → always via a pool (HikariCP); close() returns it.
+- PreparedStatement with ? parameters: safe from SQL injection and reusable. Never concatenate input into SQL.
+- try-with-resources for Connection/Statement/ResultSet; leaks exhaust the pool. Transaction = autoCommit(false) + commit/rollback.
+
+## 8.4 Kafka fundamentals: topics, partitions, consumer groups
+
+*Interview priority: must-know.* Follow order events from a producer into a partitioned topic, out to two independent consumer groups, through offset commits, a crash, a redelivery and a rebalance.
+
+#### Theory: start here
+
+**In one sentence:** Kafka is a distributed, durable log: producers append events to partitioned topics, and consumer groups read them at their own pace, tracking their position with offsets.
+
+Services often need to tell each other "something happened" (order placed, payment received) without calling each other directly. **Kafka** stores these events in **topics**. Each topic is split into **partitions**, ordered append-only logs spread across brokers for scale and replicated for safety.
+
+Consumers read in **groups**: within a group, each partition is handled by one consumer, so adding consumers (up to the number of partitions) adds throughput. Each group tracks its own **offset** per partition, so many independent services can read the same events. Events stay for the retention period whether or not they've been read.
+
+**Key terms**
+
+- **Topic**: A named stream of events.
+- **Partition**: An ordered, append-only log; the unit of parallelism and ordering.
+- **Offset**: Position of a message in a partition.
+- **Consumer group**: Consumers sharing work; each partition to one member.
+- **Rebalance**: Reassigning partitions when consumers join or leave.
+- **At-least-once**: Messages may be redelivered after failures, never lost.
+- **DLQ**: Dead-letter topic for messages that keep failing.
+
+**How it works**
+
+1. Producer sends (key, value); hash(key) picks the partition.
+2. Brokers append it to that partition's log and replicate it.
+3. Consumers in a group poll their assigned partitions.
+4. After processing, they commit offsets; on restart they resume from the last commit.
+
+**In real projects**
+
+- Choose keys by what must stay ordered (e.g. orderId).
+- Make consumers idempotent; route poison messages to a DLQ.
+- Use the outbox pattern to publish events reliably from a database transaction.
+
+**Common mistakes**
+
+- Expecting global ordering across partitions.
+- Auto-committing before processing (lost messages).
+- More consumers than partitions and expecting more throughput.
+
+#### Code
+
+```java
+// Producer: the key decides the partition → same key, same order
+producer.send(new ProducerRecord<>("orders", order.customerId(), event));
+
+// Consumer: one group id = one logical subscriber
+props.put("group.id", "billing-service");
+props.put("enable.auto.commit", "false");
+consumer.subscribe(List.of("orders"));
+while (true) {
+  for (ConsumerRecord<String, OrderEvent> r : consumer.poll(Duration.ofMillis(500))) {
+    billing.handle(r.value());            // must be idempotent
+  }
+  consumer.commitSync();                  // commit offsets AFTER processing
+}
+```
+
+#### Remember
+
+- Topic → partitions (ordered logs with offsets); key → partition; order only within a partition.
+- One consumer per partition per group; other groups read independently; messages are retained, not deleted on read.
+- Commit after processing = at-least-once → idempotent consumers; rebalances redeliver; DLQ for poison messages.
+
+---
+
+# Part 9: Testing and production tooling
+
+## 9.1 Unit testing with JUnit 5 and Mockito
+
+*Interview priority: must-know.* Test one class in isolation: replace its dependency with a mock, follow arrange-act-assert, verify interactions, cover failure paths and parameterised inputs, and learn what not to mock.
+
+#### Theory: start here
+
+**In one sentence:** A unit test runs one class in isolation and checks its behaviour automatically; mocks stand in for the slow or external things it depends on.
+
+Every time you change code, you risk breaking something that used to work. **Automated tests** re-check it in seconds. A **unit test** focuses on one class: give it inputs, check its outputs. **JUnit 5** runs the tests and reports results; assertions (`assertEquals`, AssertJ's `assertThat`) express what you expect.
+
+Classes depend on other classes: a client calling a remote API, a repository using a database. A **mock** (from **Mockito**) is a fake version you control: you tell it what to return (**stubbing**) and later check how it was called (**verification**). That keeps tests fast, deterministic and focused.
+
+**Key terms**
+
+- **@Test**: Marks a JUnit test method.
+- **Assertion**: A check that fails the test if the expectation isn't met.
+- **Mock**: A fake object that records calls and returns stubbed values.
+- **Stub**: A configured response: when(x).thenReturn(y).
+- **verify**: Checks that a mock was called in a certain way.
+- **Arrange-Act-Assert**: Structure: set up, run, check.
+
+**How it works**
+
+1. Create the class under test with mocked dependencies (constructor injection makes this easy).
+2. Arrange: stub the mocks for this scenario.
+3. Act: call the method under test.
+4. Assert results; verify interactions that matter; also test errors and boundaries.
+
+**In real projects**
+
+- Run unit tests on every build; keep them fast (milliseconds each).
+- Use AssertJ for readable assertions and @ParameterizedTest for many inputs.
+- Name tests after behaviour: `rejectsNegativeAmounts`.
+
+**Common mistakes**
+
+- Mocking everything, including value objects.
+- Verifying every internal call (brittle tests).
+- Testing only the happy path.
+
+#### Code
+
+```java
+class PriceServiceTest {
+  TaxClient tax = mock(TaxClient.class);                  // fake dependency
+  PriceService service = new PriceService(tax);           // real class under test
+
+  @Test
+  void addsTaxToNetPrice() {
+    when(tax.rateFor("DE")).thenReturn(new BigDecimal("0.19"));    // arrange
+    BigDecimal gross = service.gross(new BigDecimal("100"), "DE");  // act
+    assertEquals(new BigDecimal("119.00"), gross);                  // assert
+    verify(tax).rateFor("DE");                                      // interaction
+  }
+
+  @ParameterizedTest
+  @CsvSource({"0, 0.00", "250, 297.50"})
+  void grossForManyPrices(String net, String expected) { /* … */ }
+
+  @Test
+  void failsClearlyWhenTaxServiceIsDown() {
+    when(tax.rateFor(any())).thenThrow(new TaxUnavailableException());
+    assertThrows(PriceUnavailableException.class,
+                 () -> service.gross(BigDecimal.TEN, "DE"));
+  }
+}
+```
+
+#### Remember
+
+- Arrange (stub mocks) → Act (call the method) → Assert (check results); verify only meaningful interactions.
+- Mock slow/external collaborators; use real value objects; never mock the class under test.
+- Cover failure paths (thenThrow + assertThrows) and boundaries (@ParameterizedTest).
+
+## 9.2 JVM troubleshooting toolkit
+
+*Interview priority: good to know.* Which tool for which symptom: jcmd for flags, thread dumps and heap dumps, Java Flight Recorder for "where does the time go", and GC logs. Follow one high-CPU incident from top to the guilty line of code.
+
+#### Theory: start here
+
+**In one sentence:** The JDK ships tools to look inside a running JVM: jcmd for flags, thread and heap dumps, Java Flight Recorder for profiling, and GC logs for memory behaviour.
+
+When a production service is slow, stuck or running out of memory, guessing is expensive. The JVM can tell you what it's doing. A **thread dump** shows what every thread is executing right now; a **heap dump** shows every object in memory; **JFR** (Java Flight Recorder) records CPU, allocation, lock and I/O events over time with tiny overhead; **GC logs** show how memory is collected.
+
+**jcmd** is the single command that triggers most of these on a running process.
+
+**Key terms**
+
+- **jcmd**: Sends diagnostic commands to a running JVM.
+- **Thread dump**: Stack trace of every thread at one moment.
+- **Heap dump**: Snapshot of all objects (.hprof).
+- **JFR / JMC**: Flight Recorder (low-overhead events) / Mission Control (viewer).
+- **GC log**: Record of every garbage collection.
+
+**How it works**
+
+1. Identify the symptom: hang, high CPU, memory growth, slowness.
+2. Collect the matching evidence before restarting (dumps, JFR, logs).
+3. Correlate: hot thread id → dump; dominator tree → leak; JFR hot methods → code.
+4. Fix, then add metrics or alerts so it's caught earlier next time.
+
+**In real projects**
+
+- Enable GC logging and HeapDumpOnOutOfMemoryError by default.
+- In Kubernetes, write dumps to a persistent volume.
+- Spring Boot Actuator exposes thread and heap dumps (secure them!).
+
+**Common mistakes**
+
+- Restarting before collecting evidence.
+- Taking a single thread dump and over-interpreting it.
+- Heap dumps on a live, latency-critical instance without warning (they pause the JVM).
+
+#### Code
+
+```java
+$ jcmd                                    # list running JVMs and their pids
+$ jcmd 4242 VM.flags                      # effective heap size, GC, flags
+$ top -H -p 4242                          # which THREAD burns CPU?
+$ jcmd 4242 Thread.print > dump1.txt      # thread dump (same as jstack)
+$ jcmd 4242 GC.class_histogram | head     # what fills the heap (cheap)
+$ jcmd 4242 GC.heap_dump /dumps/app.hprof # full heap dump (pauses the app)
+$ jcmd 4242 JFR.start duration=60s filename=/dumps/rec.jfr
+$ jstat -gcutil 4242 1000                 # GC stats every second
+$ java -Xlog:gc*:file=gc.log -XX:+HeapDumpOnOutOfMemoryError -jar app.jar
+```
+
+#### Remember
+
+- jcmd: VM.flags, Thread.print, GC.class_histogram, GC.heap_dump, JFR.start.
+- High CPU: top -H → thread id in hex → nid in the thread dump. Hang: several dumps compared.
+- Always on: GC logs + HeapDumpOnOutOfMemoryError; JFR is safe in production.
+
+## 9.3 Maven and Gradle: dependencies and conflicts
+
+*Interview priority: good to know.* How a build tool turns a few declared dependencies into dozens of JARs, why two libraries wanting different versions of the same JAR cause NoSuchMethodError at run time, and how to fix it.
+
+#### Theory: start here
+
+**In one sentence:** Maven and Gradle build your project and manage its libraries, including the libraries those libraries need; when two need different versions of the same one, the tool picks one, sometimes wrongly.
+
+A real project uses dozens of open-source libraries, and those use others. Build tools resolve this whole tree from a few lines of configuration, download the JARs from repositories like Maven Central, compile, run tests and package your app.
+
+Only **one version** of each library can be on the classpath. When two dependencies want different versions, the tool chooses (Maven: nearest wins; Gradle: highest wins). If the chosen version lacks something the other library calls, you get **NoSuchMethodError** or **NoClassDefFoundError** at run time.
+
+**Key terms**
+
+- **Coordinates**: groupId:artifactId:version.
+- **Transitive dependency**: A dependency of your dependency.
+- **BOM / dependencyManagement**: A central list of versions to use.
+- **Scope**: Where a dependency is available: compile, runtime, test, provided.
+- **Wrapper**: mvnw / gradlew: pins the build tool version.
+
+**How it works**
+
+1. Declare direct dependencies (versions often from a BOM).
+2. The tool resolves the full tree and resolves conflicts.
+3. Compile, test, package (a fat JAR for Spring Boot).
+4. Inspect with dependency:tree; pin versions when needed.
+
+**In real projects**
+
+- Let Spring Boot's BOM manage versions; override deliberately.
+- Use dependency convergence checks in CI.
+- Keep dependencies updated (Dependabot/Renovate) and scan for vulnerabilities.
+
+**Common mistakes**
+
+- Adding a library without checking what it drags in.
+- Ignoring "omitted for conflict" in the tree.
+- Different build tool versions on different machines.
+
+#### Code
+
+```java
+<project>
+  <groupId>com.shop</groupId>
+  <artifactId>order-service</artifactId>
+  <version>1.4.0</version>
+  <parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>3.4.0</version>
+  </parent>
+  <dependencies>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.vendor</groupId><artifactId>pay-sdk</artifactId>
+      <version>2.1.0</version>
+    </dependency>
+    <dependency>
+      <groupId>com.partner</groupId><artifactId>loyalty-client</artifactId>
+      <version>3.0.0</version>
+    </dependency>
+  </dependencies>
+</project>
+```
+
+#### Remember
+
+- Dependencies = coordinates (group:artifact:version); transitive dependencies come along automatically.
+- One version per JAR: Maven = nearest wins (then first declared), Gradle = highest wins. Mismatch → NoSuchMethodError at run time.
+- Use BOMs, pin versions in dependencyManagement, inspect with dependency:tree, commit the wrapper.
+
+## 9.4 Logging, metrics and tracing
+
+*Interview priority: good to know.* The three pillars of observability in a Spring service: well-formed logs with context, metrics with sane tags, and distributed traces that follow one request across services.
+
+#### Theory: start here
+
+**In one sentence:** Observability means understanding a running system from its outputs: logs record events, metrics measure rates and latencies, and traces follow single requests across services.
+
+In production you can't attach a debugger. You learn what's happening from the signals the application emits. **Logs** are timestamped event records. **Metrics** are numbers aggregated over time (requests per second, error rate, p99 latency) that you graph and alert on. **Traces** connect the work one request did across many services, with timings.
+
+In Java, code logs via **SLF4J** (with Logback underneath), metrics go through **Micrometer**, and traces through **OpenTelemetry** / Micrometer Tracing. Spring Boot wires them together, including putting the trace id into every log line.
+
+**Key terms**
+
+- **Log level**: ERROR, WARN, INFO, DEBUG, TRACE.
+- **MDC**: Per-thread key-values added to log lines.
+- **Counter / timer / gauge**: Metric types: count, duration distribution, current value.
+- **Cardinality**: Number of distinct tag values; keep it bounded.
+- **Span / trace**: One timed operation / all spans of one request.
+- **SLO**: Service-level objective, e.g. 99.9% of requests under 300 ms.
+
+**How it works**
+
+1. Emit structured logs with context (traceId, ids).
+2. Record metrics for key operations and expose them (/actuator/prometheus).
+3. Propagate trace context across HTTP and messaging.
+4. Build dashboards and alerts on what users feel: errors and latency.
+
+**In real projects**
+
+- One log line per meaningful event, not per loop iteration.
+- Correlate logs and traces with the trace id.
+- Use DEBUG temporarily, via Actuator's loggers endpoint.
+
+**Common mistakes**
+
+- String concatenation in log calls.
+- Logging secrets or personal data.
+- High-cardinality metric tags (user ids, URLs with ids).
+
+#### Code
+
+```java
+private static final Logger log = LoggerFactory.getLogger(OrderService.class);
+
+public Order place(Cart cart) {
+  MDC.put("orderId", cart.id());                         // added to every log line
+  log.info("Placing order with {} items", cart.size());  // {} = lazy formatting
+  try {
+    Order o = repository.save(Order.from(cart));
+    meterRegistry.counter("orders.placed", "country", cart.country()).increment();
+    return o;
+  } catch (DataAccessException e) {
+    log.error("Could not save order", e);                // exception as the last argument
+    throw e;
+  } finally {
+    MDC.remove("orderId");
+  }
+}
+```
+
+#### Remember
+
+- Logs (what), metrics (how much/fast), traces (where across services).
+- SLF4J with {} placeholders; MDC for context (cleared in finally); exception as last arg; log once; no secrets.
+- Micrometer metrics with bounded tags; traceId propagated via headers; JSON logs linked to traces.
+
+## 9.5 Java modules (JPMS)
+
+*Interview priority: beyond typical interviews.* module-info.java declares what a module needs and what it exposes. See strong encapsulation block an internal package, reflection needing opens, and why most Spring apps still live on the classpath.
+
+#### Theory: start here
+
+**In one sentence:** The Java Platform Module System lets a JAR declare which modules it needs and which packages it exposes, giving strong encapsulation beyond public/private.
+
+Before Java 9 there were only classes and packages on a flat **classpath**: any public class could be used by anyone, even if it was meant to be internal. A **module** adds a boundary around a group of packages, described in `module-info.java`: what it **requires**, what it **exports** (its public API) and what it **opens** for reflection.
+
+The JDK itself was split into modules, which allows tools like `jlink` to build small runtimes, and since Java 17 its internals can't be accessed reflectively by default.
+
+**Key terms**
+
+- **module-info.java**: The module descriptor.
+- **requires**: Declares a dependency on another module.
+- **exports**: Makes a package accessible to other modules.
+- **opens**: Allows deep reflection into a package at run time.
+- **Unnamed module**: Where classpath code lives.
+- **jlink**: Builds a custom runtime image with only needed modules.
+
+**How it works**
+
+1. Create module-info.java at the root of the source tree.
+2. List required modules and exported packages.
+3. Open packages that frameworks reflect on.
+4. Run with --module-path instead of the classpath.
+
+**In real projects**
+
+- Libraries benefit most (clear public API).
+- jlink makes slim container images.
+- Know --add-opens for legacy libraries on Java 17+.
+
+**Common mistakes**
+
+- Forgetting opens for Jackson/Hibernate model packages.
+- Expecting public classes in non-exported packages to be usable.
+
+#### Code
+
+```java
+// src/com.shop.orders/module-info.java
+module com.shop.orders {
+  requires com.shop.payments;            // I depend on this module
+  requires java.sql;
+  exports com.shop.orders.api;           // only this package is visible to others
+  opens com.shop.orders.model to com.fasterxml.jackson.databind;  // reflection access
+}
+
+// in another module that requires com.shop.orders:
+import com.shop.orders.api.OrderService;      // exported: OK
+import com.shop.orders.internal.OrderMapper;  // not exported: compile error
+```
+
+#### Remember
+
+- module-info: requires (dependencies), exports (public API), opens (reflection).
+- Non-exported packages are inaccessible even if their classes are public.
+- JDK is modular (jlink); Java 17 locks internals (--add-opens); most apps still use the classpath.
+
+---
+
+# Part 10: Reactive programming
+
+## 10.1 Reactive streams with Project Reactor
+
+*Interview priority: beyond typical interviews.* Mono and Flux are lazy, asynchronous streams that push values to a subscriber. Follow signals (onNext, onError, onComplete), operators, a non-blocking HTTP call with timeout and fallback, and backpressure.
+
+#### Theory: start here
+
+**In one sentence:** Reactive programming models data as asynchronous streams that are pushed to subscribers; Reactor's Mono and Flux are lazy, non-blocking and support backpressure.
+
+In ordinary code you *call* a method and *wait* for its result. In reactive code you describe what should happen to values *when they arrive*, and the framework pushes them to you as they become available, without any thread sitting and waiting for I/O.
+
+**Project Reactor** provides **Mono** (at most one value) and **Flux** (many values). You chain operators (map, filter, flatMap, zip, timeout, retry), then **subscribe**. The subscriber also controls how fast data comes, through **backpressure**.
+
+**Key terms**
+
+- **Publisher / Subscriber**: Source of values / consumer of values (Reactive Streams spec).
+- **Mono / Flux**: 0..1 / 0..N asynchronous values.
+- **Signal**: onNext (a value), onError, onComplete.
+- **Operator**: A step that transforms the stream.
+- **Backpressure**: The subscriber requests only as many items as it can handle.
+- **Scheduler**: The thread pool operators run on.
+
+**How it works**
+
+1. Build a pipeline from a source and operators (nothing runs yet).
+2. subscribe() starts it; the subscriber requests n items.
+3. The source pushes up to n onNext signals, then waits for more requests.
+4. It ends with onComplete or onError; cancellation stops it early.
+
+**In real projects**
+
+- Used by Spring WebFlux, WebClient, R2DBC, reactive Kafka and Redis clients.
+- flatMap for async calls per item; zip to combine results; timeout/retry/onErrorResume for resilience.
+
+**Common mistakes**
+
+- Calling block() inside reactive code.
+- Forgetting to subscribe (nothing happens).
+- Blocking calls on event-loop threads.
+
+#### Code
+
+```java
+Flux<Order> orders = orderRepo.findByCustomer(42)   // nothing happens yet
+    .filter(Order::isPaid)
+    .map(o -> o.withTax(0.19))
+    .take(10);
+
+orders.subscribe(
+    o   -> System.out.println("got " + o.id()),      // onNext
+    err -> log.error("failed", err),                // onError
+    ()  -> System.out.println("done"));             // onComplete
+
+Mono<Price> price = webClient.get().uri("/price/{id}", 7)
+    .retrieve().bodyToMono(Price.class)
+    .timeout(Duration.ofSeconds(2))
+    .onErrorReturn(Price.UNKNOWN);
+
+Flux.range(1, 1_000_000)
+    .publishOn(Schedulers.parallel())
+    .subscribe(new SlowSubscriber());               // requests 32 at a time
+```
+
+#### Remember
+
+- Mono = 0..1, Flux = 0..N; lazy until subscribe; signals onNext*, then onComplete | onError.
+- Non-blocking I/O: threads never wait; errors are signals (timeout, onErrorReturn, retry).
+- Backpressure: subscriber requests n; publishOn/subscribeOn move work between schedulers.
+
+## 10.2 WebFlux vs virtual threads
+
+*Interview priority: good to know.* Two ways to serve thousands of concurrent requests that mostly wait on I/O. Watch one blocking call freeze a WebFlux event loop, then see the same endpoint as plain blocking code on virtual threads.
+
+#### Theory: start here
+
+**In one sentence:** WebFlux scales with a few event-loop threads and non-blocking I/O; virtual threads scale ordinary blocking code by making threads cheap. Both target I/O-bound services.
+
+A typical web request spends most of its time waiting for a database or another service. With one platform thread per request, the number of threads limits how many requests you can serve, even though the CPU is idle.
+
+**WebFlux** removes the waiting: handlers return Monos, and I/O is non-blocking, so a handful of event-loop threads juggle thousands of requests. But a single blocking call on an event loop stalls everything on that thread. **Virtual threads** (Java 21) take the opposite route: keep blocking code, but make each thread so cheap that you can have one per request and the JVM parks it during I/O.
+
+**Key terms**
+
+- **Event loop**: A thread that processes many connections' events, never blocking.
+- **R2DBC**: Reactive (non-blocking) database driver API.
+- **boundedElastic**: Reactor scheduler for wrapping blocking calls.
+- **Virtual thread**: Cheap JVM-managed thread that unmounts while blocked.
+- **BlockHound**: Tool that detects blocking calls on non-blocking threads.
+
+**How it works**
+
+1. Reactive: request → handler returns a Mono → non-blocking calls → response when the Mono completes.
+2. Virtual threads: request → its own virtual thread → blocking calls park it → response.
+3. Either way, limit pressure on scarce resources (connection pools, rate limits).
+
+**In real projects**
+
+- Default choice for new CRUD services on Java 21+: Spring MVC + virtual threads.
+- Choose WebFlux for streaming, SSE/WebSockets, gateways and backpressure-heavy pipelines.
+
+**Common mistakes**
+
+- Mixing blocking JDBC into WebFlux handlers.
+- Expecting either approach to speed up CPU-bound work.
+
+#### Code
+
+```java
+@GetMapping("/orders/{id}")
+Mono<OrderView> order(@PathVariable long id) {
+  return orderRepo.findById(id)                       // R2DBC: non-blocking
+      .zipWith(priceClient.price(id))                 // WebClient: non-blocking
+      .map(t -> OrderView.of(t.getT1(), t.getT2()));
+}
+
+@GetMapping("/reports/{id}")
+Mono<Report> report(@PathVariable long id) {
+  return Mono.just(jdbcTemplate.queryForObject(SQL, mapper, id));  // BLOCKS!
+}
+```
+
+#### Remember
+
+- Thread-per-request with platform threads caps concurrency at the pool size.
+- WebFlux: few event-loop threads, non-blocking end to end; never block the loop (use boundedElastic or avoid).
+- Virtual threads: blocking code scales for I/O; default choice for most CRUD services on Java 21+.
+
+---
+
+# Part 11: Data structures and algorithms in Java
+
+## 11.1 Big-O and the cost of Java collection operations
+
+*Interview priority: must-know.* How to estimate an algorithm's cost as the input grows, why a nested loop that's fine for 100 items dies at 100,000, and what each common Java collection operation costs.
+
+#### Theory: start here
+
+**In one sentence:** Big-O notation describes how the time or memory an algorithm needs grows as its input grows, which lets you predict whether it will survive real data sizes.
+
+Code that is instant on 100 items can take hours on a million. **Big-O** captures the growth rate, ignoring constant factors: O(n) means "doubling the input roughly doubles the work", O(n²) means "doubling the input quadruples it", O(log n) means "doubling the input adds one step".
+
+Most interview optimisations swap a slow pattern for a faster one: a nested loop (O(n²)) for a single pass with a HashSet (O(n)), or a linear search (O(n)) for binary search on sorted data (O(log n)). Knowing what each Java collection operation costs is essential.
+
+**Key terms**
+
+- **Time complexity**: How the number of steps grows with input size n.
+- **Space complexity**: How extra memory grows with n.
+- **Amortised**: Average cost over many operations (ArrayList add).
+- **Worst / average case**: HashMap get is O(1) on average, worse with many collisions.
+- **Brute force**: The straightforward, usually slow, solution.
+
+**How it works**
+
+1. Count how many times the innermost work runs in terms of n.
+2. Keep the fastest-growing term and drop constants (3n² + 5n → O(n²)).
+3. Add costs of the library calls you use (contains, sort, remove).
+4. State both time and space.
+
+**In real projects**
+
+- Back-of-envelope: ~10⁸ simple steps per second; check n × complexity against your time budget.
+- Profile real code too: constants and memory access patterns matter in practice.
+
+**Common mistakes**
+
+- Calling list.contains or list.remove(0) inside loops.
+- Forgetting recursion stack space.
+- Optimising before checking the input size.
+
+#### Code
+
+```java
+int sumAll(int[] a) { int s = 0; for (int x : a) s += x; return s; }   // O(n)
+
+boolean hasDuplicate(int[] a) {                     // O(n²)
+  for (int i = 0; i < a.length; i++)
+    for (int j = i + 1; j < a.length; j++)
+      if (a[i] == a[j]) return true;
+  return false;
+}
+
+boolean hasDuplicateFast(int[] a) {                 // O(n) time, O(n) extra space
+  Set<Integer> seen = new HashSet<>();
+  for (int x : a) if (!seen.add(x)) return true;
+  return false;
+}
+// list.contains(x) O(n) · set.contains(x) O(1) · treeSet.contains(x) O(log n)
+```
+
+#### Remember
+
+- O(1) &lt; O(log n) &lt; O(n) &lt; O(n log n) &lt; O(n²) &lt; O(2ⁿ); state time and space.
+- Nested loops over the input = O(n²); a HashSet/HashMap often brings it to O(n) using O(n) memory.
+- Know collection costs: HashMap O(1), TreeMap O(log n), list.contains / remove(0) O(n).
+
+## 11.2 Two pointers and sliding window
+
+*Interview priority: must-know.* Two patterns that turn O(n²) array and string problems into O(n): two pointers moving towards each other on a sorted array, and a window that grows and shrinks along a string.
+
+#### Theory: start here
+
+**In one sentence:** Two pointers and sliding windows scan an array or string with two moving indexes, avoiding nested loops by using order or a window invariant.
+
+Many problems ask about pairs or contiguous ranges: "two numbers that sum to X", "longest substring with no repeats", "max sum of k consecutive elements". Checking every pair or range is O(n²) or worse.
+
+With **two pointers** on sorted input, you start at both ends and move one pointer inward based on a comparison, discarding an element each step. With a **sliding window**, you keep a range [start, end] that satisfies a rule, extending the end and shrinking the start, so each element enters and leaves once.
+
+**Key terms**
+
+- **Two pointers**: Two indexes moving through the data, often from both ends.
+- **Sliding window**: A contiguous range that grows and shrinks.
+- **Invariant**: A condition the window always keeps (no duplicates, sum ≤ k).
+- **Monotonic move**: Pointers only move forward, guaranteeing O(n).
+
+**How it works**
+
+1. Decide what the pointers or window represent.
+2. Define when to move which pointer (or when to shrink).
+3. Update the answer at each valid state.
+4. Argue that each index moves at most n times → O(n).
+
+**In real projects**
+
+- Pairs/triplets in sorted arrays, merging sorted lists, palindromes.
+- Rate limiting over a time window uses the same sliding-window idea.
+
+**Common mistakes**
+
+- Using two pointers on unsorted data where order matters.
+- Moving the start pointer backwards.
+- Off-by-one window lengths (end − start + 1).
+
+#### Code
+
+```java
+// sorted input: find two numbers that add up to target
+int[] pairSum(int[] a, int target) {
+  int left = 0, right = a.length - 1;
+  while (left < right) {
+    int sum = a[left] + a[right];
+    if (sum == target) return new int[]{left, right};
+    if (sum < target) left++;      // need a bigger sum: move left up
+    else right--;                  // need a smaller sum: move right down
+  }
+  return null;
+}
+```
+
+#### Remember
+
+- Two pointers (sorted input): move the pointer that can't be part of an answer; O(n), O(1) space.
+- Sliding window: extend end, shrink start when the window breaks the rule; each index enters/leaves once → O(n).
+- Signals: "pair/triplet in a sorted array", "longest/shortest contiguous subarray/substring".
+
+## 11.3 Hashing patterns: two-sum, counting, grouping
+
+*Interview priority: must-know.* Three HashMap patterns that solve a huge share of interview problems in one pass: remember complements (two-sum), count frequencies, and group by a computed key (anagrams).
+
+#### Theory: start here
+
+**In one sentence:** A HashMap or HashSet can remember what you've already seen in O(1), turning many "search again for each element" problems into a single pass.
+
+When a brute-force solution loops over the data again for every element ("is the partner of this number somewhere?"), the fix is often to remember things as you go. A **HashMap** stores value → info (like index or count); a **HashSet** stores just "seen".
+
+Three patterns cover a lot: **complement lookup** (two-sum), **frequency counting** (most common word, duplicates, anagram check) and **grouping by a canonical key** (anagrams, events per day).
+
+**Key terms**
+
+- **Complement**: The value you need to complete a pair (target − x).
+- **Frequency map**: Map from item → count.
+- **Canonical key**: A normalised form shared by equivalent items (sorted letters).
+- **merge / computeIfAbsent**: Map methods for counting and grouping in one call.
+
+**How it works**
+
+1. Ask what you'd need to know about earlier elements.
+2. Store exactly that in a map or set as you scan.
+3. Look up before inserting (to avoid matching an element with itself).
+4. Return as soon as the answer is found.
+
+**In real projects**
+
+- Deduplicating events, counting by status, grouping orders by customer: everyday backend code, not just interviews.
+
+**Common mistakes**
+
+- Using arrays as map keys (identity hashCode).
+- Forgetting the O(n) memory cost.
+
+#### Code
+
+```java
+// 1. Two-sum (unsorted): one pass, remembering value → index
+int[] twoSum(int[] a, int target) {
+  Map<Integer, Integer> seen = new HashMap<>();
+  for (int i = 0; i < a.length; i++) {
+    Integer j = seen.get(target - a[i]);       // seen the complement already?
+    if (j != null) return new int[]{j, i};
+    seen.put(a[i], i);
+  }
+  return null;
+}
+// 2. Frequency count
+Map<String, Integer> freq = new HashMap<>();
+for (String w : words) freq.merge(w, 1, Integer::sum);
+// 3. Group anagrams: same sorted letters → same key
+Map<String, List<String>> groups = new HashMap<>();
+for (String w : words) {
+  char[] k = w.toCharArray(); Arrays.sort(k);
+  groups.computeIfAbsent(new String(k), x -> new ArrayList<>()).add(w);
+}
+```
+
+#### Remember
+
+- Two-sum: map value → index, look up target − x before inserting: O(n).
+- Count with merge(key, 1, Integer::sum); group with computeIfAbsent(key, k -> new ArrayList&lt;>()).add(x).
+- Keys need proper equals/hashCode: use String or records, not arrays.
+
+## 11.4 Binary search
+
+*Interview priority: must-know.* Halve a sorted search space each step: 1,000,000 items in 20 comparisons. Trace a hit and a miss, avoid the midpoint overflow bug, and see "binary search on the answer".
+
+#### Theory: start here
+
+**In one sentence:** Binary search finds a value in sorted data by repeatedly halving the search range, taking O(log n) steps.
+
+To find a word in a dictionary you don't read every page: you open the middle, see whether your word comes before or after, and repeat on that half. That's **binary search**. Each comparison discards half of what's left, so a million items need about 20 comparisons.
+
+It only works when the data is **sorted**, or more generally when there's a yes/no condition that flips exactly once across the range. That generalisation, "binary search on the answer", solves many optimisation problems.
+
+**Key terms**
+
+- **lo / hi / mid**: Bounds of the remaining range and its middle.
+- **O(log n)**: Steps grow with the logarithm of n.
+- **Insertion point**: Where a missing value would go to keep the order.
+- **Monotonic predicate**: A condition that is false then true (or vice versa) exactly once.
+
+**How it works**
+
+1. Set lo and hi to the range ends.
+2. Compute mid safely: lo + (hi − lo) / 2.
+3. Compare and discard the half that can't contain the answer.
+4. Stop when found, or when lo > hi (not found).
+
+**In real projects**
+
+- Arrays.binarySearch, Collections.binarySearch, TreeMap.floorKey all rely on sorted order.
+- Binary search on the answer: minimum capacity, smallest time limit, git bisect.
+
+**Common mistakes**
+
+- Binary searching unsorted data.
+- (lo + hi) / 2 overflow.
+- Infinite loops from lo = mid instead of mid + 1.
+
+#### Code
+
+```java
+int search(int[] a, int target) {          // a must be sorted
+  int lo = 0, hi = a.length - 1;
+  while (lo <= hi) {
+    int mid = lo + (hi - lo) / 2;          // not (lo + hi) / 2: can overflow
+    if (a[mid] == target) return mid;
+    if (a[mid] < target) lo = mid + 1;     // answer is to the right
+    else hi = mid - 1;                     // answer is to the left
+  }
+  return -1;                               // not found
+}
+// Built in: Arrays.binarySearch(a, key), Collections.binarySearch(list, key)
+```
+
+#### Remember
+
+- Sorted input → halve the range each step: O(log n).
+- mid = lo + (hi − lo) / 2; loop while lo &lt;= hi; move lo = mid + 1 or hi = mid − 1.
+- Monotonic yes/no condition → binary search on the answer range.
+
+## 11.5 Graphs and trees: BFS and DFS
+
+*Interview priority: must-know.* Explore a graph level by level with a queue (BFS) to find the fewest hops, or go deep first with recursion (DFS). The same two traversals cover most tree and graph problems.
+
+#### Theory: start here
+
+**In one sentence:** Graphs are nodes connected by edges; breadth-first search explores them level by level, depth-first search follows one path as far as possible before backtracking.
+
+Many problems are secretly graphs: friends of friends, routes between cities, dependencies between modules, cells in a maze. Represent them as an **adjacency list** (each node → its neighbours) and explore with one of two traversals.
+
+**BFS** uses a queue and visits nodes in order of distance from the start, so it finds the shortest path in an unweighted graph. **DFS** uses recursion or a stack and dives deep, which suits "is there a path", connected components, cycle detection, topological ordering and backtracking. Trees are graphs without cycles, and their classic traversals are BFS (level order) and DFS (pre/in/post-order).
+
+**Key terms**
+
+- **Node / edge**: A vertex / a connection between two vertices.
+- **Adjacency list**: Map from node to its neighbours.
+- **Visited set**: Prevents revisiting nodes (and infinite loops on cycles).
+- **BFS / DFS**: Queue-based level order / stack- or recursion-based depth first.
+- **O(V + E)**: Each vertex and edge handled once.
+
+**How it works**
+
+1. Build the adjacency list.
+2. Pick BFS (shortest hops, levels) or DFS (explore, paths, cycles).
+3. Track visited nodes.
+4. Process each node's neighbours; stop early when the goal is found.
+
+**In real projects**
+
+- Dependency resolution and build ordering use DFS/topological sort.
+- Recommendation "people you may know" uses BFS by distance.
+- Weighted routes need Dijkstra (a priority queue).
+
+**Common mistakes**
+
+- Forgetting a visited set on graphs with cycles.
+- Deep recursion causing StackOverflowError.
+- Using DFS when the shortest path is required.
+
+#### Code
+
+```java
+Map<String, List<String>> graph = Map.of(
+  "A", List.of("B", "C"), "B", List.of("A", "D"), "C", List.of("A", "D", "E"),
+  "D", List.of("B", "C"), "E", List.of("C", "F"), "F", List.of("E"));
+
+int shortestHops(String from, String to) {          // BFS: level by level
+  Deque<String> queue = new ArrayDeque<>(List.of(from));
+  Map<String, Integer> dist = new HashMap<>(Map.of(from, 0));
+  while (!queue.isEmpty()) {
+    String cur = queue.poll();
+    if (cur.equals(to)) return dist.get(cur);
+    for (String next : graph.get(cur))
+      if (!dist.containsKey(next)) { dist.put(next, dist.get(cur) + 1); queue.add(next); }
+  }
+  return -1;
+}
+
+void dfs(String cur, Set<String> visited) {         // DFS: go deep first
+  if (!visited.add(cur)) return;
+  for (String next : graph.get(cur)) dfs(next, visited);
+}
+```
+
+#### Remember
+
+- Graph = adjacency list Map&lt;Node, List&lt;Node>>; mark visited to handle cycles.
+- BFS: queue, level by level → shortest path in unweighted graphs; DFS: recursion/stack → paths, cycles, components, backtracking.
+- Both O(V + E); weighted shortest path → Dijkstra with a PriorityQueue.
+
+## 11.6 Dynamic programming basics
+
+*Interview priority: good to know.* When a recursive solution keeps solving the same subproblems, store the answers. See Fibonacci go from 331 million calls to 79, then fill a table for the minimum number of coins.
+
+#### Theory: start here
+
+**In one sentence:** Dynamic programming solves a problem by combining answers to smaller overlapping subproblems, computing each one only once.
+
+Some recursive solutions explode because they solve the same subproblem again and again: naive Fibonacci recomputes fib(3) thousands of times. **Dynamic programming** stores each subproblem's answer and reuses it.
+
+There are two styles: **top-down** (keep the recursion, add a memo map) and **bottom-up** (fill a table from the smallest cases upward). The hard part is choosing the **state**: what dp[x] means. Once that's clear, the recurrence usually follows.
+
+**Key terms**
+
+- **Overlapping subproblems**: The same smaller problem is needed many times.
+- **Optimal substructure**: The best answer is built from best answers to subproblems.
+- **Memoisation**: Caching results of recursive calls.
+- **Tabulation**: Filling a dp table iteratively.
+- **State / recurrence**: What dp[i] means / how it's computed from smaller states.
+
+**How it works**
+
+1. Write the brute-force recursion and spot repeated calls.
+2. Define the state and the recurrence.
+3. Add memoisation, or fill a table bottom-up.
+4. Optimise space if only recent rows are needed.
+
+**In real projects**
+
+- Pricing combinations, diffing text (edit distance, LCS), scheduling and resource allocation.
+- Interview classics: climbing stairs, coin change, knapsack, longest increasing subsequence.
+
+**Common mistakes**
+
+- Greedy choices where DP is required.
+- Wrong base cases.
+- Recursive memo with HashMap.computeIfAbsent (throws ConcurrentModificationException).
+
+#### Code
+
+```java
+// Naive recursion: recomputes the same values again and again
+long fib(int n) { return n < 2 ? n : fib(n - 1) + fib(n - 2); }
+
+// Memoised (top-down): each n computed once → O(n)
+Map<Integer, Long> memo = new HashMap<>();
+long fibMemo(int n) {
+  if (n < 2) return n;
+  Long cached = memo.get(n);
+  if (cached != null) return cached;
+  long v = fibMemo(n - 1) + fibMemo(n - 2);
+  memo.put(n, v);
+  return v;
+}
+
+// Bottom-up table: fewest coins that make an amount
+int minCoins(int[] coins, int amount) {
+  int[] dp = new int[amount + 1];                   // dp[x] = fewest coins for x
+  Arrays.fill(dp, Integer.MAX_VALUE); dp[0] = 0;
+  for (int x = 1; x <= amount; x++)
+    for (int c : coins)
+      if (c <= x && dp[x - c] != Integer.MAX_VALUE)
+        dp[x] = Math.min(dp[x], dp[x - c] + 1);
+  return dp[amount] == Integer.MAX_VALUE ? -1 : dp[amount];
+}
+```
+
+#### Remember
+
+- DP = optimal substructure + overlapping subproblems → store answers instead of recomputing.
+- Top-down: recursion + memo map; bottom-up: fill a table from base cases.
+- Recipe: state, recurrence, base cases, order, answer. Greedy can fail where DP is correct.
 
 ---
 
