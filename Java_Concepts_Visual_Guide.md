@@ -1581,6 +1581,19 @@ class CarControllerTest {
 | Observability | logs + metrics + traces (trace ID passed in headers across services) |
 | Monolith vs microservices | microservices give independent deploy/scale and team ownership, at the cost of network failures, distributed data and ops overhead |
 
+# Part 6: Real-world scenarios
+
+Production incidents that combine several topics above. Each one has a step-by-step walkthrough in the visualizer.
+
+| # | Scenario | What goes wrong | Fix |
+|---|---|---|---|
+| 6.1 | Flash sale, 2 pods, stock 1 | both pods `SELECT stock = 1`, both pass the check, both commit → 2 orders. `synchronized` only locks one JVM | `UPDATE … SET stock = stock - :q WHERE id = :id AND stock >= :q` and check rows affected; `@Version`; CHECK constraint |
+| 6.2 | Memory leak | `static HashMap` cache whose key includes `nanoTime()` → 0% hits, grows forever; heap floor after full GC rises until OOM | heap dump → dominator tree → path to GC roots; bounded, expiring Caffeine cache with metrics |
+| 6.3 | Batch never finishes | pool tasks `join()` on subtasks queued to the **same** fixed pool → every thread waits, nothing runs, no deadlock reported | compose with `thenCombine`, separate bounded I/O pool, `orTimeout` |
+| 6.4 | Checkout outage | HTTP + SMTP inside `@Transactional` hold DB connections; slow provider → pool exhausted (Little's law: rate × hold time) → every endpoint and the health check fail; email sent before a failed commit | short transactions, remote calls outside, `@TransactionalEventListener(AFTER_COMMIT)` / outbox, timeouts, breaker, `open-in-view: false` |
+| 6.5 | Cache stampede | hot key expires; rate × reload time requests all miss and run the same query → DB overload feeds itself | single-flight per key (`putIfAbsent` of a future), TTL jitter, refresh-ahead, negative caching |
+| 6.6 | Shared `SimpleDateFormat` | its parse state lives in fields → concurrent parses return each other's dates, no exception | immutable `DateTimeFormatter` / `LocalDate`; audit singletons and statics for mutable state |
+
 ---
 
 *End of guide. To step through any topic visually, open the [Java Visualizer](https://adityamalu.github.io/java-visualizer/).*

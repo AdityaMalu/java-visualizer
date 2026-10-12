@@ -11,6 +11,9 @@ Step-by-step visual walkthroughs of core Java interview topics, like stepping th
 | 3. OOP, SOLID, design patterns | dynamic dispatch, overloading, init order, composition, SOLID, 10 patterns |
 | 4. Multithreading and concurrency | races, synchronized, volatile/JMM, CAS, wait/notify, deadlock, locks, synchronizers, pools, CompletableFuture, virtual threads |
 | 5. Spring Boot, JPA, microservices | DI, bean lifecycle, AOP proxies, @Transactional, Hibernate, Boot internals, security, circuit breaker, saga/outbox, idempotency |
+| 6. Real-world scenarios | flash-sale overselling across pods, production memory leak (heap dump → fix), thread-pool starvation, long @Transactional draining the connection pool, cache stampede, shared SimpleDateFormat |
+
+Every topic ends with a 3-question quiz that explains each answer. Your best score per topic is kept in your browser and shown in the topic list.
 
 Keys: `←` `→` step, `space` play, `[` `]` previous/next topic.
 
