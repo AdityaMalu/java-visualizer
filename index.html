@@ -1081,7 +1081,7 @@ steps:[
 keep:[`Arrays.asList: fixed-size view, set writes through to the array.`,`unmodifiableList: read-only view, still changes with its source.`,`List.of / copyOf: truly immutable, no nulls.`]},
 
 /* =============================== 2.10 =============================== */
-{ no:'2.10', title:'Generics, type erasure, PECS', idea:`See the cast the compiler inserts, sneak an Integer into a List<String> through a raw type, then learn when to use extends vs super.`,
+{ no:'2.10', title:'Generics, type erasure, PECS', idea:`See the cast the compiler inserts, sneak an Integer into a List&lt;String&gt; through a raw type, then learn when to use extends vs super.`,
 actors:'Compiler / JVM', stateTitle:'Types',
 codes:{a:`List<String> names = new ArrayList<>();
 names.add("Asha");
@@ -1645,7 +1645,7 @@ steps:[
 {th:[], g:[G('Variants',['Simple factory','static method with a switch (above)'],['Factory method','subclass decides: abstract Notifier create()'],['Abstract factory','a FAMILY that fits together'],['Static factories in the JDK','List.of, Optional.of, Integer.valueOf (can cache!)']), G('Abstract factory example',['AwsFactory','AWS disk + network + VM'],['AzureFactory','Azure disk + network + VM'],['guarantees','you never mix AWS disk with Azure VM','ok'])],
  say:`Know the three flavours. <b>Abstract factory</b> creates a <b>family</b> of related objects (a cloud provider's disk, network and VM). Static factory methods also beat constructors because they have names, can return cached instances (<code>Integer.valueOf</code>), and can return subtypes.`}
 ],
-keep:[`Factory hides the concrete class; client depends on the interface.`,`switch-factory violates OCP as types grow → Spring Map<String, Bean> registry.`,`Abstract factory = a family of matching objects.`]},
+keep:[`Factory hides the concrete class; client depends on the interface.`,`switch-factory violates OCP as types grow → Spring Map&lt;String, Bean&gt; registry.`,`Abstract factory = a family of matching objects.`]},
 
 /* =============================== 3.7c =============================== */
 { no:'3.7c', title:'Builder', idea:`Replace an unreadable telescoping constructor with a fluent builder that accumulates fields, validates once, and produces an immutable object.`,
@@ -4537,6 +4537,244 @@ keep:[`Thread-per-request with platform threads caps concurrency at the pool siz
 ]});
 </script>
 <script>
+PARTS.push({no:'11', title:'Data structures and algorithms in Java', topics:[
+
+/* =============================== 11.1 =============================== */
+{ no:'11.1', title:'Big-O and the cost of Java collection operations', imp:'must', idea:`How to estimate an algorithm's cost as the input grows, why a nested loop that's fine for 100 items dies at 100,000, and what each common Java collection operation costs.`,
+actors:'Algorithm', stateTitle:'Cost', logTitle:'Rough timings',
+codes:{a:`int sumAll(int[] a) { int s = 0; for (int x : a) s += x; return s; }   // O(n)
+
+boolean hasDuplicate(int[] a) {                     // O(n²)
+  for (int i = 0; i < a.length; i++)
+    for (int j = i + 1; j < a.length; j++)
+      if (a[i] == a[j]) return true;
+  return false;
+}
+
+boolean hasDuplicateFast(int[] a) {                 // O(n) time, O(n) extra space
+  Set<Integer> seen = new HashSet<>();
+  for (int x : a) if (!seen.add(x)) return true;
+  return false;
+}
+// list.contains(x) O(n) · set.contains(x) O(1) · treeSet.contains(x) O(log n)`},
+steps:[
+{th:[], g:[G('Growth for n = 1,000,000',['O(1)','1 step: array index, HashMap get','ok'],['O(log n)','~20 steps: binary search, TreeMap','ok'],['O(n)','1,000,000: one loop','ok'],['O(n log n)','~20,000,000: sorting'],['O(n²)','10¹²: nested loops','bad'],['O(2ⁿ)','impossible: naive recursion (11.6)','bad'])],
+ say:`<b>Big-O</b> describes how an algorithm's work grows as the input grows, ignoring constants. It answers "what happens when n is 1,000 times bigger?". Assume a machine does roughly 10⁸ simple operations per second: O(n log n) on a million items takes a fraction of a second, O(n²) takes hours.`},
+{hl:{algo:[1]}, th:[['algo','RUN:ok','sumAll']], g:[G('sumAll',['loop runs','n times'],['time','O(n)','ok'],['extra space','O(1): one variable','ok'])],
+ say:`One loop over n elements, constant work per element: <b>O(n)</b> time. It uses only one extra variable regardless of n: <b>O(1) space</b>. Always state both time and space.`},
+{hl:{algo:[3,4,5,6]}, th:[['algo','RUN:bad','hasDuplicate']], g:[G('hasDuplicate (nested loops)',['comparisons','n(n−1)/2'],['n = 1,000','~500,000: instant'],['n = 100,000','~5,000,000,000: ~50 s','bad'],['time','O(n²)','bad'])], log:['n=1,000      → 1 ms','n=100,000    → 48,000 ms'],
+ say:`Comparing every pair is <b>O(n²)</b>. It passes every test with small data and becomes unusable in production: 100× more data means 10,000× more work. Nested loops over the same input are the most common hidden O(n²).`},
+{hl:{algo:[10,11,12,13]}, th:[['algo','RUN:ok','hasDuplicateFast']], g:[G('hasDuplicateFast (HashSet)',['per element','one O(1) add'],['time','O(n)','ok'],['extra space','O(n): the set','hot'],['n = 100,000','~3 ms','ok'])], log:['n=100,000    → 3 ms'],
+ say:`Trade <b>memory for time</b>: remember what you've seen in a HashSet. <code>add</code> returns false if the element was already there. One pass, O(n) time, at the cost of O(n) extra space. This trade is the heart of most interview optimisations.`},
+{hl:{algo:[15]}, th:[], g:[G('Java collection costs',['ArrayList get(i) / add at end','O(1) / amortised O(1)','ok'],['ArrayList add(0, x) / remove(0) / contains','O(n)','bad'],['HashMap / HashSet get, put, contains','O(1) average','ok'],['TreeMap / TreeSet get, put, floor','O(log n)'],['PriorityQueue offer / poll / peek','O(log n) / O(log n) / O(1)'],['LinkedList get(i)','O(n)','bad'],['Collections.sort / List.sort','O(n log n)'])],
+ say:`Know these by heart (2.1–2.8). The classic hidden cost: <code>list.contains(x)</code> inside a loop is O(n) per call, so the loop becomes O(n²). Convert the list to a HashSet first.`},
+{th:[], g:[G('Hidden costs to spot',['string += in a loop','O(n²) copying (1.8)','bad'],['list.remove(0) repeatedly','O(n²) (2.5)','bad'],['recursion depth','O(depth) stack space'],['streams','same complexity as the loop they replace'])],
+ say:`<b>In interviews:</b> state the brute-force solution and its complexity first, then improve it ("can a HashSet/HashMap remove the inner loop? can sorting help? can I use two pointers?"), and always give final time and space complexity.`}
+],
+keep:[`O(1) < O(log n) < O(n) < O(n log n) < O(n²) < O(2ⁿ); state time and space.`,`Nested loops over the input = O(n²); a HashSet/HashMap often brings it to O(n) using O(n) memory.`,`Know collection costs: HashMap O(1), TreeMap O(log n), list.contains / remove(0) O(n).`]},
+
+/* =============================== 11.2 =============================== */
+{ no:'11.2', title:'Two pointers and sliding window', imp:'must', idea:`Two patterns that turn O(n²) array and string problems into O(n): two pointers moving towards each other on a sorted array, and a window that grows and shrinks along a string.`,
+actors:'Pointers', stateTitle:'Array / window',
+codes:{a:`// sorted input: find two numbers that add up to target
+int[] pairSum(int[] a, int target) {
+  int left = 0, right = a.length - 1;
+  while (left < right) {
+    int sum = a[left] + a[right];
+    if (sum == target) return new int[]{left, right};
+    if (sum < target) left++;      // need a bigger sum: move left up
+    else right--;                  // need a smaller sum: move right down
+  }
+  return null;
+}`,
+b:`// longest substring without repeating characters
+int longestUnique(String s) {
+  Map<Character, Integer> lastSeen = new HashMap<>();
+  int best = 0, start = 0;
+  for (int end = 0; end < s.length(); end++) {
+    char c = s.charAt(end);
+    if (lastSeen.containsKey(c) && lastSeen.get(c) >= start)
+      start = lastSeen.get(c) + 1;           // shrink: jump past the repeat
+    lastSeen.put(c, end);
+    best = Math.max(best, end - start + 1);
+  }
+  return best;
+}`},
+steps:[
+{hl:{L:[3],R:[3]}, th:[['L','RUN','index 0'],['R','RUN','index 5']], g:[G('a (sorted), target 10',C('',[['1','hot'],['3'],['4'],['6'],['8'],['11','hot']]),['sum','1 + 11 = 12 > 10'])],
+ say:`<b>Two pointers.</b> The array is sorted and we want a pair summing to 10. Brute force checks all pairs: O(n²). Instead, start with one pointer at each end. Sum = 12, too big.`},
+{hl:{R:[8]}, th:[['L','RUN','index 0'],['R','RUN','index 4']], g:[G('a (sorted), target 10',C('',[['1','hot'],['3'],['4'],['6'],['8','hot'],['11','dim']]),['sum','1 + 8 = 9 < 10'])],
+ say:`Too big, so move <b>right</b> down: no pair using 11 can work, because 11 plus even the smallest number (1) is already too big. Every move safely discards one element. Now 9: too small.`},
+{hl:{L:[7]}, th:[['L','RUN','index 1'],['R','RUN','index 4']], g:[G('a (sorted), target 10',C('',[['1','dim'],['3','hot'],['4'],['6'],['8','hot'],['11','dim']]),['sum','3 + 8 = 11 > 10'])],
+ say:`Too small, so move <b>left</b> up: 1 plus the largest remaining number is too small, so 1 can't be in any answer. 3 + 8 = 11, too big again.`},
+{hl:{L:[7],R:[8]}, th:[['L','RUN','index 2'],['R','RUN','index 3']], g:[G('a (sorted), target 10',C('',[['1','dim'],['3','dim'],['4','ok'],['6','ok'],['8','dim'],['11','dim']]),['sum','4 + 6 = 10','ok'])], log:['pairSum → [2, 3]'],
+ say:`Right moves to 6 (3 + 6 = 9), then left moves to 4: 4 + 6 = 10. Found it. Each step moved one pointer inward, so it's at most n steps: <b>O(n) time, O(1) space</b>. Same idea: reversing an array, palindrome checks, merging two sorted lists, 3-sum (sort + two pointers).`},
+{cv:'b', hl:{end:[5,6,9,10]}, th:[['start','RUN','0'],['end','RUN','0 → 2']], g:[G('s = "abcabcbb"',C('window',[['a','ok'],['b','ok'],['c','ok'],['a'],['b'],['c'],['b'],['b']]),['best','3'])],
+ say:`<b>Sliding window</b> for "longest substring without repeats". A window [start, end] grows to the right one character at a time while it has no repeats: "abc", length 3. A map remembers the last index of each character.`},
+{hl:{end:[7,8]}, th:[['start','RUN','0 → 1'],['end','RUN','3 (a)']], g:[G('s = "abcabcbb"',C('window',[['a','dim'],['b','ok'],['c','ok'],['a','ok'],['b'],['c'],['b'],['b']]),['repeat','a last seen at 0 → start = 1','hot'],['best','3'])],
+ say:`At index 3 we meet 'a' again, last seen at 0, inside the window. <b>Shrink</b> by moving start just past it, to 1. The window "bca" is valid again. The start pointer only moves forward, never back.`},
+{hl:{end:[5,10]}, th:[['start','RUN','… → 7'],['end','TERM','7']], g:[G('s = "abcabcbb"',C('window',[['a','dim'],['b','dim'],['c','dim'],['a','dim'],['b','dim'],['c','dim'],['b','dim'],['b','ok']]),['best','3','ok'])], log:['longestUnique("abcabcbb") → 3'],
+ say:`Each index enters the window once and leaves at most once, so the whole scan is <b>O(n)</b> instead of checking every substring (O(n²) or worse). The pattern fits "longest/shortest subarray or substring with property X": max sum of k consecutive items, smallest window containing all letters, and so on.`}
+],
+keep:[`Two pointers (sorted input): move the pointer that can't be part of an answer; O(n), O(1) space.`,`Sliding window: extend end, shrink start when the window breaks the rule; each index enters/leaves once → O(n).`,`Signals: "pair/triplet in a sorted array", "longest/shortest contiguous subarray/substring".`]},
+
+/* =============================== 11.3 =============================== */
+{ no:'11.3', title:'Hashing patterns: two-sum, counting, grouping', imp:'must', idea:`Three HashMap patterns that solve a huge share of interview problems in one pass: remember complements (two-sum), count frequencies, and group by a computed key (anagrams).`,
+actors:'Loop', stateTitle:'Map contents',
+codes:{a:`// 1. Two-sum (unsorted): one pass, remembering value → index
+int[] twoSum(int[] a, int target) {
+  Map<Integer, Integer> seen = new HashMap<>();
+  for (int i = 0; i < a.length; i++) {
+    Integer j = seen.get(target - a[i]);       // seen the complement already?
+    if (j != null) return new int[]{j, i};
+    seen.put(a[i], i);
+  }
+  return null;
+}
+// 2. Frequency count
+Map<String, Integer> freq = new HashMap<>();
+for (String w : words) freq.merge(w, 1, Integer::sum);
+// 3. Group anagrams: same sorted letters → same key
+Map<String, List<String>> groups = new HashMap<>();
+for (String w : words) {
+  char[] k = w.toCharArray(); Arrays.sort(k);
+  groups.computeIfAbsent(new String(k), x -> new ArrayList<>()).add(w);
+}`},
+steps:[
+{hl:{i:[2,3,4,5,7]}, th:[['i','RUN','0 → 7']], g:[G('a = [7, 2, 11, 15], target 9',C('',[['7','hot'],['2'],['11'],['15']]),['need','9 − 7 = 2: not seen']), G('seen',['7','→ index 0','hot'])],
+ say:`<b>Two-sum, unsorted.</b> For each number, the partner we need is <code>target − a[i]</code>. Instead of searching for it (O(n) each time), look it up in a map of numbers seen so far: O(1). 7 needs 2, which hasn't appeared yet, so remember 7 → 0.`},
+{hl:{i:[5,6]}, th:[['i','TERM:ok','1 → 2']], g:[G('a = [7, 2, 11, 15], target 9',C('',[['7','ok'],['2','ok'],['11'],['15']]),['need','9 − 2 = 7: seen at 0','ok']), G('seen',['7','→ index 0'])], log:['twoSum → [0, 1]'],
+ say:`2 needs 7, and the map says 7 was at index 0: answer [0, 1]. <b>One pass, O(n) time, O(n) space</b>, versus O(n²) for checking all pairs. Checking before inserting also avoids pairing an element with itself.`},
+{hl:{i:[11,12,13]}, th:[['i','TERM:ok','6 words']], g:[G('words',C('',[['to'],['be'],['or'],['not'],['to'],['be']])), G('freq',['to','2','hot'],['be','2','hot'],['or','1'],['not','1'])],
+ say:`<b>Counting.</b> <code>merge(w, 1, Integer::sum)</code> inserts 1 for a new key or adds 1 to the existing count, in one call. Counting underlies "most frequent element", "first unique character", "is it a permutation?" and top-K (combine with a heap, 2.8).`},
+{hl:{i:[15,16,17,18,19]}, th:[['i','RUN','eat, tea, tan …']], g:[G('words',C('',[['eat'],['tea'],['tan'],['ate'],['nat'],['bat']])), G('key = sorted letters',['eat → "aet"',''],['tea → "aet"','same key','hot'],['tan → "ant"',''])],
+ say:`<b>Grouping by a computed key.</b> Two words are anagrams if their sorted letters match, so the sorted letters make a perfect map key. <code>computeIfAbsent</code> creates the list the first time a key appears.`},
+{hl:{i:[18]}, th:[['i','TERM:ok','done']], g:[G('groups',['"aet"','[eat, tea, ate]','ok'],['"ant"','[tan, nat]','ok'],['"abt"','[bat]','ok'])],
+ say:`One pass: O(n · k log k) for n words of length k. The same pattern groups transactions by day, logs by user, points by grid cell. The key must have correct equals/hashCode (2.3): Strings and records are safe; arrays are not.`},
+{th:[], g:[G('Recognise it',['"find pair/complement"','map of value → index'],['"count / most frequent / duplicates"','frequency map or set'],['"group things that are equivalent"','map of canonical key → list'],['"seen this state before?"','HashSet of states'])],
+ say:`<b>Rule of thumb:</b> when a brute force searches the input again for each element, ask whether a HashMap or HashSet can remember what you need in one pass. Mention the trade-off: O(n) extra memory, and worst-case behaviour if many keys collide.`}
+],
+keep:[`Two-sum: map value → index, look up target − x before inserting: O(n).`,`Count with merge(key, 1, Integer::sum); group with computeIfAbsent(key, k -> new ArrayList<>()).add(x).`,`Keys need proper equals/hashCode: use String or records, not arrays.`]},
+
+/* =============================== 11.4 =============================== */
+{ no:'11.4', title:'Binary search', imp:'must', idea:`Halve a sorted search space each step: 1,000,000 items in 20 comparisons. Trace a hit and a miss, avoid the midpoint overflow bug, and see "binary search on the answer".`,
+actors:'Search', stateTitle:'Search space',
+codes:{a:`int search(int[] a, int target) {          // a must be sorted
+  int lo = 0, hi = a.length - 1;
+  while (lo <= hi) {
+    int mid = lo + (hi - lo) / 2;          // not (lo + hi) / 2: can overflow
+    if (a[mid] == target) return mid;
+    if (a[mid] < target) lo = mid + 1;     // answer is to the right
+    else hi = mid - 1;                     // answer is to the left
+  }
+  return -1;                               // not found
+}
+// Built in: Arrays.binarySearch(a, key), Collections.binarySearch(list, key)`},
+steps:[
+{hl:{s:[2,3,4]}, th:[['s','RUN','lo 0, hi 9, mid 4']], g:[G('a, target 61',C('',[['3'],['8'],['15'],['21'],['27','hot'],['34'],['42'],['56'],['61'],['77']]),['a[mid] = 27','< 61 → go right'])],
+ say:`<b>Binary search</b> works on sorted data, like looking up a word in a dictionary by opening it in the middle. Compare the middle element with the target: 27 is less than 61, so the target can only be in the right half.`},
+{hl:{s:[6,4]}, th:[['s','RUN','lo 5, hi 9, mid 7']], g:[G('a, target 61',C('',[['3','dim'],['8','dim'],['15','dim'],['21','dim'],['27','dim'],['34'],['42'],['56','hot'],['61'],['77']]),['a[mid] = 56','< 61 → go right'])],
+ say:`Half the array is gone after one comparison. New middle: 56, still too small, so discard the left part again.`},
+{hl:{s:[5]}, th:[['s','TERM:ok','found at 8']], g:[G('a, target 61',C('',[['3','dim'],['8','dim'],['15','dim'],['21','dim'],['27','dim'],['34','dim'],['42','dim'],['56','dim'],['61','ok'],['77']]),['comparisons','3'])], log:['search(a, 61) → 8'],
+ say:`lo = 8, hi = 9, mid = 8: found. Each step halves the range, so it takes at most about log₂(n) steps: 20 for a million items, 30 for a billion. That's <b>O(log n)</b>.`},
+{hl:{s:[7,9]}, th:[['s','TERM:warn','not found']], g:[G('a, target 50',['mid 4 → 27','go right'],['mid 7 → 56','go left'],['mid 5 → 34','go right'],['mid 6 → 42','go right'],['lo 7 > hi 6','stop → -1','bad'])], log:['search(a, 50) → -1'],
+ say:`For a missing value the range shrinks until <code>lo &gt; hi</code>, which means "not here". Note where lo ended: index 7 is where 50 <i>would</i> be inserted. <code>Arrays.binarySearch</code> returns <code>-(insertion point) - 1</code> for that reason.`},
+{hl:{s:[4]}, th:[], g:[G('Midpoint overflow',['lo + hi','can exceed Integer.MAX_VALUE for huge arrays','bad'],['(lo + hi) / 2','negative index → crash','bad'],['lo + (hi − lo) / 2','always safe','ok'],['or','(lo + hi) >>> 1'])],
+ say:`A famous bug, present in the JDK's own binary search for years: <code>(lo + hi) / 2</code> overflows when both are large. Use <code>lo + (hi - lo) / 2</code>. Off-by-one errors (<code>&lt;</code> vs <code>&lt;=</code>, <code>mid</code> vs <code>mid ± 1</code>) are the other classic trap.`},
+{th:[], g:[G('Binary search on the answer',['question','smallest ship capacity to deliver all packages in 5 days'],['observation','if capacity C works, any C\' > C works (monotonic)','ok'],['search space','capacity from max(weight) to sum(weights)'],['each step','simulate: O(n)'],['total','O(n log(sum))','ok'])],
+ say:`Binary search isn't only for arrays. Whenever the answer has a <b>yes/no test that flips once</b> ("does capacity C work?"), you can binary-search the answer range: minimum capacity, smallest time, largest feasible value. Also: first/last occurrence of a value, and search in a rotated sorted array.`}
+],
+keep:[`Sorted input → halve the range each step: O(log n).`,`mid = lo + (hi − lo) / 2; loop while lo <= hi; move lo = mid + 1 or hi = mid − 1.`,`Monotonic yes/no condition → binary search on the answer range.`]},
+
+/* =============================== 11.5 =============================== */
+{ no:'11.5', title:'Graphs and trees: BFS and DFS', imp:'must', idea:`Explore a graph level by level with a queue (BFS) to find the fewest hops, or go deep first with recursion (DFS). The same two traversals cover most tree and graph problems.`,
+actors:'Traversal', stateTitle:'Queue / visited', dgTitle:'Graph',
+vb:'0 0 540 220',
+nodes:{A:{x:70,y:110,label:'A',w:50,h:40,kind:'circle'}, B:{x:190,y:50,label:'B',w:50,h:40,kind:'circle'}, C:{x:190,y:170,label:'C',w:50,h:40,kind:'circle'}, D:{x:320,y:50,label:'D',w:50,h:40,kind:'circle'}, E:{x:320,y:170,label:'E',w:50,h:40,kind:'circle'}, F:{x:460,y:170,label:'F',w:50,h:40,kind:'circle'}},
+edges:[['A','B','','line'],['A','C','','line'],['B','D','','line'],['C','D','','line'],['C','E','','line'],['E','F','','line']],
+codes:{a:`Map<String, List<String>> graph = Map.of(
+  "A", List.of("B", "C"), "B", List.of("A", "D"), "C", List.of("A", "D", "E"),
+  "D", List.of("B", "C"), "E", List.of("C", "F"), "F", List.of("E"));
+
+int shortestHops(String from, String to) {          // BFS: level by level
+  Deque<String> queue = new ArrayDeque<>(List.of(from));
+  Map<String, Integer> dist = new HashMap<>(Map.of(from, 0));
+  while (!queue.isEmpty()) {
+    String cur = queue.poll();
+    if (cur.equals(to)) return dist.get(cur);
+    for (String next : graph.get(cur))
+      if (!dist.containsKey(next)) { dist.put(next, dist.get(cur) + 1); queue.add(next); }
+  }
+  return -1;
+}
+
+void dfs(String cur, Set<String> visited) {         // DFS: go deep first
+  if (!visited.add(cur)) return;
+  for (String next : graph.get(cur)) dfs(next, visited);
+}`},
+steps:[
+{hl:{bfs:[1,2,3]}, th:[], d:{type:'graph',on:[]}, g:[G('Adjacency list',['A','B, C'],['B','A, D'],['C','A, D, E'],['D','B, C'],['E','C, F'],['F','E'])],
+ say:`A <b>graph</b> is nodes connected by edges: cities and roads, users and friendships, services and dependencies. In code it's usually an <b>adjacency list</b>: a map from each node to its neighbours. A tree is a graph with no cycles and one root.`},
+{hl:{bfs:[5,6,7]}, th:[['bfs','RUN','start at A']], d:{type:'graph',on:['A']}, g:[G('BFS',C('queue',[['A','hot']]),['dist','A = 0'])],
+ say:`<b>Breadth-first search</b> explores in rings: first the start, then everything 1 hop away, then 2 hops, and so on. A <b>queue</b> (FIFO) enforces that order. Goal: the fewest hops from A to F.`},
+{hl:{bfs:[9,11,12]}, th:[['bfs','RUN','visit A']], d:{type:'graph',on:['B','C'],ok:['A'],e:[['A','B','1','hot line'],['A','C','1','hot line']]}, g:[G('BFS',C('queue',[['B','hot'],['C','hot']]),['dist','A 0 · B 1 · C 1'])],
+ say:`Take A from the queue and add its unvisited neighbours B and C at distance 1. Recording the distance (or a visited set) when a node is <b>added</b> stops it from being queued twice, which matters in graphs with cycles.`},
+{hl:{bfs:[9,11,12]}, th:[['bfs','RUN','visit B, then C']], d:{type:'graph',on:['D','E'],ok:['A','B','C'],e:[['B','D','2','hot line'],['C','E','2','hot line']]}, g:[G('BFS',C('queue',[['D','hot'],['E','hot']]),['dist','… D 2 · E 2'],['C → D','already seen: skipped'])],
+ say:`B adds D (distance 2). C's neighbours are A (seen), D (already queued) and E (new, distance 2). The whole "2 hops away" ring is now queued before anything at 3 hops.`},
+{hl:{bfs:[10]}, th:[['bfs','TERM:ok','F found at distance 3']], d:{type:'graph',ok:['A','C','E','F'],e:[['A','C','','ok line'],['C','E','','ok line'],['E','F','3','ok line']]}, g:[G('BFS',['dist','… F 3'],['shortest path','A → C → E → F','ok'])], log:['shortestHops(A, F) → 3'],
+ say:`D adds nothing new, E adds F at distance 3, and when F comes off the queue we're done: <b>3 hops</b>. Because BFS expands in rings, the first time it reaches a node is via a shortest path (in unweighted graphs). O(V + E) time.`},
+{hl:{dfs:[17,18,19]}, th:[['dfs','RUN','recursion']], d:{type:'graph',ok:['A','B','D','C','E','F'],e:[['A','B','1','hot line'],['B','D','2','hot line'],['D','C','3','hot line'],['C','E','4','hot line'],['E','F','5','hot line']]}, g:[G('DFS from A',C('visit order',[['A'],['B'],['D'],['C'],['E'],['F']]),['structure','call stack (or an explicit Deque as a stack)'])],
+ say:`<b>Depth-first search</b> follows one path as deep as possible before backtracking: A → B → D → C → E → F. It's naturally recursive (the call stack remembers where to return). Use it for "is there a path?", connected components, cycle detection, topological sort, and exploring all possibilities (backtracking).`},
+{th:[], d:null, g:[G('Pick one',['fewest steps / nearest / level order','BFS (queue)','ok'],['explore everything / paths / cycles / ordering','DFS (recursion or stack)','ok'],['weighted shortest path','Dijkstra (PriorityQueue)']), G('Trees',['level-order traversal','BFS'],['pre / in / post-order','DFS'],['very deep trees','iterative DFS to avoid StackOverflowError'])],
+ say:`On trees: BFS gives level-order traversal; DFS gives pre-, in- and post-order (in-order on a binary search tree visits values sorted). Both are O(V + E). Java recursion has no tail-call optimisation, so for very deep structures use an explicit <code>ArrayDeque</code> as a stack.`}
+],
+keep:[`Graph = adjacency list Map&lt;Node, List&lt;Node&gt;&gt;; mark visited to handle cycles.`,`BFS: queue, level by level → shortest path in unweighted graphs; DFS: recursion/stack → paths, cycles, components, backtracking.`,`Both O(V + E); weighted shortest path → Dijkstra with a PriorityQueue.`]},
+
+/* =============================== 11.6 =============================== */
+{ no:'11.6', title:'Dynamic programming basics', imp:'good', idea:`When a recursive solution keeps solving the same subproblems, store the answers. See Fibonacci go from 331 million calls to 79, then fill a table for the minimum number of coins.`,
+actors:'Computation', stateTitle:'Memo / table', logTitle:'Call counts',
+codes:{a:`// Naive recursion: recomputes the same values again and again
+long fib(int n) { return n < 2 ? n : fib(n - 1) + fib(n - 2); }
+
+// Memoised (top-down): each n computed once → O(n)
+Map<Integer, Long> memo = new HashMap<>();
+long fibMemo(int n) {
+  if (n < 2) return n;
+  Long cached = memo.get(n);
+  if (cached != null) return cached;
+  long v = fibMemo(n - 1) + fibMemo(n - 2);
+  memo.put(n, v);
+  return v;
+}
+
+// Bottom-up table: fewest coins that make an amount
+int minCoins(int[] coins, int amount) {
+  int[] dp = new int[amount + 1];                   // dp[x] = fewest coins for x
+  Arrays.fill(dp, Integer.MAX_VALUE); dp[0] = 0;
+  for (int x = 1; x <= amount; x++)
+    for (int c : coins)
+      if (c <= x && dp[x - c] != Integer.MAX_VALUE)
+        dp[x] = Math.min(dp[x], dp[x - c] + 1);
+  return dp[amount] == Integer.MAX_VALUE ? -1 : dp[amount];
+}`},
+steps:[
+{hl:{dp:[2]}, th:[['dp','RUN:bad','fib(40), naive']], g:[G('Call tree of fib(5)',['fib(5)','fib(4) + fib(3)'],['fib(4)','fib(3) + fib(2)'],['fib(3) computed','2 times','bad'],['fib(2) computed','3 times','bad'])], log:['fib(40): 331,160,281 calls, ~1.2 s'],
+ say:`Naive recursive Fibonacci recomputes the same values over and over: fib(3) twice inside fib(5), and it gets exponentially worse. fib(40) makes over <b>331 million</b> calls: <b>O(2ⁿ)</b>. The subproblems <b>overlap</b>, which is the signal for dynamic programming.`},
+{hl:{dp:[5,6,7,8,9,10,11,12]}, th:[['dp','RUN:ok','fibMemo(40)']], g:[G('memo after fibMemo(10)',C('n → value',[['2:1'],['3:2'],['4:3'],['5:5'],['6:8'],['7:13'],['8:21'],['9:34'],['10:55','hot']]))], log:['fibMemo(40): 79 calls, < 1 ms'],
+ say:`<b>Memoisation</b> (top-down DP): same recursion, but store each answer the first time and return it from the map afterwards. Each n is computed once: <b>O(n)</b> time and space. (Don't use <code>memo.computeIfAbsent</code> with a recursive function here: HashMap throws ConcurrentModificationException when the mapping function modifies the map.)`},
+{hl:{dp:[16,17,18]}, th:[['dp','RUN','minCoins([1,3,4], 6)']], g:[G('dp table',C('amount 0…6',[['0:0','ok'],['1:∞'],['2:∞'],['3:∞'],['4:∞'],['5:∞'],['6:∞']]))],
+ say:`<b>Bottom-up</b> DP fills a table from small problems to big ones. <code>dp[x]</code> = fewest coins that make amount x, using coins 1, 3, 4. Start: 0 coins make 0; everything else "unknown" (∞).`},
+{hl:{dp:[19,20,21,22]}, g:[G('dp table',C('amount 0…6',[['0:0'],['1:1','ok'],['2:2','ok'],['3:1','ok'],['4:1','ok'],['5:?','hot'],['6:∞']])), G('rule',['dp[x]','min over coins c of dp[x − c] + 1'])],
+ say:`For each amount, try each coin as the last coin: <code>dp[x] = min(dp[x − c] + 1)</code>. dp[3] = 1 (one 3-coin), dp[4] = 1 (one 4-coin). Each answer is built from already-solved smaller amounts.`},
+{hl:{dp:[22]}, g:[G('dp table',C('amount 0…6',[['0:0'],['1:1'],['2:2'],['3:1'],['4:1'],['5:2','ok'],['6:2','ok']])), G('amount 6',['last coin 1','dp[5] + 1 = 3'],['last coin 3','dp[3] + 1 = 2','ok'],['last coin 4','dp[2] + 1 = 3'])], log:['minCoins([1,3,4], 6) → 2  (3 + 3)'],
+ say:`dp[5] = 2 (4 + 1), dp[6] = 2 (3 + 3). Note the <b>greedy</b> approach (take the biggest coin first) gives 4 + 1 + 1 = 3 coins, which is wrong; DP checks every option once. O(amount × coins) time.`},
+{th:[], g:[G('Recognise DP',['optimal / count / possible?','"minimum", "number of ways", "can we"'],['choices at each step','take a coin, include an item, move right/down'],['overlapping subproblems','same state reached many ways','hot']), G('Recipe',['1. define the state','dp[x] means …'],['2. recurrence','dp[x] from smaller states'],['3. base cases','dp[0] = 0'],['4. order','fill so dependencies are ready'],['5. answer','dp[amount]'])],
+ say:`<b>Recipe:</b> define what a state means, write the recurrence from smaller states, set base cases, fill in a valid order (or memoise the recursion), read the answer. Classic problems: climbing stairs, coin change, longest common subsequence, knapsack, edit distance, unique paths in a grid.`}
+],
+keep:[`DP = optimal substructure + overlapping subproblems → store answers instead of recomputing.`,`Top-down: recursion + memo map; bottom-up: fill a table from base cases.`,`Recipe: state, recurrence, base cases, order, answer. Greedy can fail where DP is correct.`]}
+]});
+</script>
+<script>
 /* ---------- quiz bank. Each question: [question, options, index of correct option, why, level E|M|H].
    QUIZ is the core set (3 per topic); QUIZ_ADV the advanced set (2 per topic). Wrong options are real misconceptions. ---------- */
 const QUIZ = {
@@ -6163,6 +6401,99 @@ Object.assign(QUIZ_ADV, {
 '10.2':[
  [`How do you safely call a blocking API from WebFlux?`,[`Call block() on the event loop`,`Use Thread.sleep to yield`,`Mono.fromCallable(...).subscribeOn(Schedulers.boundedElastic())`,`Wrap it in Mono.just(...)`],2,`Mono.just evaluates eagerly on the current (event-loop) thread.`,'H'],
  [`What do virtual threads NOT give you that reactive streams do?`,[`High concurrency for I/O`,`Simple sequential code`,`Normal stack traces`,`Built-in backpressure between producer and consumer`],3,`You'd add bounded queues or semaphores yourself.`,'H']]
+});
+</script>
+<script>
+/* ---------- Part 11: theory and quizzes ---------- */
+Object.assign(THEORY, {
+'11.1': TH(`Big-O notation describes how the time or memory an algorithm needs grows as its input grows, which lets you predict whether it will survive real data sizes.`,
+`<p>Code that is instant on 100 items can take hours on a million. <b>Big-O</b> captures the growth rate, ignoring constant factors: O(n) means "doubling the input roughly doubles the work", O(n²) means "doubling the input quadruples it", O(log n) means "doubling the input adds one step".</p>
+<p>Most interview optimisations swap a slow pattern for a faster one: a nested loop (O(n²)) for a single pass with a HashSet (O(n)), or a linear search (O(n)) for binary search on sorted data (O(log n)). Knowing what each Java collection operation costs is essential.</p>`,
+[[`Time complexity`,`How the number of steps grows with input size n.`],[`Space complexity`,`How extra memory grows with n.`],[`Amortised`,`Average cost over many operations (ArrayList add).`],[`Worst / average case`,`HashMap get is O(1) on average, worse with many collisions.`],[`Brute force`,`The straightforward, usually slow, solution.`]],
+[`Count how many times the innermost work runs in terms of n.`,`Keep the fastest-growing term and drop constants (3n² + 5n → O(n²)).`,`Add costs of the library calls you use (contains, sort, remove).`,`State both time and space.`],
+[`Back-of-envelope: ~10⁸ simple steps per second; check n × complexity against your time budget.`,`Profile real code too: constants and memory access patterns matter in practice.`],
+[`Calling list.contains or list.remove(0) inside loops.`,`Forgetting recursion stack space.`,`Optimising before checking the input size.`]),
+'11.2': TH(`Two pointers and sliding windows scan an array or string with two moving indexes, avoiding nested loops by using order or a window invariant.`,
+`<p>Many problems ask about pairs or contiguous ranges: "two numbers that sum to X", "longest substring with no repeats", "max sum of k consecutive elements". Checking every pair or range is O(n²) or worse.</p>
+<p>With <b>two pointers</b> on sorted input, you start at both ends and move one pointer inward based on a comparison, discarding an element each step. With a <b>sliding window</b>, you keep a range [start, end] that satisfies a rule, extending the end and shrinking the start, so each element enters and leaves once.</p>`,
+[[`Two pointers`,`Two indexes moving through the data, often from both ends.`],[`Sliding window`,`A contiguous range that grows and shrinks.`],[`Invariant`,`A condition the window always keeps (no duplicates, sum ≤ k).`],[`Monotonic move`,`Pointers only move forward, guaranteeing O(n).`]],
+[`Decide what the pointers or window represent.`,`Define when to move which pointer (or when to shrink).`,`Update the answer at each valid state.`,`Argue that each index moves at most n times → O(n).`],
+[`Pairs/triplets in sorted arrays, merging sorted lists, palindromes.`,`Rate limiting over a time window uses the same sliding-window idea.`],
+[`Using two pointers on unsorted data where order matters.`,`Moving the start pointer backwards.`,`Off-by-one window lengths (end − start + 1).`]),
+'11.3': TH(`A HashMap or HashSet can remember what you've already seen in O(1), turning many "search again for each element" problems into a single pass.`,
+`<p>When a brute-force solution loops over the data again for every element ("is the partner of this number somewhere?"), the fix is often to remember things as you go. A <b>HashMap</b> stores value → info (like index or count); a <b>HashSet</b> stores just "seen".</p>
+<p>Three patterns cover a lot: <b>complement lookup</b> (two-sum), <b>frequency counting</b> (most common word, duplicates, anagram check) and <b>grouping by a canonical key</b> (anagrams, events per day).</p>`,
+[[`Complement`,`The value you need to complete a pair (target − x).`],[`Frequency map`,`Map from item → count.`],[`Canonical key`,`A normalised form shared by equivalent items (sorted letters).`],[`merge / computeIfAbsent`,`Map methods for counting and grouping in one call.`]],
+[`Ask what you'd need to know about earlier elements.`,`Store exactly that in a map or set as you scan.`,`Look up before inserting (to avoid matching an element with itself).`,`Return as soon as the answer is found.`],
+[`Deduplicating events, counting by status, grouping orders by customer: everyday backend code, not just interviews.`],
+[`Using arrays as map keys (identity hashCode).`,`Forgetting the O(n) memory cost.`]),
+'11.4': TH(`Binary search finds a value in sorted data by repeatedly halving the search range, taking O(log n) steps.`,
+`<p>To find a word in a dictionary you don't read every page: you open the middle, see whether your word comes before or after, and repeat on that half. That's <b>binary search</b>. Each comparison discards half of what's left, so a million items need about 20 comparisons.</p>
+<p>It only works when the data is <b>sorted</b>, or more generally when there's a yes/no condition that flips exactly once across the range. That generalisation, "binary search on the answer", solves many optimisation problems.</p>`,
+[[`lo / hi / mid`,`Bounds of the remaining range and its middle.`],[`O(log n)`,`Steps grow with the logarithm of n.`],[`Insertion point`,`Where a missing value would go to keep the order.`],[`Monotonic predicate`,`A condition that is false then true (or vice versa) exactly once.`]],
+[`Set lo and hi to the range ends.`,`Compute mid safely: lo + (hi − lo) / 2.`,`Compare and discard the half that can't contain the answer.`,`Stop when found, or when lo > hi (not found).`],
+[`Arrays.binarySearch, Collections.binarySearch, TreeMap.floorKey all rely on sorted order.`,`Binary search on the answer: minimum capacity, smallest time limit, git bisect.`],
+[`Binary searching unsorted data.`,`(lo + hi) / 2 overflow.`,`Infinite loops from lo = mid instead of mid + 1.`]),
+'11.5': TH(`Graphs are nodes connected by edges; breadth-first search explores them level by level, depth-first search follows one path as far as possible before backtracking.`,
+`<p>Many problems are secretly graphs: friends of friends, routes between cities, dependencies between modules, cells in a maze. Represent them as an <b>adjacency list</b> (each node → its neighbours) and explore with one of two traversals.</p>
+<p><b>BFS</b> uses a queue and visits nodes in order of distance from the start, so it finds the shortest path in an unweighted graph. <b>DFS</b> uses recursion or a stack and dives deep, which suits "is there a path", connected components, cycle detection, topological ordering and backtracking. Trees are graphs without cycles, and their classic traversals are BFS (level order) and DFS (pre/in/post-order).</p>`,
+[[`Node / edge`,`A vertex / a connection between two vertices.`],[`Adjacency list`,`Map from node to its neighbours.`],[`Visited set`,`Prevents revisiting nodes (and infinite loops on cycles).`],[`BFS / DFS`,`Queue-based level order / stack- or recursion-based depth first.`],[`O(V + E)`,`Each vertex and edge handled once.`]],
+[`Build the adjacency list.`,`Pick BFS (shortest hops, levels) or DFS (explore, paths, cycles).`,`Track visited nodes.`,`Process each node's neighbours; stop early when the goal is found.`],
+[`Dependency resolution and build ordering use DFS/topological sort.`,`Recommendation "people you may know" uses BFS by distance.`,`Weighted routes need Dijkstra (a priority queue).`],
+[`Forgetting a visited set on graphs with cycles.`,`Deep recursion causing StackOverflowError.`,`Using DFS when the shortest path is required.`]),
+'11.6': TH(`Dynamic programming solves a problem by combining answers to smaller overlapping subproblems, computing each one only once.`,
+`<p>Some recursive solutions explode because they solve the same subproblem again and again: naive Fibonacci recomputes fib(3) thousands of times. <b>Dynamic programming</b> stores each subproblem's answer and reuses it.</p>
+<p>There are two styles: <b>top-down</b> (keep the recursion, add a memo map) and <b>bottom-up</b> (fill a table from the smallest cases upward). The hard part is choosing the <b>state</b>: what dp[x] means. Once that's clear, the recurrence usually follows.</p>`,
+[[`Overlapping subproblems`,`The same smaller problem is needed many times.`],[`Optimal substructure`,`The best answer is built from best answers to subproblems.`],[`Memoisation`,`Caching results of recursive calls.`],[`Tabulation`,`Filling a dp table iteratively.`],[`State / recurrence`,`What dp[i] means / how it's computed from smaller states.`]],
+[`Write the brute-force recursion and spot repeated calls.`,`Define the state and the recurrence.`,`Add memoisation, or fill a table bottom-up.`,`Optimise space if only recent rows are needed.`],
+[`Pricing combinations, diffing text (edit distance, LCS), scheduling and resource allocation.`,`Interview classics: climbing stairs, coin change, knapsack, longest increasing subsequence.`],
+[`Greedy choices where DP is required.`,`Wrong base cases.`,`Recursive memo with HashMap.computeIfAbsent (throws ConcurrentModificationException).`]),
+});
+Object.assign(QUIZ, {
+'11.1':[
+ [`Two nested loops over the same array of n elements. Time complexity?`,[`O(n)`,`O(n²)`,`O(log n)`,`O(2n)`],1,`Each of n iterations runs up to n inner iterations.`,'E'],
+ [`What does replacing a nested-loop duplicate check with a HashSet cost?`,[`Nothing: it's strictly better`,`O(n) extra memory`,`O(n²) memory`,`It only works on sorted data`],1,`Time drops to O(n); space rises to O(n).`,'M'],
+ [`<code>for (x : list) if (otherList.contains(x)) …</code> with both lists of size n. Complexity, and fix?`,[`O(n): contains is O(1)`,`O(n log n): contains uses binary search`,`O(n²); put otherList into a HashSet first`,`O(1)`],2,`List.contains scans the list.`,'H']],
+'11.2':[
+ [`Two pointers to find a pair with a given sum works directly on which input?`,[`Any array`,`Linked lists only`,`Arrays with no duplicates`,`Sorted arrays`],3,`Order tells you which pointer to move.`,'E'],
+ [`Sorted array, sum of a[left] + a[right] is too small. Which pointer moves?`,[`left moves right`,`right moves left`,`both move`,`restart`],0,`Only a bigger left value can increase the sum.`,'M'],
+ [`Why is the sliding window solution for "longest substring without repeats" O(n)?`,[`It uses a HashMap`,`Strings are short`,`Each index is added once and removed at most once; start never moves back`,`It stops early`],2,`Both pointers only move forward.`,'H']],
+'11.3':[
+ [`In one-pass two-sum, what do you store in the map?`,[`Each value → its index`,`Each pair of values`,`The running sum`,`Only the target`],0,`Then look up target − a[i] in O(1).`,'E'],
+ [`Best way to count word frequencies in a HashMap?`,[`map.put(w, map.get(w) + 1)`,`map.putIfAbsent(w, 1)`,`map.replace(w, 1)`,`map.merge(w, 1, Integer::sum)`],3,`get + 1 throws NPE for new words; merge handles both cases.`,'M'],
+ [`Grouping anagrams: why sort each word's letters?`,[`To make the output alphabetical`,`Anagrams share the same sorted letters, giving a common key`,`HashMap requires sorted keys`,`To remove duplicates`],1,`A canonical key maps equivalent items together.`,'M']],
+'11.4':[
+ [`About how many comparisons does binary search need for 1,000,000 sorted items?`,[`1,000,000`,`1,000`,`20`,`500,000`],2,`log₂(1,000,000) ≈ 20.`,'E'],
+ [`Why write <code>mid = lo + (hi - lo) / 2</code>?`,[`It's faster`,`lo + hi can overflow int for very large arrays`,`It rounds up`,`It handles negative numbers`],1,`The overflow bug lived in the JDK for years.`,'M'],
+ [`"Minimum ship capacity to deliver all packages in D days" can use binary search because...`,[`the packages are sorted`,`capacities are integers`,`D is small`,`if a capacity works, every larger one works too (monotonic)`],3,`Binary search the answer range with a feasibility check.`,'H']],
+'11.5':[
+ [`Which traversal finds the fewest hops between two nodes in an unweighted graph?`,[`DFS`,`BFS`,`In-order traversal`,`Binary search`],1,`BFS reaches nodes in order of distance.`,'E'],
+ [`What data structure drives BFS?`,[`A queue (FIFO)`,`A stack (LIFO)`,`A priority queue`,`A TreeMap`],0,`DFS uses a stack or recursion; Dijkstra a priority queue.`,'M'],
+ [`DFS on a graph with cycles, without a visited set?`,[`It's slower but finishes`,`It finds shortest paths`,`It can loop forever`,`It throws ConcurrentModificationException`],2,`Mark nodes visited when you first reach them.`,'H']],
+'11.6':[
+ [`What makes a problem a good fit for dynamic programming?`,[`It's about sorting`,`Overlapping subproblems and optimal substructure`,`It has no recursion`,`The input is a graph`],1,`Same subproblems recur, and answers combine.`,'E'],
+ [`Naive recursive fib(n) runs in?`,[`O(n)`,`O(n log n)`,`O(n²)`,`Exponential time, about O(2ⁿ)`],3,`Memoisation brings it to O(n).`,'M'],
+ [`Coins {1, 3, 4}, amount 6. Greedy (largest first) vs optimal?`,[`Both give 2`,`Greedy 3 coins (4+1+1), optimal 2 (3+3)`,`Greedy 2, optimal 3`,`Both give 3`],1,`Greedy isn't always optimal; DP checks every last-coin option.`,'H']]
+});
+Object.assign(QUIZ_ADV, {
+'11.1':[
+ [`HashMap get is O(1) on average. When can it degrade?`,[`Never`,`When keys are Strings`,`When many keys collide (bad hashCode); Java 8 trees keep it O(log n) per bucket`,`When the map is small`],2,`Treeified bins (2.2) bound the worst case.`,'H'],
+ [`Recursive DFS on a path-shaped graph of n nodes: extra space?`,[`O(n): the call stack depth`,`O(1)`,`O(log n)`,`O(n²)`],0,`Recursion depth counts as space.`,'M']],
+'11.2':[
+ [`Max sum of any 3 consecutive elements in an array. Efficient approach?`,[`Check all triples, O(n³)`,`Sort first`,`Fixed-size window: add the new element, subtract the one leaving, O(n)`,`Binary search`],2,`A fixed window updates in O(1) per step.`,'M'],
+ [`3-sum (triplets summing to 0) typical complexity with sort + two pointers?`,[`O(n)`,`O(n log n)`,`O(n³)`,`O(n²)`],3,`Fix one element, two-pointer the rest: n × n.`,'H']],
+'11.3':[
+ [`Why check the map before inserting in two-sum?`,[`To avoid pairing an element with itself`,`For speed`,`HashMap requires it`,`To keep order`],0,`e.g. target 10 with a single 5 must not match itself.`,'M'],
+ [`Find the first non-repeating character in a string efficiently?`,[`Nested loops`,`Sort the string`,`A TreeSet`,`Count frequencies (LinkedHashMap or array), then scan in order`],3,`Two passes, O(n).`,'H']],
+'11.4':[
+ [`<code>Arrays.binarySearch(a, 50)</code> returns -8. What does that mean?`,[`Error code 8`,`Not found; insertion point is 7`,`Found at index 8`,`Found 8 times`],1,`-(insertion point) - 1 = -8 → insertion point 7.`,'H'],
+ [`Find the first occurrence of a value with duplicates. Change from plain binary search?`,[`On a match, record it and keep searching left (hi = mid − 1)`,`Return on the first match`,`Use linear search`,`Search right`],0,`Lower-bound variant.`,'M']],
+'11.5':[
+ [`Order courses so prerequisites come first. Which algorithm?`,[`BFS shortest path`,`Binary search`,`Topological sort (DFS post-order or Kahn's algorithm)`,`Dijkstra`],2,`Detects cycles too (impossible orderings).`,'H'],
+ [`In-order DFS of a binary search tree visits values in what order?`,[`Insertion order`,`Level by level`,`Random`,`Sorted ascending`],3,`Left subtree, node, right subtree.`,'M']],
+'11.6':[
+ [`Bottom-up DP for climbing stairs only needs dp[i-1] and dp[i-2]. Space optimisation?`,[`Keep two variables instead of an array: O(1) space`,`None possible`,`Use a HashMap`,`Use recursion`],0,`Many 1-D DPs only need the last few states.`,'M'],
+ [`Why can <code>memo.computeIfAbsent(n, k -> fib(k-1) + fib(k-2))</code> fail on a HashMap?`,[`computeIfAbsent is not allowed on HashMap`,`It returns null`,`The mapping function modifies the map, which HashMap detects and throws ConcurrentModificationException`,`It overflows`],2,`Use explicit get/put for recursive memoisation.`,'H']]
 });
 </script>
 <script>

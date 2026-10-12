@@ -13,6 +13,7 @@ Core Java interview topics taught as **concept → picture → example → gotch
 - Part 8: Data and messaging
 - Part 9: Testing and production tooling
 - Part 10: Reactive programming
+- Part 11: Data structures and algorithms in Java
 
 New to a topic? Start with its **Theory: start here** section: the idea in one sentence, a plain-language explanation with an everyday analogy, key terms, how it works step by step, how it shows up in real projects, and common mistakes. No prior knowledge is assumed.
 
@@ -5887,6 +5888,400 @@ Mono<Report> report(@PathVariable long id) {
 - Thread-per-request with platform threads caps concurrency at the pool size.
 - WebFlux: few event-loop threads, non-blocking end to end; never block the loop (use boundedElastic or avoid).
 - Virtual threads: blocking code scales for I/O; default choice for most CRUD services on Java 21+.
+
+---
+
+# Part 11: Data structures and algorithms in Java
+
+## 11.1 Big-O and the cost of Java collection operations
+
+*Interview priority: must-know.* How to estimate an algorithm's cost as the input grows, why a nested loop that's fine for 100 items dies at 100,000, and what each common Java collection operation costs.
+
+#### Theory: start here
+
+**In one sentence:** Big-O notation describes how the time or memory an algorithm needs grows as its input grows, which lets you predict whether it will survive real data sizes.
+
+Code that is instant on 100 items can take hours on a million. **Big-O** captures the growth rate, ignoring constant factors: O(n) means "doubling the input roughly doubles the work", O(n²) means "doubling the input quadruples it", O(log n) means "doubling the input adds one step".
+
+Most interview optimisations swap a slow pattern for a faster one: a nested loop (O(n²)) for a single pass with a HashSet (O(n)), or a linear search (O(n)) for binary search on sorted data (O(log n)). Knowing what each Java collection operation costs is essential.
+
+**Key terms**
+
+- **Time complexity**: How the number of steps grows with input size n.
+- **Space complexity**: How extra memory grows with n.
+- **Amortised**: Average cost over many operations (ArrayList add).
+- **Worst / average case**: HashMap get is O(1) on average, worse with many collisions.
+- **Brute force**: The straightforward, usually slow, solution.
+
+**How it works**
+
+1. Count how many times the innermost work runs in terms of n.
+2. Keep the fastest-growing term and drop constants (3n² + 5n → O(n²)).
+3. Add costs of the library calls you use (contains, sort, remove).
+4. State both time and space.
+
+**In real projects**
+
+- Back-of-envelope: ~10⁸ simple steps per second; check n × complexity against your time budget.
+- Profile real code too: constants and memory access patterns matter in practice.
+
+**Common mistakes**
+
+- Calling list.contains or list.remove(0) inside loops.
+- Forgetting recursion stack space.
+- Optimising before checking the input size.
+
+#### Code
+
+```java
+int sumAll(int[] a) { int s = 0; for (int x : a) s += x; return s; }   // O(n)
+
+boolean hasDuplicate(int[] a) {                     // O(n²)
+  for (int i = 0; i < a.length; i++)
+    for (int j = i + 1; j < a.length; j++)
+      if (a[i] == a[j]) return true;
+  return false;
+}
+
+boolean hasDuplicateFast(int[] a) {                 // O(n) time, O(n) extra space
+  Set<Integer> seen = new HashSet<>();
+  for (int x : a) if (!seen.add(x)) return true;
+  return false;
+}
+// list.contains(x) O(n) · set.contains(x) O(1) · treeSet.contains(x) O(log n)
+```
+
+#### Remember
+
+- O(1) &lt; O(log n) &lt; O(n) &lt; O(n log n) &lt; O(n²) &lt; O(2ⁿ); state time and space.
+- Nested loops over the input = O(n²); a HashSet/HashMap often brings it to O(n) using O(n) memory.
+- Know collection costs: HashMap O(1), TreeMap O(log n), list.contains / remove(0) O(n).
+
+## 11.2 Two pointers and sliding window
+
+*Interview priority: must-know.* Two patterns that turn O(n²) array and string problems into O(n): two pointers moving towards each other on a sorted array, and a window that grows and shrinks along a string.
+
+#### Theory: start here
+
+**In one sentence:** Two pointers and sliding windows scan an array or string with two moving indexes, avoiding nested loops by using order or a window invariant.
+
+Many problems ask about pairs or contiguous ranges: "two numbers that sum to X", "longest substring with no repeats", "max sum of k consecutive elements". Checking every pair or range is O(n²) or worse.
+
+With **two pointers** on sorted input, you start at both ends and move one pointer inward based on a comparison, discarding an element each step. With a **sliding window**, you keep a range [start, end] that satisfies a rule, extending the end and shrinking the start, so each element enters and leaves once.
+
+**Key terms**
+
+- **Two pointers**: Two indexes moving through the data, often from both ends.
+- **Sliding window**: A contiguous range that grows and shrinks.
+- **Invariant**: A condition the window always keeps (no duplicates, sum ≤ k).
+- **Monotonic move**: Pointers only move forward, guaranteeing O(n).
+
+**How it works**
+
+1. Decide what the pointers or window represent.
+2. Define when to move which pointer (or when to shrink).
+3. Update the answer at each valid state.
+4. Argue that each index moves at most n times → O(n).
+
+**In real projects**
+
+- Pairs/triplets in sorted arrays, merging sorted lists, palindromes.
+- Rate limiting over a time window uses the same sliding-window idea.
+
+**Common mistakes**
+
+- Using two pointers on unsorted data where order matters.
+- Moving the start pointer backwards.
+- Off-by-one window lengths (end − start + 1).
+
+#### Code
+
+```java
+// sorted input: find two numbers that add up to target
+int[] pairSum(int[] a, int target) {
+  int left = 0, right = a.length - 1;
+  while (left < right) {
+    int sum = a[left] + a[right];
+    if (sum == target) return new int[]{left, right};
+    if (sum < target) left++;      // need a bigger sum: move left up
+    else right--;                  // need a smaller sum: move right down
+  }
+  return null;
+}
+```
+
+#### Remember
+
+- Two pointers (sorted input): move the pointer that can't be part of an answer; O(n), O(1) space.
+- Sliding window: extend end, shrink start when the window breaks the rule; each index enters/leaves once → O(n).
+- Signals: "pair/triplet in a sorted array", "longest/shortest contiguous subarray/substring".
+
+## 11.3 Hashing patterns: two-sum, counting, grouping
+
+*Interview priority: must-know.* Three HashMap patterns that solve a huge share of interview problems in one pass: remember complements (two-sum), count frequencies, and group by a computed key (anagrams).
+
+#### Theory: start here
+
+**In one sentence:** A HashMap or HashSet can remember what you've already seen in O(1), turning many "search again for each element" problems into a single pass.
+
+When a brute-force solution loops over the data again for every element ("is the partner of this number somewhere?"), the fix is often to remember things as you go. A **HashMap** stores value → info (like index or count); a **HashSet** stores just "seen".
+
+Three patterns cover a lot: **complement lookup** (two-sum), **frequency counting** (most common word, duplicates, anagram check) and **grouping by a canonical key** (anagrams, events per day).
+
+**Key terms**
+
+- **Complement**: The value you need to complete a pair (target − x).
+- **Frequency map**: Map from item → count.
+- **Canonical key**: A normalised form shared by equivalent items (sorted letters).
+- **merge / computeIfAbsent**: Map methods for counting and grouping in one call.
+
+**How it works**
+
+1. Ask what you'd need to know about earlier elements.
+2. Store exactly that in a map or set as you scan.
+3. Look up before inserting (to avoid matching an element with itself).
+4. Return as soon as the answer is found.
+
+**In real projects**
+
+- Deduplicating events, counting by status, grouping orders by customer: everyday backend code, not just interviews.
+
+**Common mistakes**
+
+- Using arrays as map keys (identity hashCode).
+- Forgetting the O(n) memory cost.
+
+#### Code
+
+```java
+// 1. Two-sum (unsorted): one pass, remembering value → index
+int[] twoSum(int[] a, int target) {
+  Map<Integer, Integer> seen = new HashMap<>();
+  for (int i = 0; i < a.length; i++) {
+    Integer j = seen.get(target - a[i]);       // seen the complement already?
+    if (j != null) return new int[]{j, i};
+    seen.put(a[i], i);
+  }
+  return null;
+}
+// 2. Frequency count
+Map<String, Integer> freq = new HashMap<>();
+for (String w : words) freq.merge(w, 1, Integer::sum);
+// 3. Group anagrams: same sorted letters → same key
+Map<String, List<String>> groups = new HashMap<>();
+for (String w : words) {
+  char[] k = w.toCharArray(); Arrays.sort(k);
+  groups.computeIfAbsent(new String(k), x -> new ArrayList<>()).add(w);
+}
+```
+
+#### Remember
+
+- Two-sum: map value → index, look up target − x before inserting: O(n).
+- Count with merge(key, 1, Integer::sum); group with computeIfAbsent(key, k -> new ArrayList&lt;>()).add(x).
+- Keys need proper equals/hashCode: use String or records, not arrays.
+
+## 11.4 Binary search
+
+*Interview priority: must-know.* Halve a sorted search space each step: 1,000,000 items in 20 comparisons. Trace a hit and a miss, avoid the midpoint overflow bug, and see "binary search on the answer".
+
+#### Theory: start here
+
+**In one sentence:** Binary search finds a value in sorted data by repeatedly halving the search range, taking O(log n) steps.
+
+To find a word in a dictionary you don't read every page: you open the middle, see whether your word comes before or after, and repeat on that half. That's **binary search**. Each comparison discards half of what's left, so a million items need about 20 comparisons.
+
+It only works when the data is **sorted**, or more generally when there's a yes/no condition that flips exactly once across the range. That generalisation, "binary search on the answer", solves many optimisation problems.
+
+**Key terms**
+
+- **lo / hi / mid**: Bounds of the remaining range and its middle.
+- **O(log n)**: Steps grow with the logarithm of n.
+- **Insertion point**: Where a missing value would go to keep the order.
+- **Monotonic predicate**: A condition that is false then true (or vice versa) exactly once.
+
+**How it works**
+
+1. Set lo and hi to the range ends.
+2. Compute mid safely: lo + (hi − lo) / 2.
+3. Compare and discard the half that can't contain the answer.
+4. Stop when found, or when lo > hi (not found).
+
+**In real projects**
+
+- Arrays.binarySearch, Collections.binarySearch, TreeMap.floorKey all rely on sorted order.
+- Binary search on the answer: minimum capacity, smallest time limit, git bisect.
+
+**Common mistakes**
+
+- Binary searching unsorted data.
+- (lo + hi) / 2 overflow.
+- Infinite loops from lo = mid instead of mid + 1.
+
+#### Code
+
+```java
+int search(int[] a, int target) {          // a must be sorted
+  int lo = 0, hi = a.length - 1;
+  while (lo <= hi) {
+    int mid = lo + (hi - lo) / 2;          // not (lo + hi) / 2: can overflow
+    if (a[mid] == target) return mid;
+    if (a[mid] < target) lo = mid + 1;     // answer is to the right
+    else hi = mid - 1;                     // answer is to the left
+  }
+  return -1;                               // not found
+}
+// Built in: Arrays.binarySearch(a, key), Collections.binarySearch(list, key)
+```
+
+#### Remember
+
+- Sorted input → halve the range each step: O(log n).
+- mid = lo + (hi − lo) / 2; loop while lo &lt;= hi; move lo = mid + 1 or hi = mid − 1.
+- Monotonic yes/no condition → binary search on the answer range.
+
+## 11.5 Graphs and trees: BFS and DFS
+
+*Interview priority: must-know.* Explore a graph level by level with a queue (BFS) to find the fewest hops, or go deep first with recursion (DFS). The same two traversals cover most tree and graph problems.
+
+#### Theory: start here
+
+**In one sentence:** Graphs are nodes connected by edges; breadth-first search explores them level by level, depth-first search follows one path as far as possible before backtracking.
+
+Many problems are secretly graphs: friends of friends, routes between cities, dependencies between modules, cells in a maze. Represent them as an **adjacency list** (each node → its neighbours) and explore with one of two traversals.
+
+**BFS** uses a queue and visits nodes in order of distance from the start, so it finds the shortest path in an unweighted graph. **DFS** uses recursion or a stack and dives deep, which suits "is there a path", connected components, cycle detection, topological ordering and backtracking. Trees are graphs without cycles, and their classic traversals are BFS (level order) and DFS (pre/in/post-order).
+
+**Key terms**
+
+- **Node / edge**: A vertex / a connection between two vertices.
+- **Adjacency list**: Map from node to its neighbours.
+- **Visited set**: Prevents revisiting nodes (and infinite loops on cycles).
+- **BFS / DFS**: Queue-based level order / stack- or recursion-based depth first.
+- **O(V + E)**: Each vertex and edge handled once.
+
+**How it works**
+
+1. Build the adjacency list.
+2. Pick BFS (shortest hops, levels) or DFS (explore, paths, cycles).
+3. Track visited nodes.
+4. Process each node's neighbours; stop early when the goal is found.
+
+**In real projects**
+
+- Dependency resolution and build ordering use DFS/topological sort.
+- Recommendation "people you may know" uses BFS by distance.
+- Weighted routes need Dijkstra (a priority queue).
+
+**Common mistakes**
+
+- Forgetting a visited set on graphs with cycles.
+- Deep recursion causing StackOverflowError.
+- Using DFS when the shortest path is required.
+
+#### Code
+
+```java
+Map<String, List<String>> graph = Map.of(
+  "A", List.of("B", "C"), "B", List.of("A", "D"), "C", List.of("A", "D", "E"),
+  "D", List.of("B", "C"), "E", List.of("C", "F"), "F", List.of("E"));
+
+int shortestHops(String from, String to) {          // BFS: level by level
+  Deque<String> queue = new ArrayDeque<>(List.of(from));
+  Map<String, Integer> dist = new HashMap<>(Map.of(from, 0));
+  while (!queue.isEmpty()) {
+    String cur = queue.poll();
+    if (cur.equals(to)) return dist.get(cur);
+    for (String next : graph.get(cur))
+      if (!dist.containsKey(next)) { dist.put(next, dist.get(cur) + 1); queue.add(next); }
+  }
+  return -1;
+}
+
+void dfs(String cur, Set<String> visited) {         // DFS: go deep first
+  if (!visited.add(cur)) return;
+  for (String next : graph.get(cur)) dfs(next, visited);
+}
+```
+
+#### Remember
+
+- Graph = adjacency list Map&lt;Node, List&lt;Node>>; mark visited to handle cycles.
+- BFS: queue, level by level → shortest path in unweighted graphs; DFS: recursion/stack → paths, cycles, components, backtracking.
+- Both O(V + E); weighted shortest path → Dijkstra with a PriorityQueue.
+
+## 11.6 Dynamic programming basics
+
+*Interview priority: good to know.* When a recursive solution keeps solving the same subproblems, store the answers. See Fibonacci go from 331 million calls to 79, then fill a table for the minimum number of coins.
+
+#### Theory: start here
+
+**In one sentence:** Dynamic programming solves a problem by combining answers to smaller overlapping subproblems, computing each one only once.
+
+Some recursive solutions explode because they solve the same subproblem again and again: naive Fibonacci recomputes fib(3) thousands of times. **Dynamic programming** stores each subproblem's answer and reuses it.
+
+There are two styles: **top-down** (keep the recursion, add a memo map) and **bottom-up** (fill a table from the smallest cases upward). The hard part is choosing the **state**: what dp[x] means. Once that's clear, the recurrence usually follows.
+
+**Key terms**
+
+- **Overlapping subproblems**: The same smaller problem is needed many times.
+- **Optimal substructure**: The best answer is built from best answers to subproblems.
+- **Memoisation**: Caching results of recursive calls.
+- **Tabulation**: Filling a dp table iteratively.
+- **State / recurrence**: What dp[i] means / how it's computed from smaller states.
+
+**How it works**
+
+1. Write the brute-force recursion and spot repeated calls.
+2. Define the state and the recurrence.
+3. Add memoisation, or fill a table bottom-up.
+4. Optimise space if only recent rows are needed.
+
+**In real projects**
+
+- Pricing combinations, diffing text (edit distance, LCS), scheduling and resource allocation.
+- Interview classics: climbing stairs, coin change, knapsack, longest increasing subsequence.
+
+**Common mistakes**
+
+- Greedy choices where DP is required.
+- Wrong base cases.
+- Recursive memo with HashMap.computeIfAbsent (throws ConcurrentModificationException).
+
+#### Code
+
+```java
+// Naive recursion: recomputes the same values again and again
+long fib(int n) { return n < 2 ? n : fib(n - 1) + fib(n - 2); }
+
+// Memoised (top-down): each n computed once → O(n)
+Map<Integer, Long> memo = new HashMap<>();
+long fibMemo(int n) {
+  if (n < 2) return n;
+  Long cached = memo.get(n);
+  if (cached != null) return cached;
+  long v = fibMemo(n - 1) + fibMemo(n - 2);
+  memo.put(n, v);
+  return v;
+}
+
+// Bottom-up table: fewest coins that make an amount
+int minCoins(int[] coins, int amount) {
+  int[] dp = new int[amount + 1];                   // dp[x] = fewest coins for x
+  Arrays.fill(dp, Integer.MAX_VALUE); dp[0] = 0;
+  for (int x = 1; x <= amount; x++)
+    for (int c : coins)
+      if (c <= x && dp[x - c] != Integer.MAX_VALUE)
+        dp[x] = Math.min(dp[x], dp[x - c] + 1);
+  return dp[amount] == Integer.MAX_VALUE ? -1 : dp[amount];
+}
+```
+
+#### Remember
+
+- DP = optimal substructure + overlapping subproblems → store answers instead of recomputing.
+- Top-down: recursion + memo map; bottom-up: fill a table from base cases.
+- Recipe: state, recurrence, base cases, order, answer. Greedy can fail where DP is correct.
 
 ---
 
