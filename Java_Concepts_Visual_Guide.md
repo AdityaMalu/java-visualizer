@@ -2,6 +2,7 @@
 
 Core Java interview topics taught as **concept → picture → example → gotcha** instead of Q&A. Every section has an interactive step-by-step version in the [Java Visualizer](https://adityamalu.github.io/java-visualizer/).
 
+- Part 0: Java basics
 - Part 1: Java platform, memory, types
 - Part 2: Collections, generics, exceptions, Java 8+
 - Part 3: OOP, SOLID, design patterns
@@ -12,6 +13,449 @@ Core Java interview topics taught as **concept → picture → example → gotch
 New to a topic? Start with its **Theory: start here** section: the idea in one sentence, a plain-language explanation with an everyday analogy, key terms, how it works step by step, how it shows up in real projects, and common mistakes. No prior knowledge is assumed.
 
 Then, how to read each concept's notes: the **idea** in 1–2 lines → the **picture** (diagram) → the **example** (code) → **Gotcha** (what interviewers trip you on) → **Say it** (your 15-second answer).
+
+---
+
+# Part 0: Java basics
+
+## 0.1 Your first Java program
+
+*Interview priority: beyond typical interviews.* Write, compile and run `Hello.java`, and see what every word of `public static void main` means.
+
+#### Theory: start here
+
+**In one sentence:** A Java program is a set of classes; you compile it with javac and run it with java, and execution starts in the main method.
+
+Programming means writing instructions for a computer. In Java you write them in `.java` text files, organised into **classes**. The compiler `javac` checks them and translates them into **bytecode** (`.class` files), and the `java` command starts a Java Virtual Machine that runs that bytecode.
+
+The JVM needs to know where to begin, so it looks for a method with the exact signature `public static void main(String[] args)`. Think of it as the front door of your program.
+
+**Key terms**
+
+- **Source file**: A .java text file you write.
+- **Compiler (javac)**: Checks your code and produces .class bytecode.
+- **JVM (java)**: Runs bytecode on your machine.
+- **main method**: The entry point the JVM calls first.
+- **Statement**: One instruction, usually ending with a semicolon.
+
+**How it works**
+
+1. Write `Hello.java` containing `public class Hello`.
+2. Run `javac Hello.java`; fix any compile errors it reports.
+3. Run `java Hello`; the JVM loads the class and calls main.
+4. main runs top to bottom; when it returns, the program ends.
+
+**In real projects**
+
+- Real projects use a build tool (Maven or Gradle) and an IDE (IntelliJ IDEA) that compile for you.
+- Use `jshell` to try snippets quickly.
+
+**Common mistakes**
+
+- A public class name that doesn't match the file name.
+- Misspelling main's signature, so the JVM can't find the entry point.
+
+#### Code
+
+```java
+// File: Hello.java  (the file name must match the public class)
+public class Hello {
+  public static void main(String[] args) {
+    String name = args.length > 0 ? args[0] : "world";
+    System.out.println("Hello, " + name + "!");
+  }
+}
+// $ javac Hello.java          -> creates Hello.class
+// $ java Hello Ana            -> Hello, Ana!
+// $ java Hello.java Ana       -> Java 11+: compile and run in one step
+```
+
+#### Remember
+
+- A program is classes; execution starts at `public static void main(String[] args)`.
+- javac compiles .java → .class (bytecode); java runs it on the JVM.
+- Public class name = file name; compile errors appear before anything runs.
+
+## 0.2 Variables, types and operators
+
+*Interview priority: good to know.* The eight primitive types, and the arithmetic surprises every interviewer loves: integer division, overflow, `i++` vs `++i`, casts and short-circuiting.
+
+#### Theory: start here
+
+**In one sentence:** Variables are named, typed boxes for values; Java's eight primitive types hold plain numbers, characters and booleans, and operators combine them with some surprising rules.
+
+A variable has a **type**, a **name** and a **value**: `int age = 30;`. Java is **statically typed**: the type is fixed when you write the code, and the compiler stops you putting a String into an int.
+
+The eight **primitive** types are byte, short, int, long (whole numbers), float, double (decimals), char (a character) and boolean (true/false). Everything else is an object. Operators (`+ - * / %`, comparisons, `&& ||`) work on them, but integer math has rules that catch people out: division drops the fraction, and results that don't fit wrap around silently.
+
+**Key terms**
+
+- **Primitive**: A built-in value type (int, double, boolean…), not an object.
+- **Literal**: A value written directly in code: 42, 3.5, 'A', "text", 10L.
+- **Integer division**: int / int discards the remainder.
+- **Overflow**: A result too big for its type wraps around.
+- **Cast**: Explicit conversion, e.g. (int) 3.9 → 3.
+- **Short-circuit**: && and || skip the right side when the left decides.
+
+**How it works**
+
+1. Declare a variable with a type, optionally with a starting value.
+2. Expressions are evaluated using the operand types (int math if both are ints).
+3. Widening (int → long → double) happens automatically; narrowing needs a cast.
+4. `var` (Java 10+) lets the compiler infer a local variable's type.
+
+**In real projects**
+
+- Use int by default, long for ids, timestamps and counters that can grow, BigDecimal or long cents for money (1.10).
+- Use `Math.addExact` / `multiplyExact` where overflow must never go unnoticed.
+
+**Common mistakes**
+
+- Expecting `7 / 2` to be 3.5.
+- Computing large values in int before storing in long.
+- Confusing `=` (assign) with `==` (compare).
+
+#### Code
+
+```java
+int apples = 7, people = 2;
+int each = apples / people;            // integer division
+int left = apples % people;            // remainder
+double exact = apples / 2.0;           // one double → double math
+long big = Integer.MAX_VALUE + 1;      // overflow happens in int first!
+long fixed = Integer.MAX_VALUE + 1L;   // 1L makes it long math
+int i = 5;
+int a = i++;                           // use, then add
+int b = ++i;                           // add, then use
+byte small = (byte) 200;               // narrowing cast wraps around
+boolean ok = people != 0 && apples / people > 1;  // && short-circuits
+char c = 'A' + 1;                      // chars are numbers
+```
+
+#### Remember
+
+- int / int drops the fraction; % is the remainder; one double makes it double math.
+- int arithmetic overflows silently before widening: use 1L, long, or Math.addExact.
+- i++ returns the old value, ++i the new; && / || short-circuit; narrowing casts wrap.
+
+## 0.3 Control flow: if, switch and loops
+
+*Interview priority: beyond typical interviews.* Make decisions with `if` and `switch`, repeat with loops, and steer them with `break` and `continue`. Then the classic switch fall-through bug.
+
+#### Theory: start here
+
+**In one sentence:** Control flow decides which statements run: if and switch choose between paths, loops repeat code, and break/continue change a loop's course.
+
+By default statements run top to bottom. **if** runs a block only when a condition is true; add **else if** and **else** for alternatives. **switch** chooses among many cases based on one value; modern switch *expressions* with arrows are concise and safe.
+
+**Loops** repeat work: `for` when you know the count, `while` while a condition holds, `do-while` to run at least once, and the enhanced `for (item : collection)` to visit every element. `break` leaves a loop; `continue` jumps to its next pass.
+
+**Key terms**
+
+- **Condition**: An expression that's true or false.
+- **Block**: Statements inside { }.
+- **Switch expression**: switch that produces a value, with -> cases.
+- **Fall-through**: Old switch behaviour: without break, execution continues into the next case.
+- **Enhanced for**: for (T x : items): loops over every element.
+
+**How it works**
+
+1. Evaluate the condition.
+2. Run the matching branch (or skip it).
+3. For loops: initialise, check the condition, run the body, update, repeat.
+4. break exits the loop; continue jumps to the update step.
+
+**In real projects**
+
+- Prefer early returns over deeply nested ifs.
+- Use switch expressions with enums and sealed types so the compiler checks every case.
+- Prefer streams or enhanced for over manual index loops when you don't need the index.
+
+**Common mistakes**
+
+- Missing break in a classic switch.
+- Off-by-one loop bounds (`<=` vs `<`).
+- Infinite loops whose condition never changes.
+
+#### Code
+
+```java
+int score = 82;
+String grade;
+if (score >= 90)      grade = "A";
+else if (score >= 75) grade = "B";
+else                  grade = "C";
+
+String msg = switch (grade) {        // switch expression (Java 14+)
+  case "A" -> "Excellent";
+  case "B", "C" -> "Good";
+  default -> "Unknown";
+};
+
+int sum = 0;
+for (int n = 1; n <= 10; n++) {
+  if (n % 2 == 0) continue;          // skip even numbers
+  if (n > 7) break;                  // leave the loop
+  sum += n;
+}
+```
+
+#### Remember
+
+- if/else if picks the first true branch; switch expressions (->) never fall through and must be exhaustive.
+- continue skips to the next pass; break leaves the loop.
+- Old colon-style switch falls through without break: a classic bug.
+
+## 0.4 Arrays
+
+*Interview priority: good to know.* Fixed-size, indexed containers. See default values, two variables sharing one array, copying, out-of-bounds errors, and why printing an array shows gibberish.
+
+#### Theory: start here
+
+**In one sentence:** An array stores a fixed number of values of the same type in numbered slots, starting at index 0.
+
+When you need many values of the same kind (ten scores, a grid of cells), an **array** keeps them together. You choose the size when creating it, and it never changes. Each slot has an **index**: the first is 0 and the last is `length - 1`. Reading or writing a slot by index is instant.
+
+Arrays are objects, so an array variable holds a reference. Two variables can point to the same array, and changes through one are seen through the other.
+
+**Key terms**
+
+- **Index**: Position of a slot, from 0 to length − 1.
+- **length**: Number of slots (a field: arr.length).
+- **Default values**: 0, false or null until you assign something.
+- **Arrays utility**: java.util.Arrays: sort, copyOf, toString, equals, fill, binarySearch.
+
+**How it works**
+
+1. Create: `new int[5]` or `int[] a = {3, 1, 2};`.
+2. Access: `a[i]` for reading and writing.
+3. Loop: `for (int i = 0; i < a.length; i++)` or `for (int x : a)`.
+4. Grow: create a bigger array and copy, or use ArrayList.
+
+**In real projects**
+
+- Use ArrayList in most application code; arrays for fixed-size data, performance-critical code and coding interviews.
+- `Arrays.asList` and `List.of` bridge arrays and lists (2.9).
+
+**Common mistakes**
+
+- Index out of bounds (often `i <= a.length`).
+- Printing an array directly instead of Arrays.toString.
+- Comparing arrays with == instead of Arrays.equals.
+
+#### Code
+
+```java
+int[] prices = new int[4];             // 4 slots, all 0
+prices[0] = 300; prices[3] = 120;
+int[] alias = prices;                  // same array, second name
+alias[1] = 999;                        // prices[1] is 999 too
+int[] bigger = Arrays.copyOf(prices, 6); // a new, longer array
+System.out.println(prices.length);     // 4 (a field, not a method)
+Arrays.sort(prices);                   // sorts in place
+System.out.println(prices);            // [I@1b6d3586
+System.out.println(Arrays.toString(prices)); // [0, 120, 300, 999]
+prices[4] = 1;                         // index 4 doesn't exist
+int[][] grid = new int[3][2];          // 3 rows of 2
+```
+
+#### Remember
+
+- Fixed size, indexes 0..length-1, default values 0/false/null.
+- Arrays are objects: assignment copies the reference; Arrays.copyOf makes a new one.
+- Print with Arrays.toString, compare with Arrays.equals; bad index → ArrayIndexOutOfBoundsException.
+
+## 0.5 Methods, recursion and the call stack
+
+*Interview priority: good to know.* How a method call works: arguments in, a new stack frame, a return value out. Then follow `factorial(3)` as the stack grows and unwinds.
+
+#### Theory: start here
+
+**In one sentence:** A method is a named, reusable block of code with inputs (parameters) and an optional output (return value); each call gets its own stack frame.
+
+Methods let you split a program into small named steps: `calculateTax(order)` reads better than 30 lines of arithmetic. You define parameters (inputs) and a return type (output, or `void` for none).
+
+When a method is called, Java creates a **stack frame** for it on the thread's call stack, holding its parameters and local variables. When it returns, the frame is removed. **Recursion** is a method calling itself to solve a smaller version of the same problem; it needs a **base case** that stops the chain.
+
+**Key terms**
+
+- **Parameter / argument**: The variable in the definition / the value passed in the call.
+- **Return type**: The type of value the method gives back (void = nothing).
+- **Stack frame**: Memory for one call: parameters and locals.
+- **Recursion**: A method calling itself.
+- **Base case**: The condition where recursion stops.
+
+**How it works**
+
+1. The caller evaluates the arguments.
+2. A new frame is pushed; argument values are copied into parameters.
+3. The body runs; return sends a value back and pops the frame.
+4. The caller continues from where it paused.
+
+**In real projects**
+
+- Keep methods short and named after what they do.
+- Prefer iteration for deep recursion in Java (no tail-call optimisation).
+- Many coding-interview problems (trees, backtracking) are naturally recursive.
+
+**Common mistakes**
+
+- Recursion without a correct base case → StackOverflowError.
+- Expecting a method to change the caller's variables by reassigning parameters.
+
+#### Code
+
+```java
+static int factorial(int n) {
+  if (n <= 1) return 1;            // base case: stop here
+  return n * factorial(n - 1);     // recursive case
+}
+
+static void greet(String name, int times) {   // parameters
+  for (int i = 0; i < times; i++) System.out.println("Hi " + name);
+}
+
+public static void main(String[] args) {
+  int r = factorial(3);            // 6
+  greet("Ana", 2);
+}
+```
+
+#### Remember
+
+- Each call gets its own stack frame with its own parameters and locals; return pops it.
+- Recursion = a method calling itself; always needs a base case or you get StackOverflowError.
+- Arguments are copied into parameters (pass-by-value).
+
+## 0.6 Classes, objects and constructors
+
+*Interview priority: good to know.* A class is a blueprint; `new` builds objects from it. Follow two accounts being created, a deposit, and two variables pointing at the same object.
+
+#### Theory: start here
+
+**In one sentence:** A class is a blueprint that defines data (fields) and behaviour (methods); objects are individual things built from it with new, and constructors set them up.
+
+Real programs model things: accounts, orders, cars. A **class** describes what every account has (owner, balance) and can do (deposit, withdraw). An **object** is one specific account. You can create as many as you like with `new`, and each has its own field values.
+
+A **constructor** is special code that runs once when an object is created, to put it in a valid starting state. Making fields `private` and offering methods that check their inputs keeps objects valid: this is **encapsulation**.
+
+**Key terms**
+
+- **Class**: The definition: fields + constructors + methods.
+- **Object / instance**: One thing created from a class.
+- **Field**: A variable belonging to each object.
+- **Constructor**: Initialises a new object; same name as the class, no return type.
+- **this**: Reference to the current object.
+- **static**: Belongs to the class itself, not to each object.
+
+**How it works**
+
+1. `new Account("Ana")` allocates memory on the heap with default field values.
+2. The constructor runs and sets the fields.
+3. A reference to the object is returned and stored in a variable.
+4. Calling `a.deposit(500)` runs the method with `this` = a.
+
+**In real projects**
+
+- Keep fields private; expose behaviour, not raw setters.
+- Validate in constructors and methods so an object can't get into an invalid state.
+- Use records for simple immutable data classes.
+
+**Common mistakes**
+
+- Thinking `b = a` copies an object (it copies the reference).
+- Comparing objects with == when you mean equals.
+
+#### Code
+
+```java
+public class Account {
+  private final String owner;          // fields: the object's data
+  private long balance;
+
+  public Account(String owner) {       // constructor: sets up a new object
+    this.owner = owner;                // this = the object being built
+  }
+  public void deposit(long amount) {   // method: behaviour
+    if (amount <= 0) throw new IllegalArgumentException("amount");
+    balance += amount;
+  }
+  public long balance() { return balance; }
+}
+
+Account a = new Account("Ana");
+Account b = new Account("Raj");
+a.deposit(500);
+Account c = a;                         // a and c: the same object
+c.deposit(100);
+// a.balance() → 600, b.balance() → 0, a == c → true, a == b → false
+```
+
+#### Remember
+
+- Class = blueprint (fields + methods); new creates an object on the heap and runs the constructor.
+- Object variables hold references: assignment shares the object; == compares identity.
+- Private fields + public methods that check inputs = encapsulation.
+
+## 0.7 Packages, imports and access modifiers
+
+*Interview priority: good to know.* How code is organised into packages, how you use classes from other packages, and the four access levels that decide who can see what.
+
+#### Theory: start here
+
+**In one sentence:** Packages organise classes into namespaces, imports let you refer to them by short names, and access modifiers control who can use each class and member.
+
+As a codebase grows, you need structure. **Packages** group related classes (`com.shop.order`, `com.shop.payment`) and match folders on disk. Two classes can have the same simple name in different packages.
+
+**Access modifiers** decide visibility: `public` (everyone), `protected` (same package and subclasses), package-private (no keyword: same package only) and `private` (same class only). Hiding details lets you change them later without breaking other code.
+
+**Key terms**
+
+- **Package**: Namespace + folder for related classes.
+- **Fully qualified name**: Package + class, e.g. java.util.List.
+- **import**: Lets you use the short class name.
+- **Package-private**: Default access when no modifier is written.
+- **Module**: Java 9+ unit that exports selected packages.
+
+**How it works**
+
+1. Declare the package at the top of each file.
+2. Import the classes you use from other packages.
+3. Choose the most restrictive access that works.
+4. Expose a small public API; keep the rest private or package-private.
+
+**In real projects**
+
+- Typical layout: package by feature (order, payment) rather than by layer.
+- Spring scans components from the main class's package downward (5.6).
+
+**Common mistakes**
+
+- Making everything public "just in case".
+- Wildcard imports hiding which classes are actually used.
+
+#### Code
+
+```java
+// file: src/main/java/com/shop/order/Order.java
+package com.shop.order;
+
+import java.util.List;                  // a class from another package
+import com.shop.pay.PaymentClient;
+
+public class Order {                    // visible everywhere
+  private long id;                      // only inside Order
+  int itemCount;                        // package-private: com.shop.order only
+  protected void audit() { }            // same package + subclasses
+  public long id() { return id; }       // everyone
+}
+```
+
+#### Remember
+
+- Package = folder + namespace; import is only a naming shortcut.
+- public > protected (package + subclasses) > package-private > private.
+- Fields private, expose behaviour through methods: encapsulation.
 
 ---
 

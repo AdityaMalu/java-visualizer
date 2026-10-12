@@ -164,6 +164,9 @@ button:focus-visible,select:focus-visible,summary:focus-visible{outline:2px soli
 .qz code,.qz pre{font-family:var(--f-mono);font-size:.88em}
 .qz code{background:var(--soft);border:1px solid var(--line);border-radius:4px;padding:0 4px}
 .qz pre{font-weight:400;background:var(--code-bg);border:1px solid var(--line);border-radius:7px;padding:8px 12px;margin:8px 0 6px;overflow-x:auto;white-space:pre;line-height:1.55}
+#quiz,.theory-body{grid-template-columns:minmax(0,1fr)}
+.qz,.th-box{min-width:0}
+.theory-body code,.qz code,.say code,.keep code,.idea code{overflow-wrap:anywhere}
 .qzbar{display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center;padding:14px 16px 0}
 .segwrap{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .seg-l{font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
@@ -3620,6 +3623,265 @@ keep:[`SimpleDateFormat keeps state in fields → sharing it across threads corr
 ]});
 </script>
 <script>
+PARTS.push({no:'0', title:'Java basics', topics:[
+
+/* =============================== 0.1 =============================== */
+{ no:'0.1', title:'Your first Java program', imp:'extra', idea:`Write, compile and run <code>Hello.java</code>, and see what every word of <code>public static void main</code> means.`,
+actors:'Thread', stateTitle:'Files and memory', logTitle:'Terminal',
+codes:{a:`// File: Hello.java  (the file name must match the public class)
+public class Hello {
+  public static void main(String[] args) {
+    String name = args.length > 0 ? args[0] : "world";
+    System.out.println("Hello, " + name + "!");
+  }
+}
+// $ javac Hello.java          -> creates Hello.class
+// $ java Hello Ana            -> Hello, Ana!
+// $ java Hello.java Ana       -> Java 11+: compile and run in one step`},
+steps:[
+{hl:{main:[1,2]}, th:[], g:[G('Files',['Hello.java','source code you write'])],
+ say:`Every Java program is made of <b>classes</b>. This file declares one public class, <code>Hello</code>, so the file must be called <code>Hello.java</code>. The braces <code>{ }</code> mark where the class starts and ends.`},
+{hl:{main:[3]}, g:[G('main, word by word',['public','anyone may call it (the JVM must)'],['static','belongs to the class: no object needed'],['void','returns nothing'],['main','the name the JVM looks for'],['String[] args','command-line arguments'])],
+ say:`<code>main</code> is the <b>entry point</b>: the JVM starts your program by calling it. Each keyword has a reason. <code>static</code> matters most: the JVM can call it without first creating a <code>Hello</code> object.`},
+{hl:{main:[8]}, g:[G('Files',['Hello.java','source code'],['Hello.class','bytecode, created by javac','hot'])], log:['$ javac Hello.java','(no output: success)'],
+ say:`<code>javac</code> (the Java compiler) checks your code and turns it into <b>bytecode</b> in <code>Hello.class</code>. Compile errors (a typo, a missing semicolon) are reported here, before anything runs.`},
+{hl:{main:[9,3]}, th:[['main','RUN','JVM called main()']], g:[G('Files',['Hello.class','loaded by the JVM']), G('main() frame',['args','["Ana"]','hot'])], log:['$ java Hello Ana'],
+ say:`<code>java Hello Ana</code> starts the JVM, loads the class and calls <code>main</code>, passing the words after the class name as the <code>args</code> array. Here <code>args[0]</code> is "Ana".`},
+{hl:{main:[4]}, g:[G('main() frame',['args','["Ana"]'],['args.length','1'],['name','"Ana"','hot'])],
+ say:`A <b>local variable</b> <code>name</code> of type String. The <b>ternary</b> <code>cond ? a : b</code> picks a value: there is an argument, so name = "Ana". With no arguments it would be "world".`},
+{hl:{main:[5]}, g:[G('main() frame',['name','"Ana"'],['"Hello, " + name + "!"','"Hello, Ana!"','hot'])], log:['Hello, Ana!'],
+ say:`<code>+</code> joins strings. <code>System.out.println</code> prints a line to the console. When main returns, the program ends.`},
+{hl:{main:[10]}, th:[], g:[G('Shortcuts',['java Hello.java','compile + run a single file (Java 11+)'],['jshell','try one line at a time (Java 9+)'],['void main() { … }','compact source files (final in Java 25)'])], log:['$ java Hello.java Ana','Hello, Ana!'],
+ say:`For quick experiments: run a single source file directly, or use <code>jshell</code>. Java 25 also allows a <b>compact source file</b> with just <code>void main() { … }</code>, which is great for learning. Real projects still use classes, packages and a build tool (Maven or Gradle).`}
+],
+keep:[`A program is classes; execution starts at <code>public static void main(String[] args)</code>.`,`javac compiles .java → .class (bytecode); java runs it on the JVM.`,`Public class name = file name; compile errors appear before anything runs.`]},
+
+/* =============================== 0.2 =============================== */
+{ no:'0.2', title:'Variables, types and operators', imp:'good', idea:`The eight primitive types, and the arithmetic surprises every interviewer loves: integer division, overflow, <code>i++</code> vs <code>++i</code>, casts and short-circuiting.`,
+actors:'Thread', stateTitle:'Variables',
+codes:{a:`int apples = 7, people = 2;
+int each = apples / people;            // integer division
+int left = apples % people;            // remainder
+double exact = apples / 2.0;           // one double → double math
+long big = Integer.MAX_VALUE + 1;      // overflow happens in int first!
+long fixed = Integer.MAX_VALUE + 1L;   // 1L makes it long math
+int i = 5;
+int a = i++;                           // use, then add
+int b = ++i;                           // add, then use
+byte small = (byte) 200;               // narrowing cast wraps around
+boolean ok = people != 0 && apples / people > 1;  // && short-circuits
+char c = 'A' + 1;                      // chars are numbers`},
+steps:[
+{th:[], g:[G('8 primitive types',['byte / short','8 / 16-bit whole numbers'],['int','32-bit, ±2.1 billion (default choice)'],['long','64-bit, add L: 10_000_000_000L'],['float / double','decimals (double is the default)'],['char','one UTF-16 character'],['boolean','true / false'])],
+ say:`A <b>variable</b> is a named box with a <b>type</b>. Java has 8 <b>primitive</b> types holding plain values; everything else (String, arrays, your classes) is an <b>object</b> reached through a reference. The type fixes what a variable can hold and how big it is.`},
+{hl:{main:[1,2]}, g:[G('Variables',['apples','7'],['people','2'],['each','3','hot'])],
+ say:`<code>7 / 2</code> is <b>3</b>, not 3.5. When both sides are integers, Java does <b>integer division</b> and drops the fraction (it doesn't round).`},
+{hl:{main:[3,4]}, g:[G('Variables',['each','3'],['left','1','hot'],['exact','3.5','hot'])],
+ say:`<code>%</code> gives the <b>remainder</b> (handy for "is it even?": <code>n % 2 == 0</code>). If either side is a double, the math is done in double: <code>7 / 2.0</code> is 3.5.`},
+{hl:{main:[5]}, g:[G('Variables',['Integer.MAX_VALUE','2147483647'],['big','-2147483648','bad'])], log:['MAX_VALUE + 1 computed as int → wraps to MIN_VALUE, then widened to long'],
+ say:`<b>Overflow.</b> The right side is computed as <code>int</code> first. One past the maximum <b>wraps around</b> to the most negative int, silently, and only then is it stored in the long. The target type doesn't help.`},
+{hl:{main:[6]}, g:[G('Variables',['big','-2147483648'],['fixed','2147483648','ok'])],
+ say:`Make one operand long (<code>1L</code>) and the whole expression is computed in long. For money or counters that can grow, use long, or <code>Math.addExact</code>, which throws instead of wrapping.`},
+{hl:{main:[7,8,9]}, g:[G('Variables',['i (start)','5'],['a = i++','5, then i becomes 6','hot'],['b = ++i','i becomes 7, then b = 7','hot'])],
+ say:`<code>i++</code> (post-increment) gives you the <b>old</b> value, then adds one. <code>++i</code> (pre-increment) adds first and gives you the <b>new</b> value. On a line by itself, both just add one.`},
+{hl:{main:[10]}, g:[G('Variables',['200 in binary','1100 1000'],['as a byte (-128..127)','-56','bad'])],
+ say:`Converting to a <b>smaller</b> type needs an explicit <b>cast</b>, and it keeps only the low bits: 200 doesn't fit in a byte and becomes -56. Widening (int → long, int → double) is automatic and safe.`},
+{hl:{main:[11]}, g:[G('Variables',['people != 0','true'],['apples / people > 1','true (only evaluated because left was true)'],['ok','true','ok'])],
+ say:`<code>&&</code> and <code>||</code> <b>short-circuit</b>: if the left side already decides the answer, the right side never runs. That's what makes <code>people != 0 && apples / people > 1</code> safe from division by zero. The single <code>&</code> and <code>|</code> always evaluate both sides.`},
+{hl:{main:[12]}, g:[G('Variables',["'A'",'65'],["'A' + 1",'66 → \'B\'','ok'])],
+ say:`A <code>char</code> is a number (its Unicode code). <code>'A' + 1</code> is 66, which is 'B'. Also remember: <code>==</code> on primitives compares values; on objects it compares references (1.8).`}
+],
+keep:[`int / int drops the fraction; % is the remainder; one double makes it double math.`,`int arithmetic overflows silently before widening: use 1L, long, or Math.addExact.`,`i++ returns the old value, ++i the new; && / || short-circuit; narrowing casts wrap.`]},
+
+/* =============================== 0.3 =============================== */
+{ no:'0.3', title:'Control flow: if, switch and loops', imp:'extra', idea:`Make decisions with <code>if</code> and <code>switch</code>, repeat with loops, and steer them with <code>break</code> and <code>continue</code>. Then the classic switch fall-through bug.`,
+actors:'Thread', stateTitle:'Variables',
+codes:{a:`int score = 82;
+String grade;
+if (score >= 90)      grade = "A";
+else if (score >= 75) grade = "B";
+else                  grade = "C";
+
+String msg = switch (grade) {        // switch expression (Java 14+)
+  case "A" -> "Excellent";
+  case "B", "C" -> "Good";
+  default -> "Unknown";
+};
+
+int sum = 0;
+for (int n = 1; n <= 10; n++) {
+  if (n % 2 == 0) continue;          // skip even numbers
+  if (n > 7) break;                  // leave the loop
+  sum += n;
+}`,
+b:`String msg;
+switch (grade) {                     // classic switch statement
+  case "A": msg = "Excellent";
+  case "B": msg = "Good";            // no break above: falls through!
+            break;
+  default:  msg = "Unknown";
+}
+// grade = "A" → msg ends up "Good"`},
+steps:[
+{hl:{main:[1,3,4]}, th:[], g:[G('Variables',['score','82'],['score >= 90','false'],['score >= 75','true','hot'],['grade','"B"','hot'])],
+ say:`An <code>if / else if / else</code> chain checks conditions top to bottom and runs the <b>first</b> branch whose condition is true. 82 isn't ≥ 90, but it is ≥ 75, so grade = "B" and the rest is skipped.`},
+{hl:{main:[7,9]}, g:[G('Variables',['grade','"B"'],['msg','"Good"','hot'])],
+ say:`A <b>switch expression</b> picks a value by matching cases. Arrow cases (<code>-&gt;</code>) never fall through, several labels can share a case (<code>"B", "C"</code>), and the compiler requires every possibility to be covered (here via <code>default</code>).`},
+{hl:{main:[13,14,17]}, g:[G('Loop',['n','1'],['n % 2 == 0','false'],['sum','1','hot'])],
+ say:`A <code>for</code> loop has three parts: start (<code>n = 1</code>), condition checked before each pass (<code>n &lt;= 10</code>), and step after each pass (<code>n++</code>). First pass: 1 is odd and not > 7, so sum = 1.`},
+{hl:{main:[14,15]}, g:[G('Loop',['n','2'],['n % 2 == 0','true → continue','hot'],['sum','1'])],
+ say:`<code>continue</code> skips the <b>rest of this pass</b> and goes straight to the step (<code>n++</code>). Even numbers never reach <code>sum += n</code>.`},
+{hl:{main:[17]}, g:[G('Loop',C('odd n added',[['1'],['3'],['5'],['7','hot']]),['sum','1 + 3 + 5 + 7 = 16','hot'])],
+ say:`Passes for 3, 5 and 7 add to the sum; 4 and 6 are skipped by continue.`},
+{hl:{main:[16]}, g:[G('Loop',['n','8 → continue, then 9'],['9 > 7','true → break','bad'],['sum (final)','16','ok'])],
+ say:`At 8, continue. At 9, <code>break</code> exits the <b>whole loop</b> immediately, even though the condition <code>n &lt;= 10</code> is still true. Final sum: 16. (Other loops: <code>while (cond)</code> checks first; <code>do { } while (cond)</code> runs at least once; <code>for (x : list)</code> walks a collection.)`},
+{cv:'b', hl:{main:[3,4,5]}, g:[G('Variables',['grade','"A"'],['case "A"','msg = "Excellent"'],['falls into case "B"','msg = "Good"','bad'],['break','leaves the switch'])], log:['msg = Good   (expected Excellent)'],
+ say:`<b>The classic bug.</b> In an old-style <code>switch</code> statement with colons, execution <b>falls through</b> into the next case unless you write <code>break</code>. "A" sets "Excellent", then runs on into case "B" and overwrites it. Prefer arrow cases or switch expressions, which can't fall through.`}
+],
+keep:[`if/else if picks the first true branch; switch expressions (->) never fall through and must be exhaustive.`,`continue skips to the next pass; break leaves the loop.`,`Old colon-style switch falls through without break: a classic bug.`]},
+
+/* =============================== 0.4 =============================== */
+{ no:'0.4', title:'Arrays', imp:'good', idea:`Fixed-size, indexed containers. See default values, two variables sharing one array, copying, out-of-bounds errors, and why printing an array shows gibberish.`,
+actors:'Thread', stateTitle:'Heap',
+codes:{a:`int[] prices = new int[4];             // 4 slots, all 0
+prices[0] = 300; prices[3] = 120;
+int[] alias = prices;                  // same array, second name
+alias[1] = 999;                        // prices[1] is 999 too
+int[] bigger = Arrays.copyOf(prices, 6); // a new, longer array
+System.out.println(prices.length);     // 4 (a field, not a method)
+Arrays.sort(prices);                   // sorts in place
+System.out.println(prices);            // [I@1b6d3586
+System.out.println(Arrays.toString(prices)); // [0, 120, 300, 999]
+prices[4] = 1;                         // index 4 doesn't exist
+int[][] grid = new int[3][2];          // 3 rows of 2`},
+steps:[
+{hl:{main:[1]}, th:[], g:[G('prices → int[4]',C('index 0..3',[['0'],['0'],['0'],['0']]))],
+ say:`An <b>array</b> holds a fixed number of values of one type, side by side. <code>new int[4]</code> creates 4 slots on the heap, numbered <b>0 to 3</b>, each starting at the default value (0 for numbers, false for booleans, null for objects).`},
+{hl:{main:[2]}, g:[G('prices → int[4]',C('index 0..3',[['300','hot'],['0'],['0'],['120','hot']]))],
+ say:`Use <code>array[index]</code> to read or write a slot. Indexes start at 0, so the last slot is <code>length - 1</code>.`},
+{hl:{main:[3,4]}, g:[G('prices, alias → same int[4]',C('index 0..3',[['300'],['999','hot'],['0'],['120']]))],
+ say:`An array is an <b>object</b>. <code>alias = prices</code> copies the <b>reference</b>, not the data, so both names point to the same array. Changing <code>alias[1]</code> changes what <code>prices</code> sees.`},
+{hl:{main:[5,6]}, g:[G('prices → int[4]',C('',[['300'],['999'],['0'],['120']])), G('bigger → new int[6]',C('',[['300'],['999'],['0'],['120'],['0','hot'],['0','hot']]))], log:['4'],
+ say:`Arrays can't grow. To "resize", create a new one and copy (<code>Arrays.copyOf</code>). <code>length</code> is a field, so no parentheses (unlike <code>String.length()</code> and <code>list.size()</code>).`},
+{hl:{main:[7,8,9]}, g:[G('prices → int[4] (sorted)',C('',[['0','hot'],['120','hot'],['300','hot'],['999','hot']]))], log:['[I@1b6d3586','[0, 120, 300, 999]'],
+ say:`<code>Arrays.sort</code> sorts in place. Printing an array directly shows its type and a hash code (<code>[I</code> means "int array"), not its contents. Use <code>Arrays.toString</code>. Likewise, compare contents with <code>Arrays.equals</code>, not <code>==</code>.`},
+{hl:{main:[10]}, g:[G('prices → int[4]',['valid indexes','0, 1, 2, 3'],['requested','4','bad'])], log:['java.lang.ArrayIndexOutOfBoundsException: Index 4 out of bounds for length 4'],
+ say:`Java checks every index. Going past the end throws <code>ArrayIndexOutOfBoundsException</code> instead of silently corrupting memory. "Off by one" loops (<code>i &lt;= length</code>) are the usual cause.`},
+{hl:{main:[11]}, g:[G('grid → int[3][2]',['grid[0]','[0, 0]'],['grid[1]','[0, 0]'],['grid[2]','[0, 0]'],['grid[1][0]','row 1, column 0'])],
+ say:`A 2D array is an <b>array of arrays</b>. In real code you'll mostly use <code>ArrayList</code> (2.5), which grows automatically, but arrays remain important for performance and in coding interviews.`}
+],
+keep:[`Fixed size, indexes 0..length-1, default values 0/false/null.`,`Arrays are objects: assignment copies the reference; Arrays.copyOf makes a new one.`,`Print with Arrays.toString, compare with Arrays.equals; bad index → ArrayIndexOutOfBoundsException.`]},
+
+/* =============================== 0.5 =============================== */
+{ no:'0.5', title:'Methods, recursion and the call stack', imp:'good', idea:`How a method call works: arguments in, a new stack frame, a return value out. Then follow <code>factorial(3)</code> as the stack grows and unwinds.`,
+actors:'Thread', stateTitle:'Call stack (top = running now)',
+codes:{a:`static int factorial(int n) {
+  if (n <= 1) return 1;            // base case: stop here
+  return n * factorial(n - 1);     // recursive case
+}
+
+static void greet(String name, int times) {   // parameters
+  for (int i = 0; i < times; i++) System.out.println("Hi " + name);
+}
+
+public static void main(String[] args) {
+  int r = factorial(3);            // 6
+  greet("Ana", 2);
+}`},
+steps:[
+{hl:{main:[6,7]}, th:[], g:[G('Anatomy',['static','no object needed to call it'],['void / int','return type (void = returns nothing)'],['greet','name'],['(String name, int times)','parameters'],['{ … }','body'])],
+ say:`A <b>method</b> is a named block of code you can call with inputs (<b>parameters</b>) and that may give back a value (its <b>return type</b>, or <code>void</code>). Methods let you reuse logic and give it a name.`},
+{hl:{main:[10,11]}, g:[G('main',['r','?','hot'])],
+ say:`<code>main</code> calls <code>factorial(3)</code>. Each call gets its own <b>stack frame</b> holding its parameters and local variables. Frames pile up like a stack of plates: the top one is running.`},
+{hl:{main:[1,3]}, g:[G('factorial(3)',['n','3'],['waiting for','factorial(2)','hot']), G('main',['r','?'])],
+ say:`n = 3 isn't ≤ 1, so it needs <code>factorial(2)</code> first. This frame <b>pauses</b> in the middle of line 3, and a new frame is pushed on top.`},
+{hl:{main:[1,3]}, g:[G('factorial(2)',['n','2'],['waiting for','factorial(1)','hot']), G('factorial(3)',['n','3'],['waiting for','factorial(2)']), G('main',['r','?'])],
+ say:`Same again: <code>factorial(2)</code> calls <code>factorial(1)</code>. Three frames for the same method, each with its <b>own</b> <code>n</code>. That's why recursion works.`},
+{hl:{main:[2]}, g:[G('factorial(1)',['n','1'],['returns','1','ok']), G('factorial(2)',['n','2']), G('factorial(3)',['n','3']), G('main',['r','?'])],
+ say:`The <b>base case</b>: n = 1 returns 1 without another call. Without a base case, frames would pile up until <code>StackOverflowError</code>.`},
+{hl:{main:[3]}, g:[G('factorial(2)',['n * result','2 × 1 = 2','ok']), G('factorial(3)',['n','3']), G('main',['r','?'])],
+ say:`The stack <b>unwinds</b>. The top frame is popped, and <code>factorial(2)</code> resumes exactly where it paused, computing 2 × 1 = 2 and returning it.`},
+{hl:{main:[3,10]}, g:[G('factorial(3)',['n * result','3 × 2 = 6','ok']), G('main',['r','6','ok'])],
+ say:`<code>factorial(3)</code> resumes: 3 × 2 = 6, returned to main. All the factorial frames are gone, and so are their variables.`},
+{hl:{main:[11,6,7]}, g:[G('greet("Ana", 2)',['name','"Ana"'],['times','2'],['i','0 → 1']), G('main',['r','6'])], log:['Hi Ana','Hi Ana'],
+ say:`Arguments are matched to parameters by position. Java copies each argument's value into the parameter (always pass-by-value, see 1.6). Several methods may share a name with different parameter lists: that's <b>overloading</b> (3.2).`}
+],
+keep:[`Each call gets its own stack frame with its own parameters and locals; return pops it.`,`Recursion = a method calling itself; always needs a base case or you get StackOverflowError.`,`Arguments are copied into parameters (pass-by-value).`]},
+
+/* =============================== 0.6 =============================== */
+{ no:'0.6', title:'Classes, objects and constructors', imp:'good', idea:`A class is a blueprint; <code>new</code> builds objects from it. Follow two accounts being created, a deposit, and two variables pointing at the same object.`,
+actors:'Thread', stateTitle:'Heap',
+codes:{a:`public class Account {
+  private final String owner;          // fields: the object's data
+  private long balance;
+
+  public Account(String owner) {       // constructor: sets up a new object
+    this.owner = owner;                // this = the object being built
+  }
+  public void deposit(long amount) {   // method: behaviour
+    if (amount <= 0) throw new IllegalArgumentException("amount");
+    balance += amount;
+  }
+  public long balance() { return balance; }
+}
+
+Account a = new Account("Ana");
+Account b = new Account("Raj");
+a.deposit(500);
+Account c = a;                         // a and c: the same object
+c.deposit(100);
+// a.balance() → 600, b.balance() → 0, a == c → true, a == b → false`},
+steps:[
+{hl:{main:[1,2,3]}, th:[], g:[G('class Account (blueprint)',['fields','owner, balance'],['constructor','Account(String owner)'],['methods','deposit, balance'])],
+ say:`A <b>class</b> describes a kind of thing: what data each one has (<b>fields</b>) and what it can do (<b>methods</b>). It's a blueprint. No account exists yet.`},
+{hl:{main:[15,5,6]}, g:[G('Account #1 (a)',['owner','"Ana"','hot'],['balance','0'])],
+ say:`<code>new Account("Ana")</code> allocates an <b>object</b> on the heap, sets fields to defaults (balance = 0), then runs the <b>constructor</b>. Inside it, <code>this</code> means "the object being built", so <code>this.owner = owner</code> copies the parameter into the field.`},
+{hl:{main:[16]}, g:[G('Account #1 (a)',['owner','"Ana"'],['balance','0']), G('Account #2 (b)',['owner','"Raj"','hot'],['balance','0'])],
+ say:`A second <code>new</code> creates a second, completely separate object. Each object has its own copy of every (non-static) field.`},
+{hl:{main:[17,8,9,10]}, g:[G('Account #1 (a)',['owner','"Ana"'],['balance','500','hot']), G('Account #2 (b)',['owner','"Raj"'],['balance','0'])],
+ say:`<code>a.deposit(500)</code> runs the method <b>on object #1</b>. The method checks the input first (rejecting amounts ≤ 0) and only then changes the balance. This is <b>encapsulation</b>: the field is private, so this method is the only way to change it, and it protects the rules.`},
+{hl:{main:[18]}, g:[G('Account #1 (a, c)',['owner','"Ana"'],['balance','500']), G('Account #2 (b)',['owner','"Raj"'],['balance','0'])],
+ say:`<code>Account c = a</code> doesn't copy the object. Variables of class types hold <b>references</b>, so now <code>a</code> and <code>c</code> point to the same account.`},
+{hl:{main:[19,20]}, g:[G('Account #1 (a, c)',['owner','"Ana"'],['balance','600','hot']), G('Account #2 (b)',['owner','"Raj"'],['balance','0'])], log:['a.balance() = 600','a == c → true (same object)','a == b → false'],
+ say:`Depositing through <code>c</code> changes the one object both names point to. <code>==</code> on objects asks "same object?", not "same contents?". For content equality, classes override <code>equals</code> (2.3).`},
+{th:[], g:[G('Vocabulary',['class','blueprint'],['object / instance','one thing built from it'],['field','data each object holds'],['method','behaviour'],['constructor','runs once per new object'],['this','the current object'])],
+ say:`If you write no constructor, Java provides an empty no-argument one. <code>final</code> fields must be set exactly once, in the constructor. Records (2.14) generate all this for simple data classes.`}
+],
+keep:[`Class = blueprint (fields + methods); new creates an object on the heap and runs the constructor.`,`Object variables hold references: assignment shares the object; == compares identity.`,`Private fields + public methods that check inputs = encapsulation.`]},
+
+/* =============================== 0.7 =============================== */
+{ no:'0.7', title:'Packages, imports and access modifiers', imp:'good', idea:`How code is organised into packages, how you use classes from other packages, and the four access levels that decide who can see what.`,
+actors:'Thread', stateTitle:'Who can see what',
+codes:{a:`// file: src/main/java/com/shop/order/Order.java
+package com.shop.order;
+
+import java.util.List;                  // a class from another package
+import com.shop.pay.PaymentClient;
+
+public class Order {                    // visible everywhere
+  private long id;                      // only inside Order
+  int itemCount;                        // package-private: com.shop.order only
+  protected void audit() { }            // same package + subclasses
+  public long id() { return id; }       // everyone
+}`},
+steps:[
+{hl:{main:[1,2]}, th:[], g:[G('Package = folder',['package','com.shop.order'],['folder','com/shop/order/'],['full class name','com.shop.order.Order'])],
+ say:`A <b>package</b> groups related classes, like folders group files. The package name mirrors the folder path, and by convention starts with a reversed domain (<code>com.shop</code>) so names are globally unique. Two classes can share a short name if their packages differ.`},
+{hl:{main:[4,5]}, g:[G('Imports',['java.util.List','JDK collection'],['com.shop.pay.PaymentClient','your other package'],['java.lang.*','always imported (String, Math…)'])],
+ say:`<code>import</code> lets you write the short name <code>List</code> instead of <code>java.util.List</code> everywhere. It doesn't load or copy anything; it's only a naming shortcut for the compiler. Classes in <code>java.lang</code> and in your own package need no import.`},
+{hl:{main:[7,8,9,10,11]}, g:[G('Access levels (most → least open)',['public','everywhere','ok'],['protected','same package + subclasses'],['(no keyword)','same package only ("package-private")'],['private','same class only','bad'])],
+ say:`<b>Access modifiers</b> control who may use a class, field or method. Default to <b>private</b> for fields, and open up only what callers truly need.`},
+{hl:{main:[8,11]}, g:[G('From com.shop.billing.Invoice',['order.id()','✔ public'],['order.id','✘ private','bad'],['order.itemCount','✘ different package','bad'],['order.audit()','✘ not a subclass','bad'])],
+ say:`From a class in another package, only <code>public</code> members are reachable. The private field is hidden behind the public <code>id()</code> method, so Order can later change how it stores ids without breaking callers. That's <b>encapsulation</b>.`},
+{hl:{main:[10]}, g:[G('class SpecialOrder extends Order (other package)',['audit() inside SpecialOrder','✔ protected via inheritance','ok'],['itemCount','✘ package-private','bad'])],
+ say:`<code>protected</code> also opens a member to <b>subclasses</b>, even in other packages. Package-private is often used for tests and helpers that live in the same package.`},
+{th:[], g:[G('Rules of thumb',['fields','private'],['helper classes','package-private'],['API types and methods','public'],['top-level classes','only public or package-private'],['modules (Java 9+)','export packages explicitly'])],
+ say:`A top-level class can only be <code>public</code> or package-private, and a file may hold only one public class. In larger systems, <b>modules</b> (module-info.java) add another layer: a package is visible outside its module only if it's exported.`}
+],
+keep:[`Package = folder + namespace; import is only a naming shortcut.`,`public > protected (package + subclasses) > package-private > private.`,`Fields private, expose behaviour through methods: encapsulation.`]}
+]});
+</script>
+<script>
 /* ---------- quiz bank. Each question: [question, options, index of correct option, why, level E|M|H].
    QUIZ is the core set (3 per topic); QUIZ_ADV the advanced set (2 per topic). Wrong options are real misconceptions. ---------- */
 const QUIZ = {
@@ -4865,6 +5127,113 @@ Object.assign(THEORY, {
 [`Review static fields and singleton bean fields.`,`For each mutable, non-thread-safe object, replace it with an immutable alternative or create it per use.`,`Test concurrency-sensitive code with many threads, not only single-threaded unit tests.`],
 [`java.time (DateTimeFormatter, LocalDate) for dates; ConcurrentHashMap for shared maps; ThreadLocalRandom for random numbers.`],
 [`Assuming a class is thread-safe because it's in the JDK.`,`Trusting single-threaded unit tests for concurrency bugs.`]),
+});
+</script>
+<script>
+/* ---------- Part 0: theory and quizzes ---------- */
+Object.assign(THEORY, {
+'0.1': TH(`A Java program is a set of classes; you compile it with javac and run it with java, and execution starts in the main method.`,
+`<p>Programming means writing instructions for a computer. In Java you write them in <code>.java</code> text files, organised into <b>classes</b>. The compiler <code>javac</code> checks them and translates them into <b>bytecode</b> (<code>.class</code> files), and the <code>java</code> command starts a Java Virtual Machine that runs that bytecode.</p>
+<p>The JVM needs to know where to begin, so it looks for a method with the exact signature <code>public static void main(String[] args)</code>. Think of it as the front door of your program.</p>`,
+[[`Source file`,`A .java text file you write.`],[`Compiler (javac)`,`Checks your code and produces .class bytecode.`],[`JVM (java)`,`Runs bytecode on your machine.`],[`main method`,`The entry point the JVM calls first.`],[`Statement`,`One instruction, usually ending with a semicolon.`]],
+[`Write <code>Hello.java</code> containing <code>public class Hello</code>.`,`Run <code>javac Hello.java</code>; fix any compile errors it reports.`,`Run <code>java Hello</code>; the JVM loads the class and calls main.`,`main runs top to bottom; when it returns, the program ends.`],
+[`Real projects use a build tool (Maven or Gradle) and an IDE (IntelliJ IDEA) that compile for you.`,`Use <code>jshell</code> to try snippets quickly.`],
+[`A public class name that doesn't match the file name.`,`Misspelling main's signature, so the JVM can't find the entry point.`]),
+'0.2': TH(`Variables are named, typed boxes for values; Java's eight primitive types hold plain numbers, characters and booleans, and operators combine them with some surprising rules.`,
+`<p>A variable has a <b>type</b>, a <b>name</b> and a <b>value</b>: <code>int age = 30;</code>. Java is <b>statically typed</b>: the type is fixed when you write the code, and the compiler stops you putting a String into an int.</p>
+<p>The eight <b>primitive</b> types are byte, short, int, long (whole numbers), float, double (decimals), char (a character) and boolean (true/false). Everything else is an object. Operators (<code>+ - * / %</code>, comparisons, <code>&& ||</code>) work on them, but integer math has rules that catch people out: division drops the fraction, and results that don't fit wrap around silently.</p>`,
+[[`Primitive`,`A built-in value type (int, double, boolean…), not an object.`],[`Literal`,`A value written directly in code: 42, 3.5, 'A', "text", 10L.`],[`Integer division`,`int / int discards the remainder.`],[`Overflow`,`A result too big for its type wraps around.`],[`Cast`,`Explicit conversion, e.g. (int) 3.9 → 3.`],[`Short-circuit`,`&& and || skip the right side when the left decides.`]],
+[`Declare a variable with a type, optionally with a starting value.`,`Expressions are evaluated using the operand types (int math if both are ints).`,`Widening (int → long → double) happens automatically; narrowing needs a cast.`,`<code>var</code> (Java 10+) lets the compiler infer a local variable's type.`],
+[`Use int by default, long for ids, timestamps and counters that can grow, BigDecimal or long cents for money (1.10).`,`Use <code>Math.addExact</code> / <code>multiplyExact</code> where overflow must never go unnoticed.`],
+[`Expecting <code>7 / 2</code> to be 3.5.`,`Computing large values in int before storing in long.`,`Confusing <code>=</code> (assign) with <code>==</code> (compare).`]),
+'0.3': TH(`Control flow decides which statements run: if and switch choose between paths, loops repeat code, and break/continue change a loop's course.`,
+`<p>By default statements run top to bottom. <b>if</b> runs a block only when a condition is true; add <b>else if</b> and <b>else</b> for alternatives. <b>switch</b> chooses among many cases based on one value; modern switch <i>expressions</i> with arrows are concise and safe.</p>
+<p><b>Loops</b> repeat work: <code>for</code> when you know the count, <code>while</code> while a condition holds, <code>do-while</code> to run at least once, and the enhanced <code>for (item : collection)</code> to visit every element. <code>break</code> leaves a loop; <code>continue</code> jumps to its next pass.</p>`,
+[[`Condition`,`An expression that's true or false.`],[`Block`,`Statements inside { }.`],[`Switch expression`,`switch that produces a value, with -> cases.`],[`Fall-through`,`Old switch behaviour: without break, execution continues into the next case.`],[`Enhanced for`,`for (T x : items): loops over every element.`]],
+[`Evaluate the condition.`,`Run the matching branch (or skip it).`,`For loops: initialise, check the condition, run the body, update, repeat.`,`break exits the loop; continue jumps to the update step.`],
+[`Prefer early returns over deeply nested ifs.`,`Use switch expressions with enums and sealed types so the compiler checks every case.`,`Prefer streams or enhanced for over manual index loops when you don't need the index.`],
+[`Missing break in a classic switch.`,`Off-by-one loop bounds (<code>&lt;=</code> vs <code>&lt;</code>).`,`Infinite loops whose condition never changes.`]),
+'0.4': TH(`An array stores a fixed number of values of the same type in numbered slots, starting at index 0.`,
+`<p>When you need many values of the same kind (ten scores, a grid of cells), an <b>array</b> keeps them together. You choose the size when creating it, and it never changes. Each slot has an <b>index</b>: the first is 0 and the last is <code>length - 1</code>. Reading or writing a slot by index is instant.</p>
+<p>Arrays are objects, so an array variable holds a reference. Two variables can point to the same array, and changes through one are seen through the other.</p>`,
+[[`Index`,`Position of a slot, from 0 to length − 1.`],[`length`,`Number of slots (a field: arr.length).`],[`Default values`,`0, false or null until you assign something.`],[`Arrays utility`,`java.util.Arrays: sort, copyOf, toString, equals, fill, binarySearch.`]],
+[`Create: <code>new int[5]</code> or <code>int[] a = {3, 1, 2};</code>.`,`Access: <code>a[i]</code> for reading and writing.`,`Loop: <code>for (int i = 0; i &lt; a.length; i++)</code> or <code>for (int x : a)</code>.`,`Grow: create a bigger array and copy, or use ArrayList.`],
+[`Use ArrayList in most application code; arrays for fixed-size data, performance-critical code and coding interviews.`,`<code>Arrays.asList</code> and <code>List.of</code> bridge arrays and lists (2.9).`],
+[`Index out of bounds (often <code>i &lt;= a.length</code>).`,`Printing an array directly instead of Arrays.toString.`,`Comparing arrays with == instead of Arrays.equals.`]),
+'0.5': TH(`A method is a named, reusable block of code with inputs (parameters) and an optional output (return value); each call gets its own stack frame.`,
+`<p>Methods let you split a program into small named steps: <code>calculateTax(order)</code> reads better than 30 lines of arithmetic. You define parameters (inputs) and a return type (output, or <code>void</code> for none).</p>
+<p>When a method is called, Java creates a <b>stack frame</b> for it on the thread's call stack, holding its parameters and local variables. When it returns, the frame is removed. <b>Recursion</b> is a method calling itself to solve a smaller version of the same problem; it needs a <b>base case</b> that stops the chain.</p>`,
+[[`Parameter / argument`,`The variable in the definition / the value passed in the call.`],[`Return type`,`The type of value the method gives back (void = nothing).`],[`Stack frame`,`Memory for one call: parameters and locals.`],[`Recursion`,`A method calling itself.`],[`Base case`,`The condition where recursion stops.`]],
+[`The caller evaluates the arguments.`,`A new frame is pushed; argument values are copied into parameters.`,`The body runs; return sends a value back and pops the frame.`,`The caller continues from where it paused.`],
+[`Keep methods short and named after what they do.`,`Prefer iteration for deep recursion in Java (no tail-call optimisation).`,`Many coding-interview problems (trees, backtracking) are naturally recursive.`],
+[`Recursion without a correct base case → StackOverflowError.`,`Expecting a method to change the caller's variables by reassigning parameters.`]),
+'0.6': TH(`A class is a blueprint that defines data (fields) and behaviour (methods); objects are individual things built from it with new, and constructors set them up.`,
+`<p>Real programs model things: accounts, orders, cars. A <b>class</b> describes what every account has (owner, balance) and can do (deposit, withdraw). An <b>object</b> is one specific account. You can create as many as you like with <code>new</code>, and each has its own field values.</p>
+<p>A <b>constructor</b> is special code that runs once when an object is created, to put it in a valid starting state. Making fields <code>private</code> and offering methods that check their inputs keeps objects valid: this is <b>encapsulation</b>.</p>`,
+[[`Class`,`The definition: fields + constructors + methods.`],[`Object / instance`,`One thing created from a class.`],[`Field`,`A variable belonging to each object.`],[`Constructor`,`Initialises a new object; same name as the class, no return type.`],[`this`,`Reference to the current object.`],[`static`,`Belongs to the class itself, not to each object.`]],
+[`<code>new Account("Ana")</code> allocates memory on the heap with default field values.`,`The constructor runs and sets the fields.`,`A reference to the object is returned and stored in a variable.`,`Calling <code>a.deposit(500)</code> runs the method with <code>this</code> = a.`],
+[`Keep fields private; expose behaviour, not raw setters.`,`Validate in constructors and methods so an object can't get into an invalid state.`,`Use records for simple immutable data classes.`],
+[`Thinking <code>b = a</code> copies an object (it copies the reference).`,`Comparing objects with == when you mean equals.`]),
+'0.7': TH(`Packages organise classes into namespaces, imports let you refer to them by short names, and access modifiers control who can use each class and member.`,
+`<p>As a codebase grows, you need structure. <b>Packages</b> group related classes (<code>com.shop.order</code>, <code>com.shop.payment</code>) and match folders on disk. Two classes can have the same simple name in different packages.</p>
+<p><b>Access modifiers</b> decide visibility: <code>public</code> (everyone), <code>protected</code> (same package and subclasses), package-private (no keyword: same package only) and <code>private</code> (same class only). Hiding details lets you change them later without breaking other code.</p>`,
+[[`Package`,`Namespace + folder for related classes.`],[`Fully qualified name`,`Package + class, e.g. java.util.List.`],[`import`,`Lets you use the short class name.`],[`Package-private`,`Default access when no modifier is written.`],[`Module`,`Java 9+ unit that exports selected packages.`]],
+[`Declare the package at the top of each file.`,`Import the classes you use from other packages.`,`Choose the most restrictive access that works.`,`Expose a small public API; keep the rest private or package-private.`],
+[`Typical layout: package by feature (order, payment) rather than by layer.`,`Spring scans components from the main class's package downward (5.6).`],
+[`Making everything public "just in case".`,`Wildcard imports hiding which classes are actually used.`]),
+});
+Object.assign(QUIZ, {
+'0.1':[
+ [`Which method signature does the JVM look for to start a program?`,[`public void main(String[] args)`,`public static void main(String[] args)`,`static int main(String args)`,`public static void start(String[] args)`],1,`It must be public, static, void, named main, with a String[] parameter (Java 25 also allows simpler forms in compact source files).`,'E'],
+ [`What does <code>javac Hello.java</code> produce?`,[`A native .exe for your OS`,`A .jar archive`,`Hello.class containing bytecode`,`Nothing until you run java`],2,`javac compiles source to platform-neutral bytecode; the JVM runs it.`,'E'],
+ [`A file <code>Main.java</code> contains <code>public class App</code>. What happens?`,[`It runs, using App as the entry point`,`Compile error: a public class must be in a file of the same name`,`It compiles, but java Main fails`,`javac renames the class to Main`],1,`One public top-level class per file, and the file is named after it.`,'M']],
+'0.2':[
+ [`<code>int x = 7 / 2;</code> What is x?`,[`3.5`,`4`,`3`,`Compile error`],2,`Integer division drops the fraction (it doesn't round).`,'E'],
+ [`<code>int i = 5; int a = i++; int b = ++i;</code> What are a and b?`,[`a = 6, b = 7`,`a = 5, b = 6`,`a = 6, b = 6`,`a = 5, b = 7`],3,`i++ yields 5 (i becomes 6); ++i makes i 7 and yields 7.`,'M'],
+ [`<code>long big = Integer.MAX_VALUE + 1;</code> What is big?`,[`-2147483648`,`2147483648`,`Compile error`,`ArithmeticException`],0,`The addition happens in int and overflows before the result is widened to long.`,'H']],
+'0.3':[
+ [`In a for loop, what does <code>continue</code> do?`,[`Exits the loop`,`Skips to the next iteration`,`Restarts the loop from the beginning`,`Pauses the thread`],1,`break exits; continue skips the rest of the current pass.`,'E'],
+ [`Which loop always runs its body at least once?`,[`while`,`for`,`enhanced for`,`do-while`],3,`do-while checks the condition after the body.`,'E'],
+ [`Classic switch: <code>case 1: x = "one"; case 2: x = "two"; break;</code>. With value 1, x is?`,[`"one"`,`"two"`,`null`,`Compile error`],1,`No break after case 1, so it falls through into case 2.`,'M']],
+'0.4':[
+ [`<code>int[] a = new int[3];</code> What is <code>a[2]</code>?`,[`null`,`0`,`Undefined garbage`,`ArrayIndexOutOfBoundsException`],1,`Numeric arrays start filled with 0.`,'E'],
+ [`<code>int[] b = a; b[0] = 9;</code> What is <code>a[0]</code>?`,[`9: both names refer to one array`,`0: b is a copy`,`Compile error`,`Depends on the JVM`],0,`Arrays are objects; assignment copies the reference.`,'M'],
+ [`How do you print an array's contents?`,[`System.out.println(arr)`,`arr.toString()`,`Arrays.toString(arr)`,`String.valueOf(arr)`],2,`Arrays don't override toString, so printing shows type@hash.`,'M']],
+'0.5':[
+ [`What does a method with return type <code>void</code> return?`,[`null`,`0`,`Nothing`,`An empty Optional`],2,`void means it returns no value.`,'E'],
+ [`A recursive method has no base case. What happens?`,[`It returns 0`,`StackOverflowError`,`OutOfMemoryError: heap`,`The JIT turns it into a loop`],1,`Each call adds a frame until the thread's stack is full.`,'M'],
+ [`<code>factorial(3)</code> calls itself down to factorial(1). How many factorial frames exist at the deepest point?`,[`1`,`2`,`4`,`3`],3,`factorial(3), (2) and (1) are all on the stack at once.`,'M']],
+'0.6':[
+ [`What does a constructor do?`,[`Destroys an object`,`Initialises a newly created object`,`Copies an object`,`Compares two objects`],1,`It runs once per new object to set its starting state.`,'E'],
+ [`<code>Account a = new Account("Ana"); Account c = a; c.deposit(100);</code> Does a's balance change?`,[`Yes: a and c are the same object`,`No: c is a copy`,`Only if deposit is static`,`Compile error`],0,`Object variables hold references; assignment shares the object.`,'M'],
+ [`Inside a constructor, what does <code>this.owner = owner</code> do?`,[`Compares the field to the parameter`,`Assigns the field to itself`,`Copies the parameter into the object's field`,`Creates a new object`],2,`this.owner is the field; owner alone is the parameter that shadows it.`,'M']],
+'0.7':[
+ [`Which modifier makes a member visible only inside its own class?`,[`private`,`protected`,`(no modifier)`,`final`],0,`private is the most restrictive.`,'E'],
+ [`A field has no access modifier. Who can see it?`,[`Everyone`,`Only the class`,`Classes in the same package`,`Only subclasses`],2,`No keyword = package-private.`,'M'],
+ [`What does an <code>import</code> statement do?`,[`Loads the class into memory at startup`,`Copies the class into your package`,`Makes private members accessible`,`Lets you use a class's short name`],3,`Imports are a compile-time naming shortcut only.`,'M']]
+});
+Object.assign(QUIZ_ADV, {
+'0.1':[
+ [`Where does <code>String[] args</code> get its values?`,[`From words typed after the class name on the command line`,`From environment variables`,`From application.properties`,`From System.in`],0,`java Hello a b → args = ["a", "b"].`,'M'],
+ [`Why is main <code>static</code>?`,[`So it runs faster`,`So only one thread can call it`,`So the JVM can call it without creating an object`,`So it can't be overridden by mistake`],2,`No instance of the class exists yet when the program starts.`,'H']],
+'0.2':[
+ [`<code>double d = 10 / 4;</code> What is d?`,[`2.5`,`2.0`,`3.0`,`Compile error`],1,`10 / 4 is int division (2), then widened to 2.0.`,'H'],
+ [`<code>(int) 3.99</code> and <code>Math.round(3.5)</code>?`,[`4 and 4`,`3 and 3`,`4 and 3`,`3 and 4`],3,`Casting truncates toward zero; Math.round rounds half up.`,'M']],
+'0.3':[
+ [`Can a switch expression with <code>-&gt;</code> cases fall through?`,[`Yes, like classic switch`,`Only without default`,`No`,`Only for Strings`],2,`Arrow cases run exactly one branch.`,'M'],
+ [`<code>for (int i = 0; i &lt; 3; i++) { }</code> What is i after the loop?`,[`Compile error if used: i is scoped to the loop`,`3`,`2`,`0`],0,`A variable declared in the for header only exists inside the loop.`,'H']],
+'0.4':[
+ [`<code>int[] a = {1,2}; int[] b = {1,2};</code> What are <code>a == b</code> and <code>Arrays.equals(a, b)</code>?`,[`true, true`,`false, false`,`false, true`,`true, false`],2,`== compares references; Arrays.equals compares contents.`,'M'],
+ [`<code>new int[2][3]</code> creates?`,[`One array of 6 ints`,`An array of 2 arrays, each with 3 ints`,`An array of 3 arrays, each with 2 ints`,`A 2×3 matrix object`],1,`Java has arrays of arrays; rows can even have different lengths.`,'H']],
+'0.5':[
+ [`<code>void inc(int x) { x++; }</code> called as <code>inc(n)</code> with n = 5. What is n afterwards?`,[`6`,`0`,`Compile error`,`5`],3,`The value is copied into x; changing x doesn't touch n.`,'M'],
+ [`Why does Java prefer loops over very deep recursion?`,[`Recursion is not allowed in Java`,`No tail-call optimisation: each call uses a stack frame`,`Loops are always clearer`,`Recursion disables the JIT`],1,`Deep recursion (e.g. 100,000 levels) can overflow the default stack.`,'H']],
+'0.6':[
+ [`You write a constructor <code>Account(String owner)</code>. Can you still call <code>new Account()</code>?`,[`No: the default constructor is only provided when you write none`,`Yes, Java always adds one`,`Yes, but fields are null`,`Only via reflection`],0,`Declaring any constructor removes the implicit no-arg one.`,'H'],
+ [`A <code>static</code> field <code>count</code> is incremented in the constructor. After 3 objects, what is count?`,[`1 in each object`,`0`,`3, shared by the class`,`Compile error`],2,`Static fields have one copy for the whole class.`,'M']],
+'0.7':[
+ [`Can a top-level class be declared <code>private</code>?`,[`Yes`,`Only inside a package-info file`,`Only if it's final`,`No: only public or package-private`],3,`private and protected apply to members and nested classes.`,'M'],
+ [`A protected method in <code>com.a.Base</code>. Can <code>com.b.Other</code> (not a subclass) call it?`,[`Yes, protected is public within the module`,`No: only the same package or subclasses`,`Yes, after importing com.a.Base`,`Only through reflection with no restrictions`],1,`protected = package access plus subclasses.`,'H']]
 });
 </script>
 <script>

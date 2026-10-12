@@ -6,12 +6,15 @@ Step-by-step visual walkthroughs of core Java interview topics, like stepping th
 
 | Part | Topics |
 |---|---|
+| 0. Java basics | first program, types and operators, control flow, arrays, methods and recursion, classes and objects, packages and access |
 | 1. Java platform, memory, types | JIT, class loading, stack vs heap, GC, references, pass-by-value, Integer cache, String pool, immutability |
 | 2. Collections, generics, exceptions, Java 8+ | HashMap internals, equals/hashCode, LRU, TreeMap, heaps, fail-fast iterators, generics/PECS, streams, Optional |
 | 3. OOP, SOLID, design patterns | dynamic dispatch, overloading, init order, composition, SOLID, 10 patterns |
 | 4. Multithreading and concurrency | races, synchronized, volatile/JMM, CAS, wait/notify, deadlock, locks, synchronizers, pools, CompletableFuture, virtual threads |
 | 5. Spring Boot, JPA, microservices | DI, bean lifecycle, AOP proxies, @Transactional, Hibernate, Boot internals, security, circuit breaker, saga/outbox, idempotency |
 | 6. Real-world scenarios | flash-sale overselling across pods, production memory leak (heap dump → fix), thread-pool starvation, long @Transactional draining the connection pool, cache stampede, shared SimpleDateFormat |
+
+Each topic is tagged by interview priority (must-know, good to know, beyond interviews). Use the **Interview focus** filter at the top of the topic list to see only what you need; Prev/Next topic and the `[` `]` keys follow it.
 
 Every topic opens with a **Theory: start here** section written for someone who has never seen the concept: the idea in one sentence, a plain-language explanation with an everyday analogy, key terms, how it works step by step, how it shows up in real projects, and common mistakes. Then the visual walkthrough, then the quiz.
 
