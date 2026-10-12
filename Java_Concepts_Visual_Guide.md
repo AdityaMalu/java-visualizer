@@ -10,6 +10,7 @@ Core Java interview topics taught as **concept → picture → example → gotch
 - Part 5: Spring Boot, JPA, microservices
 - Part 6: Real-world scenarios
 - Part 7: Language features in depth
+- Part 8: Data and messaging
 
 New to a topic? Start with its **Theory: start here** section: the idea in one sentence, a plain-language explanation with an everyday analogy, key terms, how it works step by step, how it shows up in real projects, and common mistakes. No prior knowledge is assumed.
 
@@ -5156,6 +5157,265 @@ try (var exec = Executors.newVirtualThreadPerTaskExecutor()) { }  // Java 21
 - LTS: 8, 11, 17, 21, 25; a new release every 6 months.
 - 8: lambdas/streams/Optional/java.time · 11: var, HttpClient · 17: records, sealed, switch expr, text blocks · 21: virtual threads, pattern switch, sequenced collections.
 - 25: scoped values, compact source files, flexible constructor bodies. Spring Boot 3 needs Java 17+.
+
+---
+
+# Part 8: Data and messaging
+
+## 8.1 Transactions and isolation levels
+
+*Interview priority: must-know.* Three transactions run at once against one table. See dirty reads, non-repeatable reads and phantoms appear or disappear as the isolation level goes up, and what PostgreSQL and MySQL actually do.
+
+#### Theory: start here
+
+**In one sentence:** A transaction makes several database changes succeed or fail together; the isolation level decides how much concurrent transactions can see of each other's work.
+
+Moving money means two updates: subtract here, add there. If the system crashes in between, money vanishes. A **transaction** wraps both so they commit together or not at all. That's the A (atomicity) in **ACID**.
+
+Many transactions run at the same time. Perfect **isolation** would make each behave as if it ran alone, but that requires lots of locking or aborting. So databases offer levels: **READ COMMITTED** (never see uncommitted data), **REPEATABLE READ** (a stable snapshot for the whole transaction), **SERIALIZABLE** (as if one at a time). Each level rules out more **anomalies**.
+
+**Key terms**
+
+- **ACID**: Atomicity, Consistency, Isolation, Durability.
+- **Dirty read**: Reading another transaction's uncommitted change.
+- **Non-repeatable read**: The same row read twice gives different values.
+- **Phantom read**: A repeated range query returns new rows.
+- **MVCC**: Multi-version concurrency control: readers see a snapshot, writers create new versions.
+- **Serialization failure**: The DB aborts a transaction to keep a high isolation guarantee.
+
+**How it works**
+
+1. BEGIN starts a transaction (Spring does this for @Transactional).
+2. Reads see data according to the isolation level (statement-level or transaction-level snapshot).
+3. Writes take row locks; other writers to the same row wait.
+4. COMMIT makes changes durable and visible; ROLLBACK discards them.
+
+**In real projects**
+
+- Keep transactions short and use the default level unless you have a reason.
+- Protect read-modify-write with optimistic locking, conditional updates or SELECT … FOR UPDATE.
+- Retry transactions that fail with deadlock or serialization errors.
+
+**Common mistakes**
+
+- Assuming @Transactional alone prevents lost updates.
+- Long transactions holding locks and connections.
+- Not knowing your database's default level.
+
+#### Code
+
+```java
+-- account 1: balance 100, branch PUNE   (3 accounts in PUNE)
+T1: BEGIN;
+T1: SELECT balance FROM account WHERE id = 1;            -- read A
+T2: BEGIN; UPDATE account SET balance = 50 WHERE id = 1;
+T1: SELECT balance FROM account WHERE id = 1;            -- read B (T2 not committed)
+T2: COMMIT;
+T1: SELECT balance FROM account WHERE id = 1;            -- read C (T2 committed)
+T3: INSERT INTO account VALUES (9, 70, 'PUNE'); COMMIT;
+T1: SELECT count(*) FROM account WHERE branch = 'PUNE';  -- read D
+T1: COMMIT;
+```
+
+#### Remember
+
+- Anomalies: dirty read (uncommitted data), non-repeatable read (same row changes), phantom (new rows in a range).
+- READ UNCOMMITTED &lt; READ COMMITTED (Postgres default) &lt; REPEATABLE READ (MySQL default) &lt; SERIALIZABLE.
+- Higher levels can abort with serialization errors: retry. Usually: READ COMMITTED + optimistic locking / conditional updates.
+
+## 8.2 Indexes and query plans
+
+*Interview priority: must-know.* Why a query on 10 million rows takes seconds, and how a B-tree index makes it milliseconds. Then composite indexes, the leftmost-prefix rule, queries that can't use an index, and reading EXPLAIN.
+
+#### Theory: start here
+
+**In one sentence:** An index is a sorted lookup structure (usually a B-tree) that lets the database find matching rows without scanning the whole table.
+
+Without an index, finding "all orders of customer 42" means checking every row: a **full table scan**. An **index** on `customer_id` keeps those values sorted in a balanced tree with pointers back to the rows, so the database jumps straight to them in a handful of steps, like using a book's index instead of reading every page.
+
+Indexes aren't free: every insert, update and delete must also update each index, and they take space. The art is indexing the columns your important queries **filter, join and sort** by, and checking with **EXPLAIN**.
+
+**Key terms**
+
+- **Full table scan**: Reading every row (Seq Scan).
+- **B-tree**: Balanced sorted tree; the default index type.
+- **Composite index**: An index on several columns, in a specific order.
+- **Leftmost prefix**: A composite index helps queries using its first column(s).
+- **Selectivity**: How few rows a value matches; high selectivity = good index candidate.
+- **EXPLAIN ANALYZE**: Shows the plan the database chose and real timings.
+
+**How it works**
+
+1. Find slow queries (logs, APM, pg_stat_statements).
+2. Run EXPLAIN ANALYZE; look for Seq Scans on big tables and sort steps.
+3. Add an index matching the WHERE / JOIN / ORDER BY columns (most selective / equality columns first).
+4. Re-check the plan and the write cost.
+
+**In real projects**
+
+- Index foreign keys used in joins.
+- Composite index (customer_id, created_at) for "latest orders per customer" pages.
+- Declare indexes in migrations (Flyway/Liquibase); JPA @Index for documentation.
+
+**Common mistakes**
+
+- Indexing every column.
+- Functions on indexed columns in WHERE.
+- Composite indexes with columns in the wrong order.
+
+#### Code
+
+```java
+CREATE TABLE orders (id BIGINT PRIMARY KEY, customer_id BIGINT,
+                     status TEXT, created_at TIMESTAMPTZ, total NUMERIC);
+-- 10 million rows
+
+SELECT * FROM orders WHERE customer_id = 42;            -- before the index
+CREATE INDEX idx_orders_customer ON orders (customer_id);
+SELECT * FROM orders WHERE customer_id = 42;            -- after
+
+CREATE INDEX idx_cust_created ON orders (customer_id, created_at);
+SELECT * FROM orders WHERE customer_id = 42 ORDER BY created_at DESC LIMIT 20;
+SELECT * FROM orders WHERE created_at > now() - interval '1 day';
+SELECT * FROM orders WHERE lower(status) = 'paid';
+
+EXPLAIN ANALYZE SELECT * FROM orders WHERE customer_id = 42;
+```
+
+#### Remember
+
+- No index → full table scan; B-tree index → O(log n) lookups.
+- Composite index (a, b): helps filters on a, or a + b, and ORDER BY b within a; not b alone (leftmost prefix).
+- Functions on columns, leading wildcards and casts defeat indexes; use EXPLAIN ANALYZE. Indexes slow writes.
+
+## 8.3 JDBC, PreparedStatement and connection pooling
+
+*Interview priority: good to know.* What happens underneath JPA and JdbcTemplate: borrow a connection from the pool, run a parameterised query, read rows, give the connection back. Plus SQL injection and leaked connections.
+
+#### Theory: start here
+
+**In one sentence:** JDBC is Java's low-level API for relational databases: borrow a connection, run a prepared statement with parameters, read the result set, and give the connection back to the pool.
+
+Every Java database library, from JPA to Spring Data, uses **JDBC** underneath. The flow is always the same: get a **Connection** (a session with the database), create a **PreparedStatement** with `?` placeholders, bind values, execute, and read rows from the **ResultSet**.
+
+Opening a real connection is slow, so applications use a **connection pool** (HikariCP in Spring Boot) that keeps a few connections open and lends them out. "Closing" a pooled connection returns it to the pool.
+
+**Key terms**
+
+- **Driver**: Database-specific JDBC implementation.
+- **DataSource**: Factory for connections; in practice a pool.
+- **PreparedStatement**: Parameterised SQL; prevents injection.
+- **ResultSet**: Cursor over returned rows.
+- **SQL injection**: Attacker-controlled input changing the SQL itself.
+- **Connection leak**: A connection never returned to the pool.
+
+**How it works**
+
+1. Borrow a connection from the DataSource.
+2. Prepare SQL with placeholders and bind values.
+3. Execute; iterate the ResultSet and map rows.
+4. Close everything with try-with-resources (connection returns to the pool).
+
+**In real projects**
+
+- Prefer JdbcTemplate or JPA over raw JDBC; know JDBC to debug them.
+- Use batch updates for bulk inserts.
+- Configure pool size, connection timeout and leak detection.
+
+**Common mistakes**
+
+- Concatenating user input into SQL.
+- Forgetting to close connections.
+- Huge pools that overload the database.
+
+#### Code
+
+```java
+String sql = "SELECT id, total FROM orders WHERE customer_id = ?";
+try (Connection con = dataSource.getConnection();          // borrow from the pool
+     PreparedStatement ps = con.prepareStatement(sql)) {
+  ps.setLong(1, customerId);                               // bind the parameter
+  try (ResultSet rs = ps.executeQuery()) {
+    while (rs.next()) {
+      orders.add(new Order(rs.getLong("id"), rs.getBigDecimal("total")));
+    }
+  }
+}                                                          // returned to the pool
+
+// NEVER build SQL by concatenation:
+String bad = "SELECT * FROM users WHERE name = '" + name + "'";
+```
+
+#### Remember
+
+- Connection = expensive DB session → always via a pool (HikariCP); close() returns it.
+- PreparedStatement with ? parameters: safe from SQL injection and reusable. Never concatenate input into SQL.
+- try-with-resources for Connection/Statement/ResultSet; leaks exhaust the pool. Transaction = autoCommit(false) + commit/rollback.
+
+## 8.4 Kafka fundamentals: topics, partitions, consumer groups
+
+*Interview priority: must-know.* Follow order events from a producer into a partitioned topic, out to two independent consumer groups, through offset commits, a crash, a redelivery and a rebalance.
+
+#### Theory: start here
+
+**In one sentence:** Kafka is a distributed, durable log: producers append events to partitioned topics, and consumer groups read them at their own pace, tracking their position with offsets.
+
+Services often need to tell each other "something happened" (order placed, payment received) without calling each other directly. **Kafka** stores these events in **topics**. Each topic is split into **partitions**, ordered append-only logs spread across brokers for scale and replicated for safety.
+
+Consumers read in **groups**: within a group, each partition is handled by one consumer, so adding consumers (up to the number of partitions) adds throughput. Each group tracks its own **offset** per partition, so many independent services can read the same events. Events stay for the retention period whether or not they've been read.
+
+**Key terms**
+
+- **Topic**: A named stream of events.
+- **Partition**: An ordered, append-only log; the unit of parallelism and ordering.
+- **Offset**: Position of a message in a partition.
+- **Consumer group**: Consumers sharing work; each partition to one member.
+- **Rebalance**: Reassigning partitions when consumers join or leave.
+- **At-least-once**: Messages may be redelivered after failures, never lost.
+- **DLQ**: Dead-letter topic for messages that keep failing.
+
+**How it works**
+
+1. Producer sends (key, value); hash(key) picks the partition.
+2. Brokers append it to that partition's log and replicate it.
+3. Consumers in a group poll their assigned partitions.
+4. After processing, they commit offsets; on restart they resume from the last commit.
+
+**In real projects**
+
+- Choose keys by what must stay ordered (e.g. orderId).
+- Make consumers idempotent; route poison messages to a DLQ.
+- Use the outbox pattern to publish events reliably from a database transaction.
+
+**Common mistakes**
+
+- Expecting global ordering across partitions.
+- Auto-committing before processing (lost messages).
+- More consumers than partitions and expecting more throughput.
+
+#### Code
+
+```java
+// Producer: the key decides the partition → same key, same order
+producer.send(new ProducerRecord<>("orders", order.customerId(), event));
+
+// Consumer: one group id = one logical subscriber
+props.put("group.id", "billing-service");
+props.put("enable.auto.commit", "false");
+consumer.subscribe(List.of("orders"));
+while (true) {
+  for (ConsumerRecord<String, OrderEvent> r : consumer.poll(Duration.ofMillis(500))) {
+    billing.handle(r.value());            // must be idempotent
+  }
+  consumer.commitSync();                  // commit offsets AFTER processing
+}
+```
+
+#### Remember
+
+- Topic → partitions (ordered logs with offsets); key → partition; order only within a partition.
+- One consumer per partition per group; other groups read independently; messages are retained, not deleted on read.
+- Commit after processing = at-least-once → idempotent consumers; rebalances redeliver; DLQ for poison messages.
 
 ---
 

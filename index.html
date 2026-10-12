@@ -4108,6 +4108,157 @@ keep:[`LTS: 8, 11, 17, 21, 25; a new release every 6 months.`,`8: lambdas/stream
 ]});
 </script>
 <script>
+PARTS.push({no:'8', title:'Data and messaging', topics:[
+
+/* =============================== 8.1 =============================== */
+{ no:'8.1', title:'Transactions and isolation levels', imp:'must', idea:`Three transactions run at once against one table. See dirty reads, non-repeatable reads and phantoms appear or disappear as the isolation level goes up, and what PostgreSQL and MySQL actually do.`,
+actors:'Transactions', stateTitle:'What T1 sees at each isolation level', logTitle:'Results',
+codes:{a:`-- account 1: balance 100, branch PUNE   (3 accounts in PUNE)
+T1: BEGIN;
+T1: SELECT balance FROM account WHERE id = 1;            -- read A
+T2: BEGIN; UPDATE account SET balance = 50 WHERE id = 1;
+T1: SELECT balance FROM account WHERE id = 1;            -- read B (T2 not committed)
+T2: COMMIT;
+T1: SELECT balance FROM account WHERE id = 1;            -- read C (T2 committed)
+T3: INSERT INTO account VALUES (9, 70, 'PUNE'); COMMIT;
+T1: SELECT count(*) FROM account WHERE branch = 'PUNE';  -- read D
+T1: COMMIT;`},
+steps:[
+{hl:{T1:[2]}, th:[['T1','RUN:ok','report: reads twice'],['T2','NEW:dim','transfer'],['T3','NEW:dim','new account']], g:[G('ACID',['Atomic','all or nothing'],['Consistent','constraints hold before and after'],['Isolated','concurrent transactions don\'t see each other\'s half-done work','hot'],['Durable','committed = survives a crash'])],
+ say:`A <b>transaction</b> groups statements into one all-or-nothing unit. The "I" in ACID, <b>isolation</b>, is a dial: perfect isolation (as if transactions ran one after another) is slow, so databases offer weaker levels that allow some <b>anomalies</b>. T1 is a report that reads the same data several times.`},
+{hl:{T1:[3]}, g:[G('Read A',['every level','100'])], log:['A = 100'],
+ say:`T1 reads account 1: balance 100. Nothing interesting yet.`},
+{hl:{T2:[4]}, th:[['T1','RUN:ok',''],['T2','RUN:warn','updated, NOT committed'],['T3','NEW:dim','']], g:[G('account 1',['committed value','100'],['T2\'s pending value','50','hot'],['row lock','held by T2'])],
+ say:`T2 updates the balance to 50 but hasn't committed. It might still roll back. The database keeps both versions: the committed 100, and T2's uncommitted 50.`},
+{hl:{T1:[5]}, g:[G('Read B',['READ UNCOMMITTED','50 → dirty read','bad'],['READ COMMITTED','100','ok'],['REPEATABLE READ','100','ok'],['SERIALIZABLE','100','ok'])], log:['B = 100 (or 50 under READ UNCOMMITTED)'],
+ say:`<b>Dirty read:</b> seeing another transaction's <i>uncommitted</i> data. Only READ UNCOMMITTED allows it; if T2 then rolled back, T1 would have used a value that never existed. (PostgreSQL treats READ UNCOMMITTED as READ COMMITTED, so it never returns dirty data.)`},
+{hl:{T2:[6],T1:[7]}, th:[['T1','RUN:ok',''],['T2','TERM:ok','committed'],['T3','NEW:dim','']], g:[G('Read C',['READ COMMITTED','50 → non-repeatable read','bad'],['REPEATABLE READ','100 (same snapshot)','ok'],['SERIALIZABLE','100','ok'])], log:['C = 50 under READ COMMITTED, 100 under REPEATABLE READ'],
+ say:`T2 commits. Under <b>READ COMMITTED</b> every statement sees the latest committed data, so T1 now reads 50: the <b>same query in the same transaction gave a different answer</b> (a non-repeatable read). Under <b>REPEATABLE READ</b> T1 keeps reading from the snapshot taken at its first read, so it still sees 100.`},
+{hl:{T3:[8],T1:[9]}, th:[['T1','RUN:ok',''],['T2','TERM:ok',''],['T3','TERM:ok','inserted + committed']], g:[G('Read D: count of PUNE accounts',['READ COMMITTED','4 → phantom row','bad'],['REPEATABLE READ (SQL standard)','may be 4 (phantoms allowed)'],['REPEATABLE READ (PostgreSQL, MySQL InnoDB)','3 (snapshot)','ok'],['SERIALIZABLE','3','ok'])], log:['D = 4 under READ COMMITTED, 3 under snapshot-based REPEATABLE READ'],
+ say:`A <b>phantom</b> is a new row that appears in a repeated range query. The SQL standard allows phantoms at REPEATABLE READ, but PostgreSQL's and MySQL InnoDB's snapshot-based implementations don't show them to plain reads. SERIALIZABLE forbids them everywhere.`},
+{hl:{T1:[10]}, th:[['T1','TERM:ok','committed'],['T2','TERM:ok',''],['T3','TERM:ok','']], g:[G('Defaults',['PostgreSQL, Oracle, SQL Server','READ COMMITTED'],['MySQL InnoDB','REPEATABLE READ']), G('Higher levels cost',['REPEATABLE READ (Postgres)','"could not serialize access" errors on conflicting updates'],['SERIALIZABLE','more aborts; app must retry','hot'])],
+ say:`Higher isolation isn't free. In PostgreSQL, REPEATABLE READ and SERIALIZABLE <b>abort</b> a transaction that would break the rules, with a serialization error, so the application must retry it. Know your database's default: PostgreSQL uses READ COMMITTED, MySQL InnoDB uses REPEATABLE READ.`},
+{th:[], g:[G('In practice (Spring)',['@Transactional(isolation = …)','per method, if you need it'],['usual choice','default READ COMMITTED','ok'],['protect updates','conditional UPDATE / @Version / SELECT … FOR UPDATE (6.1, 5.5)','ok'],['serialization failures','retry the whole transaction','ok'])],
+ say:`<b>Say it:</b> "Isolation levels trade consistency for concurrency. READ COMMITTED prevents dirty reads, REPEATABLE READ also gives a stable snapshot, SERIALIZABLE behaves as if transactions ran one at a time. Most apps keep READ COMMITTED and protect specific updates with optimistic locking or conditional updates, retrying on conflicts."`}
+],
+keep:[`Anomalies: dirty read (uncommitted data), non-repeatable read (same row changes), phantom (new rows in a range).`,`READ UNCOMMITTED < READ COMMITTED (Postgres default) < REPEATABLE READ (MySQL default) < SERIALIZABLE.`,`Higher levels can abort with serialization errors: retry. Usually: READ COMMITTED + optimistic locking / conditional updates.`]},
+
+/* =============================== 8.2 =============================== */
+{ no:'8.2', title:'Indexes and query plans', imp:'must', idea:`Why a query on 10 million rows takes seconds, and how a B-tree index makes it milliseconds. Then composite indexes, the leftmost-prefix rule, queries that can't use an index, and reading EXPLAIN.`,
+actors:'Query', stateTitle:'Cost', dgTitle:'B-tree index on customer_id', logTitle:'EXPLAIN ANALYZE',
+vb:'0 0 560 190',
+nodes:{root:{x:280,y:30,label:'root: 4000 | 8000',w:180,h:34}, n1:{x:90,y:105,label:'1 … 3999',w:120,h:34}, n2:{x:280,y:105,label:'4000 … 7999',w:120,h:34}, n3:{x:470,y:105,label:'8000 …',w:120,h:34}, leaf:{x:90,y:165,label:'leaf: 42 → rows',kind:'mem',w:150,h:30}},
+edges:[['root','n1'],['root','n2'],['root','n3'],['n1','leaf']],
+codes:{a:`CREATE TABLE orders (id BIGINT PRIMARY KEY, customer_id BIGINT,
+                     status TEXT, created_at TIMESTAMPTZ, total NUMERIC);
+-- 10 million rows
+
+SELECT * FROM orders WHERE customer_id = 42;            -- before the index
+CREATE INDEX idx_orders_customer ON orders (customer_id);
+SELECT * FROM orders WHERE customer_id = 42;            -- after
+
+CREATE INDEX idx_cust_created ON orders (customer_id, created_at);
+SELECT * FROM orders WHERE customer_id = 42 ORDER BY created_at DESC LIMIT 20;
+SELECT * FROM orders WHERE created_at > now() - interval '1 day';
+SELECT * FROM orders WHERE lower(status) = 'paid';
+
+EXPLAIN ANALYZE SELECT * FROM orders WHERE customer_id = 42;`},
+steps:[
+{hl:{q:[5]}, th:[['q','RUN:bad','Seq Scan']], d:null, g:[G('Without an index',['rows checked','10,000,000','bad'],['rows returned','37'],['time','~2,400 ms','bad'])], log:['Seq Scan on orders (rows=37) (actual time=0.1..2412 ms)','  Filter: (customer_id = 42)','  Rows Removed by Filter: 9999963'],
+ say:`With no index, the database has only one option: read <b>every row</b> and keep the 37 that match: a <b>sequential (full table) scan</b>. Fine for 1,000 rows, painful for 10 million, and it gets slower as the table grows.`},
+{hl:{q:[6]}, th:[['q','READY','index being built']], d:{type:'graph',on:['root']}, g:[G('B-tree index',['stores','customer_id → row locations, sorted'],['height','3–4 levels for 10M rows'],['lookup cost','O(log n): a few page reads','ok'])],
+ say:`An <b>index</b> is a separate, sorted structure, like the index at the back of a book: look up the word, get the page numbers. Most indexes are <b>B-trees</b>: a shallow, balanced tree whose leaves hold sorted keys with pointers to the table rows.`},
+{hl:{q:[7]}, th:[['q','RUN:ok','Index Scan']], d:{type:'graph',on:['root','n1','leaf'],e:[['root','n1','42 < 4000','hot'],['n1','leaf','','hot']]}, g:[G('With the index',['pages read','~40','ok'],['time','~0.3 ms','ok'],['speed-up','~8,000×','ok'])], log:['Index Scan using idx_orders_customer on orders (rows=37) (actual time=0.03..0.3 ms)','  Index Cond: (customer_id = 42)'],
+ say:`Now the database walks root → branch → leaf (42 is below 4000, so go left) and fetches only the 37 matching rows. Thousands of times faster, and it stays fast as the table grows.`},
+{hl:{q:[9,10]}, th:[['q','RUN:ok','Index Scan, no sort']], d:null, g:[G('Composite index (customer_id, created_at)',['sorted by','customer_id, then created_at'],['WHERE customer_id = 42','uses it','ok'],['ORDER BY created_at DESC LIMIT 20','already in order: no sort step','ok'])],
+ say:`A <b>composite index</b> sorts by the first column, then the second within it, like a phone book sorted by surname, then first name. For "customer 42's latest 20 orders", the rows are already in order inside the index, so the database reads 20 entries and stops.`},
+{hl:{q:[11]}, th:[['q','RUN:warn','can\'t use the leading column']], g:[G('Leftmost-prefix rule',['(customer_id)','✔ uses the index','ok'],['(customer_id, created_at)','✔','ok'],['(created_at) alone','✘ not the leading column','bad'])],
+ say:`A composite index helps queries that filter on its <b>leading</b> column(s). Filtering only by <code>created_at</code> is like finding everyone named "Ana" in a surname-sorted phone book: the order doesn't help. That query needs its own index on <code>created_at</code>.`},
+{hl:{q:[12]}, th:[['q','RUN:bad','Seq Scan']], g:[G('Index killers',['function on the column: lower(status)','index on status unused','bad'],['fix','expression index: ON orders (lower(status))','ok'],['leading wildcard: LIKE \'%abc\'','unused','bad'],['type mismatch / implicit cast','often unused','bad'])],
+ say:`Wrapping the column in a function (<code>lower(status)</code>, <code>date(created_at)</code>) hides it from a plain index. Create an <b>expression index</b>, or rewrite the query (e.g. a range on created_at instead of <code>date(created_at) = …</code>).`},
+{hl:{q:[14]}, th:[], g:[G('Indexes cost something',['every INSERT/UPDATE','also updates each index','bad'],['disk + memory','each index takes space'],['low-selectivity columns','status with 3 values: rarely worth it'],['foreign keys','index them: joins and deletes need it','ok'])],
+ say:`<b>EXPLAIN ANALYZE</b> runs the query and shows the real plan: Seq Scan vs Index Scan, rows, time. Don't index everything: each index slows writes and uses space. Index the columns you <b>filter, join and sort</b> on, check slow queries with EXPLAIN, and remember JPA's N+1 queries (5.5) often hit an unindexed foreign key.`}
+],
+keep:[`No index → full table scan; B-tree index → O(log n) lookups.`,`Composite index (a, b): helps filters on a, or a + b, and ORDER BY b within a; not b alone (leftmost prefix).`,`Functions on columns, leading wildcards and casts defeat indexes; use EXPLAIN ANALYZE. Indexes slow writes.`]},
+
+/* =============================== 8.3 =============================== */
+{ no:'8.3', title:'JDBC, PreparedStatement and connection pooling', imp:'good', idea:`What happens underneath JPA and JdbcTemplate: borrow a connection from the pool, run a parameterised query, read rows, give the connection back. Plus SQL injection and leaked connections.`,
+actors:'Request threads', stateTitle:'Connection pool (HikariCP, max 4 shown)', logTitle:'SQL sent',
+codes:{a:`String sql = "SELECT id, total FROM orders WHERE customer_id = ?";
+try (Connection con = dataSource.getConnection();          // borrow from the pool
+     PreparedStatement ps = con.prepareStatement(sql)) {
+  ps.setLong(1, customerId);                               // bind the parameter
+  try (ResultSet rs = ps.executeQuery()) {
+    while (rs.next()) {
+      orders.add(new Order(rs.getLong("id"), rs.getBigDecimal("total")));
+    }
+  }
+}                                                          // returned to the pool
+
+// NEVER build SQL by concatenation:
+String bad = "SELECT * FROM users WHERE name = '" + name + "'";`},
+steps:[
+{hl:{t1:[1]}, th:[['t1','RUN','GET /customers/42/orders']], g:[G('JDBC layers',['your code / JPA / JdbcTemplate','↓'],['DataSource (HikariCP pool)','↓'],['Connection','one DB session (TCP + auth)'],['PreparedStatement','one SQL statement'],['ResultSet','a cursor over result rows'])],
+ say:`<b>JDBC</b> is Java's standard API for talking to relational databases. Every higher layer (JPA, Spring Data, JdbcTemplate) ends up here. A database-specific <b>driver</b> implements it for PostgreSQL, MySQL and so on.`},
+{hl:{t1:[2]}, g:[G('Pool',C('connections',[['c1 · t1','hot'],['c2 · idle','ok'],['c3 · idle','ok'],['c4 · idle','ok']]),['cost of a NEW connection','TCP + TLS + auth ≈ 10–50 ms','bad'],['cost of borrowing','≈ microseconds','ok'])],
+ say:`Opening a database connection is slow (network handshake, TLS, authentication) and each one uses memory on the database. A <b>connection pool</b> keeps a few open and lends them out. <code>getConnection()</code> borrows one; <code>close()</code> gives it back instead of really closing it.`},
+{hl:{t1:[3,4]}, g:[G('PreparedStatement',['SQL','… WHERE customer_id = ?'],['parameter 1','42 (sent separately, as a value)','ok'],['plan','can be reused for other ids'])], log:['SELECT id, total FROM orders WHERE customer_id = $1   [$1 = 42]'],
+ say:`A <b>PreparedStatement</b> sends the SQL with <code>?</code> placeholders, and the values separately. The database never treats the value as SQL code, and it can reuse the parsed statement.`},
+{hl:{t1:[5,6,7]}, g:[G('ResultSet cursor',['row 1','id 1001 · 300.00'],['row 2','id 1007 · 125.50'],['rs.next()','moves to the next row; false at the end'])],
+ say:`<code>executeQuery</code> returns a <b>ResultSet</b>, a cursor positioned before the first row. Each <code>next()</code> advances it; you read columns by name or position and map them to objects. This is exactly the work JPA's mapping and Spring's <code>RowMapper</code> do for you.`},
+{hl:{t1:[10]}, th:[['t1','TERM:ok','response sent']], g:[G('Pool',C('connections',[['c1 · idle','ok'],['c2 · idle','ok'],['c3 · idle','ok'],['c4 · idle','ok']]))],
+ say:`try-with-resources closes ResultSet, PreparedStatement and Connection in reverse order, even on exceptions. Closing the connection <b>returns it to the pool</b>, ready for the next request.`},
+{hl:{t1:[13]}, th:[['t1','RUN:bad','name = x\' OR \'1\'=\'1']], g:[G('String concatenation',['input','x\' OR \'1\'=\'1'],['SQL becomes','… WHERE name = \'x\' OR \'1\'=\'1\'','bad'],['result','every user returned','bad'],['fix','PreparedStatement parameters (or JPA named parameters)','ok'])], log:['SELECT * FROM users WHERE name = \'x\' OR \'1\'=\'1\''],
+ say:`<b>SQL injection.</b> Concatenating user input into SQL lets an attacker change the query itself. This classic input turns the condition into "always true" and dumps every user; worse inputs can delete data. Always use parameters, including in <code>@Query</code> strings and native queries.`},
+{th:[['t1','RUN','forgot to close'],['t2','TIMED','waiting for a connection'],['t3','TIMED','waiting'],['t4','TIMED','waiting']], g:[G('Pool',C('connections',[['c1 · leaked','bad'],['c2 · leaked','bad'],['c3 · leaked','bad'],['c4 · leaked','bad']]),['getConnection()','waits up to connectionTimeout (30 s), then fails','bad'])], log:['HikariPool-1 - Connection is not available, request timed out after 30000ms','Connection leak detection triggered for … (leak-detection-threshold)'],
+ say:`If code forgets to close connections, they're never returned: a <b>connection leak</b>. Once the pool is empty, every request waits and then fails, which looks just like the slow-transaction outage in 6.4. HikariCP's <code>leak-detection-threshold</code> logs the stack trace of whoever held a connection too long.`},
+{th:[], g:[G('What frameworks add',['transactions','con.setAutoCommit(false) … commit()/rollback() = @Transactional','ok'],['JdbcTemplate','connection + statement + mapping + exception translation'],['batching','addBatch / executeBatch for bulk inserts','ok'],['pool sizing','small (10–20), from DB limits and Little\'s law (6.4)'])],
+ say:`A transaction at this level is <code>setAutoCommit(false)</code>, then <code>commit()</code> or <code>rollback()</code> on the same connection, which is exactly what <code>@Transactional</code> does on the thread's borrowed connection. For bulk work, batch statements instead of sending thousands of single inserts.`}
+],
+keep:[`Connection = expensive DB session → always via a pool (HikariCP); close() returns it.`,`PreparedStatement with ? parameters: safe from SQL injection and reusable. Never concatenate input into SQL.`,`try-with-resources for Connection/Statement/ResultSet; leaks exhaust the pool. Transaction = autoCommit(false) + commit/rollback.`]},
+
+/* =============================== 8.4 =============================== */
+{ no:'8.4', title:'Kafka fundamentals: topics, partitions, consumer groups', imp:'must', idea:`Follow order events from a producer into a partitioned topic, out to two independent consumer groups, through offset commits, a crash, a redelivery and a rebalance.`,
+actors:'Consumers', stateTitle:'Offsets (next message to read)', dgTitle:'Topic "orders" (3 partitions)', logTitle:'Events',
+vb:'0 0 600 220',
+nodes:{prod:{x:70,y:110,label:'order-service\nproducer',w:120,h:46}, p0:{x:250,y:45,label:'P0 ▮▮▮▮▮',kind:'mem',w:110,h:30}, p1:{x:250,y:110,label:'P1 ▮▮▮▮',kind:'mem',w:110,h:30}, p2:{x:250,y:175,label:'P2 ▮▮▮▮▮▮',kind:'mem',w:110,h:30},
+  c1:{x:440,y:70,label:'billing #1',w:100,h:30}, c2:{x:440,y:150,label:'billing #2',w:100,h:30}, a1:{x:560,y:110,label:'analytics',w:70,h:30,fs:10}},
+edges:[['prod','p0'],['prod','p1'],['prod','p2'],['p0','c1'],['p1','c1'],['p2','c2']],
+codes:{a:`// Producer: the key decides the partition → same key, same order
+producer.send(new ProducerRecord<>("orders", order.customerId(), event));
+
+// Consumer: one group id = one logical subscriber
+props.put("group.id", "billing-service");
+props.put("enable.auto.commit", "false");
+consumer.subscribe(List.of("orders"));
+while (true) {
+  for (ConsumerRecord<String, OrderEvent> r : consumer.poll(Duration.ofMillis(500))) {
+    billing.handle(r.value());            // must be idempotent
+  }
+  consumer.commitSync();                  // commit offsets AFTER processing
+}`},
+steps:[
+{hl:{c1:[1,2]}, th:[], d:{type:'graph',on:['prod','p0','p1','p2'],e:[['prod','p1','key = cust-7','hot']]}, g:[G('Topic "orders"',['P0','offsets 0 … 4'],['P1','offsets 0 … 3'],['P2','offsets 0 … 5'],['partition for key','hash(key) % 3'])],
+ say:`Kafka stores events in <b>topics</b>, and each topic is split into <b>partitions</b>: append-only logs on disk. Every message in a partition gets an increasing number, its <b>offset</b>. The producer picks the partition by hashing the <b>key</b>, so all events for customer 7 land in P1, <b>in order</b>. Kafka guarantees order only <b>within</b> a partition.`},
+{hl:{c1:[4,5,7]}, th:[['billing #1','RUN:ok','P0, P1'],['billing #2','RUN:ok','P2']], d:{type:'graph',on:['c1','c2'],e:[['p0','c1','','ok'],['p1','c1','','ok'],['p2','c2','','ok']]}, g:[G('Group billing-service',C('assignment',[['P0 → #1'],['P1 → #1'],['P2 → #2']]),['max useful consumers','3 (one per partition)'])],
+ say:`Consumers with the same <b>group.id</b> share the work: each partition is assigned to <b>exactly one</b> consumer in the group. Two billing instances split three partitions. A 4th instance would sit idle, because <b>partitions are the unit of parallelism</b>.`},
+{hl:{a1:[4]}, th:[['billing #1','RUN:ok','P0, P1'],['billing #2','RUN:ok','P2'],['analytics','RUN:ok','P0, P1, P2']], d:{type:'graph',on:['a1'],e:[['p0','a1','','hot'],['p1','a1','','hot'],['p2','a1','','hot']]}, g:[G('Offsets per group',['billing-service · P1','2'],['analytics · P1','0 (reads independently)','hot'])],
+ say:`A <b>different group</b> gets its own copy of the stream, with its own offsets. Analytics reads everything without affecting billing. Messages aren't deleted when read; they're kept for the topic's <b>retention</b> period (e.g. 7 days), so a new consumer can even replay history.`},
+{hl:{c1:[8,9,10]}, th:[['billing #1','RUN:ok','processing P1 offsets 2, 3'],['billing #2','RUN:ok','']], d:{type:'graph',on:['c1'],e:[['p1','c1','poll','hot']]}, g:[G('billing · P1',['committed offset','2'],['processing','offsets 2 and 3','hot'])],
+ say:`<code>poll</code> fetches a batch. The consumer processes each record. Kafka doesn't know about this yet: progress is recorded only when the consumer <b>commits</b> its offset.`},
+{hl:{c1:[12]}, g:[G('billing · P1',['committed offset','4','ok'],['meaning','"next read starts at 4"'])], log:['commitSync: billing-service P1 → 4'],
+ say:`<b>Commit after processing.</b> Committing offset 4 says "everything before 4 is done". Committing <i>before</i> processing would lose messages if the consumer crashed in between (at-most-once).`},
+{hl:{c1:[10]}, th:[['billing #1','TERM:bad','crashed after handling offset 4, before commit'],['billing #2','RUN:ok','P2']], d:{type:'graph',bad:['c1']}, g:[G('billing · P1',['committed offset','4'],['actually handled','offset 4 (charge created)','hot'])], log:['billing #1 crashed (OOMKilled)'],
+ say:`Instance #1 processes offset 4 (creates an invoice) and <b>crashes before committing</b>. Kafka still thinks P1's next message is 4.`},
+{th:[['billing #2','RUN:warn','now owns P0, P1, P2']], d:{type:'graph',ok:['c2'],dim:['c1'],e:[['p0','c2','','ok'],['p1','c2','rebalanced','ok'],['p2','c2','','ok']]}, g:[G('After rebalance',C('assignment',[['P0 → #2'],['P1 → #2'],['P2 → #2']]),['billing · P1 resumes at','4 → redelivered','bad'])], log:['rebalance: billing-service partitions reassigned','offset 4 delivered again to billing #2'],
+ say:`The group <b>rebalances</b>: #2 takes over P0 and P1 and resumes from the committed offset 4, so offset 4 is processed <b>again</b>. This is <b>at-least-once delivery</b>, the normal Kafka setup. The consumer must be <b>idempotent</b>: dedupe by event id or make the operation naturally repeatable (5.13c), or the customer gets two invoices.`},
+{th:[], d:null, g:[G('Production checklist',['key choice','what must stay in order? (customer id, order id)','ok'],['partitions','≥ expected consumer count; hard to reduce later'],['idempotent consumers','dedupe table / unique constraint','ok'],['poison messages','retry a few times, then a dead-letter topic','ok'],['publishing from a DB transaction','outbox pattern (5.13b)','ok'],['exactly-once','idempotent producer + transactions, within Kafka only'])],
+ say:`<b>Say it:</b> "A topic is split into partitions; the key picks the partition, and order is only guaranteed within one. Each partition goes to one consumer per group, so partitions cap parallelism. I commit offsets after processing, which gives at-least-once delivery, so consumers are idempotent. Failing messages go to a dead-letter topic, and producers use the outbox pattern."`}
+],
+keep:[`Topic → partitions (ordered logs with offsets); key → partition; order only within a partition.`,`One consumer per partition per group; other groups read independently; messages are retained, not deleted on read.`,`Commit after processing = at-least-once → idempotent consumers; rebalances redeliver; DLQ for poison messages.`]}
+]});
+</script>
+<script>
 /* ---------- quiz bank. Each question: [question, options, index of correct option, why, level E|M|H].
    QUIZ is the core set (3 per topic); QUIZ_ADV the advanced set (2 per topic). Wrong options are real misconceptions. ---------- */
 const QUIZ = {
@@ -5553,6 +5704,71 @@ Object.assign(QUIZ_ADV, {
 '7.6':[
  [`Which Java 21 feature lets you write <code>list.getFirst()</code> and <code>list.reversed()</code>?`,[`Sequenced collections`,`Stream gatherers`,`Record patterns`,`Scoped values`],0,`SequencedCollection adds first/last/reversed to ordered collections.`,'M'],
  [`What do scoped values (final in Java 25) replace in many cases?`,[`Optional`,`synchronized`,`ThreadLocal, for passing immutable context to callees and child tasks`,`CompletableFuture`],2,`They're immutable, bounded to a scope, and cheap with virtual threads.`,'H']]
+});
+</script>
+<script>
+/* ---------- Part 8: theory and quizzes ---------- */
+Object.assign(THEORY, {
+'8.1': TH(`A transaction makes several database changes succeed or fail together; the isolation level decides how much concurrent transactions can see of each other's work.`,
+`<p>Moving money means two updates: subtract here, add there. If the system crashes in between, money vanishes. A <b>transaction</b> wraps both so they commit together or not at all. That's the A (atomicity) in <b>ACID</b>.</p>
+<p>Many transactions run at the same time. Perfect <b>isolation</b> would make each behave as if it ran alone, but that requires lots of locking or aborting. So databases offer levels: <b>READ COMMITTED</b> (never see uncommitted data), <b>REPEATABLE READ</b> (a stable snapshot for the whole transaction), <b>SERIALIZABLE</b> (as if one at a time). Each level rules out more <b>anomalies</b>.</p>`,
+[[`ACID`,`Atomicity, Consistency, Isolation, Durability.`],[`Dirty read`,`Reading another transaction's uncommitted change.`],[`Non-repeatable read`,`The same row read twice gives different values.`],[`Phantom read`,`A repeated range query returns new rows.`],[`MVCC`,`Multi-version concurrency control: readers see a snapshot, writers create new versions.`],[`Serialization failure`,`The DB aborts a transaction to keep a high isolation guarantee.`]],
+[`BEGIN starts a transaction (Spring does this for @Transactional).`,`Reads see data according to the isolation level (statement-level or transaction-level snapshot).`,`Writes take row locks; other writers to the same row wait.`,`COMMIT makes changes durable and visible; ROLLBACK discards them.`],
+[`Keep transactions short and use the default level unless you have a reason.`,`Protect read-modify-write with optimistic locking, conditional updates or SELECT … FOR UPDATE.`,`Retry transactions that fail with deadlock or serialization errors.`],
+[`Assuming @Transactional alone prevents lost updates.`,`Long transactions holding locks and connections.`,`Not knowing your database's default level.`]),
+'8.2': TH(`An index is a sorted lookup structure (usually a B-tree) that lets the database find matching rows without scanning the whole table.`,
+`<p>Without an index, finding "all orders of customer 42" means checking every row: a <b>full table scan</b>. An <b>index</b> on <code>customer_id</code> keeps those values sorted in a balanced tree with pointers back to the rows, so the database jumps straight to them in a handful of steps, like using a book's index instead of reading every page.</p>
+<p>Indexes aren't free: every insert, update and delete must also update each index, and they take space. The art is indexing the columns your important queries <b>filter, join and sort</b> by, and checking with <b>EXPLAIN</b>.</p>`,
+[[`Full table scan`,`Reading every row (Seq Scan).`],[`B-tree`,`Balanced sorted tree; the default index type.`],[`Composite index`,`An index on several columns, in a specific order.`],[`Leftmost prefix`,`A composite index helps queries using its first column(s).`],[`Selectivity`,`How few rows a value matches; high selectivity = good index candidate.`],[`EXPLAIN ANALYZE`,`Shows the plan the database chose and real timings.`]],
+[`Find slow queries (logs, APM, pg_stat_statements).`,`Run EXPLAIN ANALYZE; look for Seq Scans on big tables and sort steps.`,`Add an index matching the WHERE / JOIN / ORDER BY columns (most selective / equality columns first).`,`Re-check the plan and the write cost.`],
+[`Index foreign keys used in joins.`,`Composite index (customer_id, created_at) for "latest orders per customer" pages.`,`Declare indexes in migrations (Flyway/Liquibase); JPA @Index for documentation.`],
+[`Indexing every column.`,`Functions on indexed columns in WHERE.`,`Composite indexes with columns in the wrong order.`]),
+'8.3': TH(`JDBC is Java's low-level API for relational databases: borrow a connection, run a prepared statement with parameters, read the result set, and give the connection back to the pool.`,
+`<p>Every Java database library, from JPA to Spring Data, uses <b>JDBC</b> underneath. The flow is always the same: get a <b>Connection</b> (a session with the database), create a <b>PreparedStatement</b> with <code>?</code> placeholders, bind values, execute, and read rows from the <b>ResultSet</b>.</p>
+<p>Opening a real connection is slow, so applications use a <b>connection pool</b> (HikariCP in Spring Boot) that keeps a few connections open and lends them out. "Closing" a pooled connection returns it to the pool.</p>`,
+[[`Driver`,`Database-specific JDBC implementation.`],[`DataSource`,`Factory for connections; in practice a pool.`],[`PreparedStatement`,`Parameterised SQL; prevents injection.`],[`ResultSet`,`Cursor over returned rows.`],[`SQL injection`,`Attacker-controlled input changing the SQL itself.`],[`Connection leak`,`A connection never returned to the pool.`]],
+[`Borrow a connection from the DataSource.`,`Prepare SQL with placeholders and bind values.`,`Execute; iterate the ResultSet and map rows.`,`Close everything with try-with-resources (connection returns to the pool).`],
+[`Prefer JdbcTemplate or JPA over raw JDBC; know JDBC to debug them.`,`Use batch updates for bulk inserts.`,`Configure pool size, connection timeout and leak detection.`],
+[`Concatenating user input into SQL.`,`Forgetting to close connections.`,`Huge pools that overload the database.`]),
+'8.4': TH(`Kafka is a distributed, durable log: producers append events to partitioned topics, and consumer groups read them at their own pace, tracking their position with offsets.`,
+`<p>Services often need to tell each other "something happened" (order placed, payment received) without calling each other directly. <b>Kafka</b> stores these events in <b>topics</b>. Each topic is split into <b>partitions</b>, ordered append-only logs spread across brokers for scale and replicated for safety.</p>
+<p>Consumers read in <b>groups</b>: within a group, each partition is handled by one consumer, so adding consumers (up to the number of partitions) adds throughput. Each group tracks its own <b>offset</b> per partition, so many independent services can read the same events. Events stay for the retention period whether or not they've been read.</p>`,
+[[`Topic`,`A named stream of events.`],[`Partition`,`An ordered, append-only log; the unit of parallelism and ordering.`],[`Offset`,`Position of a message in a partition.`],[`Consumer group`,`Consumers sharing work; each partition to one member.`],[`Rebalance`,`Reassigning partitions when consumers join or leave.`],[`At-least-once`,`Messages may be redelivered after failures, never lost.`],[`DLQ`,`Dead-letter topic for messages that keep failing.`]],
+[`Producer sends (key, value); hash(key) picks the partition.`,`Brokers append it to that partition's log and replicate it.`,`Consumers in a group poll their assigned partitions.`,`After processing, they commit offsets; on restart they resume from the last commit.`],
+[`Choose keys by what must stay ordered (e.g. orderId).`,`Make consumers idempotent; route poison messages to a DLQ.`,`Use the outbox pattern to publish events reliably from a database transaction.`],
+[`Expecting global ordering across partitions.`,`Auto-committing before processing (lost messages).`,`More consumers than partitions and expecting more throughput.`]),
+});
+Object.assign(QUIZ, {
+'8.1':[
+ [`What is a dirty read?`,[`Reading a row that another transaction deleted and committed`,`Reading another transaction's uncommitted change`,`Reading the same row twice and getting different values`,`Reading a row while it's being indexed`],1,`Only READ UNCOMMITTED allows it.`,'E'],
+ [`Under READ COMMITTED, T1 reads a balance, T2 updates and commits it, T1 reads again. T1's second read?`,[`The old value: READ COMMITTED keeps a snapshot`,`An error`,`It blocks until T1 commits`,`The new value: a non-repeatable read`],3,`Each statement sees the latest committed data.`,'M'],
+ [`What is PostgreSQL's default isolation level?`,[`READ COMMITTED`,`REPEATABLE READ`,`SERIALIZABLE`,`READ UNCOMMITTED`],0,`MySQL InnoDB defaults to REPEATABLE READ.`,'H']],
+'8.2':[
+ [`Without an index, how does the DB answer <code>WHERE customer_id = 42</code> on a big table?`,[`It uses the primary key automatically`,`It reads every row (full table scan)`,`It samples a few rows`,`It caches the answer forever`],1,`Seq Scan: cost grows with table size.`,'E'],
+ [`Index on (customer_id, created_at). Which query can't use it well?`,[`WHERE customer_id = 42`,`WHERE customer_id = 42 ORDER BY created_at`,`WHERE created_at &gt; yesterday`,`WHERE customer_id = 42 AND created_at &gt; yesterday`],2,`Leftmost-prefix rule: the leading column isn't constrained.`,'M'],
+ [`An index exists on status, but <code>WHERE lower(status) = 'paid'</code> does a full scan. Fix?`,[`Add an expression index on lower(status), or store normalised values`,`Increase work_mem`,`Add LIMIT 1`,`Use SELECT DISTINCT`],0,`Functions on the column hide it from a plain index.`,'H']],
+'8.3':[
+ [`What does <code>close()</code> on a connection from HikariCP do?`,[`Closes the TCP connection to the database`,`Nothing`,`Returns it to the pool`,`Commits the transaction`],2,`The pool wraps connections; close hands it back for reuse.`,'E'],
+ [`Why use PreparedStatement parameters instead of string concatenation?`,[`They're shorter to write`,`They prevent SQL injection and let the DB reuse the parsed statement`,`They return results faster in every case`,`They're required by JPA`],1,`Values are sent as data, never parsed as SQL.`,'M'],
+ [`Requests start failing with "Connection is not available, request timed out after 30000ms" while the DB is idle. Likely cause?`,[`The database is down`,`Too many indexes`,`GC pauses`,`Connections are leaked or held too long, so the pool is empty`],3,`Enable leak detection; check for unclosed connections or long transactions (6.4).`,'H']],
+'8.4':[
+ [`Kafka guarantees message order...`,[`Across the whole topic`,`Within a partition only`,`Across all topics`,`Never`],1,`Use a key so related events go to the same partition.`,'E'],
+ [`A topic has 4 partitions; a group has 6 consumers. How many are actively consuming?`,[`6`,`4; 2 sit idle`,`3`,`1`],1,`Each partition goes to one consumer in a group.`,'M'],
+ [`A consumer processes a message, then crashes before committing its offset. What happens?`,[`The message is lost`,`Kafka deletes it`,`It's redelivered after the rebalance, so processing must be idempotent`,`The whole topic is replayed from offset 0`],2,`At-least-once delivery.`,'H']]
+});
+Object.assign(QUIZ_ADV, {
+'8.1':[
+ [`PostgreSQL at REPEATABLE READ: two transactions update the same row concurrently. The second one?`,[`Overwrites the first silently`,`Waits, then fails with "could not serialize access due to concurrent update"`,`Deadlocks forever`,`Sees the first one's change and continues`],1,`Snapshot isolation won't let it update a row changed after its snapshot; retry.`,'H'],
+ [`Write skew: two doctors each check "at least one other doctor is on call" and both go off call. Which level prevents it?`,[`READ COMMITTED`,`REPEATABLE READ (snapshot)`,`SERIALIZABLE`,`None`],2,`Each transaction's snapshot looks fine; only serializable detects the conflict.`,'H']],
+'8.2':[
+ [`What's a covering index?`,[`An index on every column`,`An index on the primary key`,`A partial index with a WHERE clause`,`An index containing all columns a query needs, so the table isn't read`],3,`Enables index-only scans (INCLUDE columns in PostgreSQL).`,'M'],
+ [`Why is an index on a boolean or a 3-value status column often useless?`,[`Low selectivity: each value matches a big share of rows, so a scan is cheaper`,`Databases can't index booleans`,`It breaks foreign keys`,`It makes reads slower`],0,`A partial index (WHERE status = 'PENDING') can still help for rare values.`,'H']],
+'8.3':[
+ [`Inserting 100,000 rows one statement at a time is slow. Better?`,[`More threads with more connections`,`Batch with addBatch/executeBatch (or COPY), inside one transaction`,`autoCommit = true`,`A bigger pool`],1,`Fewer round trips and commits.`,'M'],
+ [`What does <code>@Transactional</code> do at the JDBC level?`,[`Opens a new pool`,`Sends BEGIN as a SQL string per query`,`Wraps each statement in its own transaction`,`Borrows a connection, sets autoCommit(false), binds it to the thread, then commit/rollback`],3,`All repository calls in that thread reuse that connection.`,'H']],
+'8.4':[
+ [`Why does adding partitions to an existing keyed topic break ordering for some keys?`,[`hash(key) % partitions changes, so a key's new events go to a different partition`,`Kafka reorders old messages`,`Offsets are reset`,`It doesn't`],0,`Plan partition counts up front.`,'H'],
+ [`A message always fails processing (bad payload). What should the consumer do?`,[`Retry forever`,`Skip silently`,`Retry a few times, then send it to a dead-letter topic and continue`,`Restart the consumer`],2,`Otherwise one poison message blocks the whole partition.`,'M']]
 });
 </script>
 <script>
