@@ -16,6 +16,7 @@ Step-by-step visual walkthroughs of core Java interview topics, like stepping th
 | 7. Language features in depth | enums, reflection and annotations, Collectors (groupingBy, toMap), java.time, I/O and serialization, Java 8 → 25 |
 | 8. Data and messaging | transactions and isolation levels, indexes and EXPLAIN, JDBC and connection pooling, Kafka fundamentals |
 | 9. Testing and production tooling | JUnit 5 and Mockito, JVM troubleshooting (jcmd, dumps, JFR), Maven/Gradle dependency conflicts, logging/metrics/tracing, Java modules |
+| 10. Reactive programming | Project Reactor (Mono/Flux, backpressure), WebFlux vs virtual threads |
 
 Each topic is tagged by interview priority (must-know, good to know, beyond interviews). Use the **Interview focus** filter at the top of the topic list to see only what you need; Prev/Next topic and the `[` `]` keys follow it.
 

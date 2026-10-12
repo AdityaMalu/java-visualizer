@@ -12,6 +12,7 @@ Core Java interview topics taught as **concept → picture → example → gotch
 - Part 7: Language features in depth
 - Part 8: Data and messaging
 - Part 9: Testing and production tooling
+- Part 10: Reactive programming
 
 New to a topic? Start with its **Theory: start here** section: the idea in one sentence, a plain-language explanation with an everyday analogy, key terms, how it works step by step, how it shows up in real projects, and common mistakes. No prior knowledge is assumed.
 
@@ -5756,6 +5757,136 @@ import com.shop.orders.internal.OrderMapper;  // not exported: compile error
 - module-info: requires (dependencies), exports (public API), opens (reflection).
 - Non-exported packages are inaccessible even if their classes are public.
 - JDK is modular (jlink); Java 17 locks internals (--add-opens); most apps still use the classpath.
+
+---
+
+# Part 10: Reactive programming
+
+## 10.1 Reactive streams with Project Reactor
+
+*Interview priority: beyond typical interviews.* Mono and Flux are lazy, asynchronous streams that push values to a subscriber. Follow signals (onNext, onError, onComplete), operators, a non-blocking HTTP call with timeout and fallback, and backpressure.
+
+#### Theory: start here
+
+**In one sentence:** Reactive programming models data as asynchronous streams that are pushed to subscribers; Reactor's Mono and Flux are lazy, non-blocking and support backpressure.
+
+In ordinary code you *call* a method and *wait* for its result. In reactive code you describe what should happen to values *when they arrive*, and the framework pushes them to you as they become available, without any thread sitting and waiting for I/O.
+
+**Project Reactor** provides **Mono** (at most one value) and **Flux** (many values). You chain operators (map, filter, flatMap, zip, timeout, retry), then **subscribe**. The subscriber also controls how fast data comes, through **backpressure**.
+
+**Key terms**
+
+- **Publisher / Subscriber**: Source of values / consumer of values (Reactive Streams spec).
+- **Mono / Flux**: 0..1 / 0..N asynchronous values.
+- **Signal**: onNext (a value), onError, onComplete.
+- **Operator**: A step that transforms the stream.
+- **Backpressure**: The subscriber requests only as many items as it can handle.
+- **Scheduler**: The thread pool operators run on.
+
+**How it works**
+
+1. Build a pipeline from a source and operators (nothing runs yet).
+2. subscribe() starts it; the subscriber requests n items.
+3. The source pushes up to n onNext signals, then waits for more requests.
+4. It ends with onComplete or onError; cancellation stops it early.
+
+**In real projects**
+
+- Used by Spring WebFlux, WebClient, R2DBC, reactive Kafka and Redis clients.
+- flatMap for async calls per item; zip to combine results; timeout/retry/onErrorResume for resilience.
+
+**Common mistakes**
+
+- Calling block() inside reactive code.
+- Forgetting to subscribe (nothing happens).
+- Blocking calls on event-loop threads.
+
+#### Code
+
+```java
+Flux<Order> orders = orderRepo.findByCustomer(42)   // nothing happens yet
+    .filter(Order::isPaid)
+    .map(o -> o.withTax(0.19))
+    .take(10);
+
+orders.subscribe(
+    o   -> System.out.println("got " + o.id()),      // onNext
+    err -> log.error("failed", err),                // onError
+    ()  -> System.out.println("done"));             // onComplete
+
+Mono<Price> price = webClient.get().uri("/price/{id}", 7)
+    .retrieve().bodyToMono(Price.class)
+    .timeout(Duration.ofSeconds(2))
+    .onErrorReturn(Price.UNKNOWN);
+
+Flux.range(1, 1_000_000)
+    .publishOn(Schedulers.parallel())
+    .subscribe(new SlowSubscriber());               // requests 32 at a time
+```
+
+#### Remember
+
+- Mono = 0..1, Flux = 0..N; lazy until subscribe; signals onNext*, then onComplete | onError.
+- Non-blocking I/O: threads never wait; errors are signals (timeout, onErrorReturn, retry).
+- Backpressure: subscriber requests n; publishOn/subscribeOn move work between schedulers.
+
+## 10.2 WebFlux vs virtual threads
+
+*Interview priority: good to know.* Two ways to serve thousands of concurrent requests that mostly wait on I/O. Watch one blocking call freeze a WebFlux event loop, then see the same endpoint as plain blocking code on virtual threads.
+
+#### Theory: start here
+
+**In one sentence:** WebFlux scales with a few event-loop threads and non-blocking I/O; virtual threads scale ordinary blocking code by making threads cheap. Both target I/O-bound services.
+
+A typical web request spends most of its time waiting for a database or another service. With one platform thread per request, the number of threads limits how many requests you can serve, even though the CPU is idle.
+
+**WebFlux** removes the waiting: handlers return Monos, and I/O is non-blocking, so a handful of event-loop threads juggle thousands of requests. But a single blocking call on an event loop stalls everything on that thread. **Virtual threads** (Java 21) take the opposite route: keep blocking code, but make each thread so cheap that you can have one per request and the JVM parks it during I/O.
+
+**Key terms**
+
+- **Event loop**: A thread that processes many connections' events, never blocking.
+- **R2DBC**: Reactive (non-blocking) database driver API.
+- **boundedElastic**: Reactor scheduler for wrapping blocking calls.
+- **Virtual thread**: Cheap JVM-managed thread that unmounts while blocked.
+- **BlockHound**: Tool that detects blocking calls on non-blocking threads.
+
+**How it works**
+
+1. Reactive: request → handler returns a Mono → non-blocking calls → response when the Mono completes.
+2. Virtual threads: request → its own virtual thread → blocking calls park it → response.
+3. Either way, limit pressure on scarce resources (connection pools, rate limits).
+
+**In real projects**
+
+- Default choice for new CRUD services on Java 21+: Spring MVC + virtual threads.
+- Choose WebFlux for streaming, SSE/WebSockets, gateways and backpressure-heavy pipelines.
+
+**Common mistakes**
+
+- Mixing blocking JDBC into WebFlux handlers.
+- Expecting either approach to speed up CPU-bound work.
+
+#### Code
+
+```java
+@GetMapping("/orders/{id}")
+Mono<OrderView> order(@PathVariable long id) {
+  return orderRepo.findById(id)                       // R2DBC: non-blocking
+      .zipWith(priceClient.price(id))                 // WebClient: non-blocking
+      .map(t -> OrderView.of(t.getT1(), t.getT2()));
+}
+
+@GetMapping("/reports/{id}")
+Mono<Report> report(@PathVariable long id) {
+  return Mono.just(jdbcTemplate.queryForObject(SQL, mapper, id));  // BLOCKS!
+}
+```
+
+#### Remember
+
+- Thread-per-request with platform threads caps concurrency at the pool size.
+- WebFlux: few event-loop threads, non-blocking end to end; never block the loop (use boundedElastic or avoid).
+- Virtual threads: blocking code scales for I/O; default choice for most CRUD services on Java 21+.
 
 ---
 
