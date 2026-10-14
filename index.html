@@ -159,7 +159,7 @@ button:focus-visible,select:focus-visible,summary:focus-visible{outline:2px soli
 .keep ul{margin:0;padding:12px 16px 14px 34px;display:grid;gap:4px}
 .quiz{margin-top:16px;scroll-margin-top:16px}
 #quiz{padding:14px 16px 16px;display:grid;gap:18px}
-.qz .q{font-weight:600;margin-bottom:8px;max-width:92ch}
+.qz .q{font-weight:600;margin-bottom:8px;max-width:92ch;overflow-wrap:anywhere}
 .qz .qn{font-family:var(--f-mono);color:var(--accent);font-size:13px;margin-right:4px}
 .qz code,.qz pre{font-family:var(--f-mono);font-size:.88em}
 .qz code{background:var(--soft);border:1px solid var(--line);border-radius:4px;padding:0 4px}
@@ -182,15 +182,15 @@ button:focus-visible,select:focus-visible,summary:focus-visible{outline:2px soli
 .qz-new{font:inherit;font-size:13px;border:1px solid var(--line);background:var(--panel);color:var(--accent);border-radius:8px;padding:5px 11px;cursor:pointer;margin-left:auto}
 .qz-new:hover{border-color:var(--accent)}
 .qz-bank{flex-basis:100%;margin:0;font-size:12.5px;color:var(--muted)}
-.qz .opts{display:grid;gap:6px;max-width:92ch}
-.qz .opts button{display:flex;gap:10px;align-items:baseline;text-align:left;font:inherit;font-size:14.5px;border:1px solid var(--line);border-left-width:3px;background:var(--soft);color:var(--ink);border-radius:7px;padding:8px 12px;cursor:pointer}
+.qz .opts{display:grid;grid-template-columns:minmax(0,1fr);gap:6px;max-width:92ch}
+.qz .opts button{display:flex;gap:10px;align-items:baseline;text-align:left;font:inherit;font-size:14.5px;border:1px solid var(--line);border-left-width:3px;background:var(--soft);color:var(--ink);border-radius:7px;padding:8px 12px;cursor:pointer;min-width:0;overflow-wrap:anywhere}
 .qz .opts button:hover:not(:disabled){border-color:var(--accent)}
 .qz .opts button:disabled{cursor:default}
 .qz .opts button .l{font-family:var(--f-mono);font-size:12px;color:var(--muted);font-weight:600}
 .qz .opts button.right{background:var(--ok);border-color:var(--ok-line)}
 .qz .opts button.wrong{background:var(--bad);border-color:var(--bad-line)}
 .qz .opts button.dim{opacity:.55}
-.qz .why{margin-top:8px;font-size:14px;max-width:92ch;border-left:3px solid var(--line);padding:2px 0 2px 10px}
+.qz .why{margin-top:8px;font-size:14px;max-width:92ch;border-left:3px solid var(--line);padding:2px 0 2px 10px;overflow-wrap:anywhere}
 .qz .why b.ok{color:var(--ok-line)} .qz .why b.bad{color:var(--bad-line)}
 .qzfoot{display:flex;flex-wrap:wrap;align-items:center;gap:10px;border-top:1px solid var(--line);padding-top:14px}
 .qzfoot span{margin-right:auto}
@@ -5073,7 +5073,7 @@ System.out.println(C.K);</pre>What prints?`,[`S 5`,`5 S`,`S`,`5`],3,`C.K is a co
 '5.7':[
  [`Env var <code>PAYMENT_TIMEOUT_MS</code> binds to which property?`,[`Nothing: env vars must match exactly`,`payment.timeout-ms, through relaxed binding`,`payment_timeout_ms only`,`PAYMENT_TIMEOUT_MS only`],1,`Relaxed binding maps env-var style to property names.`,'E'],
  [`<code>server.port</code>: 8080 in application.yml, 9090 in application-prod.yml, env SERVER_PORT=7070, <code>--server.port=6060</code>. Profile prod is active. Port?`,[`9090`,`7070`,`6060`,`8080`],2,`Command-line arguments beat env vars, which beat profile files, which beat application.yml.`,'M'],
- [`<code>@Value("\${payment.timeout}")</code> is set only in application-prod.yml, and the app runs without prod. Result?`,[`Startup fails: unresolvable placeholder`,`The field is null`,`The field is 0`,`It's an empty string`],0,`Give a default (\${payment.timeout:5000}) or define it in application.yml.`,'H']],
+ [`<code>@Value("\${payment.timeout}")</code> is set only in application-prod.yml, and the app runs without prod. Result?`,[`Startup fails: unresolvable placeholder`,`The field stays null until prod is active`,`The field defaults to 0, as for any int`,`A warning is logged and an empty string is used`],0,`Give a default (\${payment.timeout:5000}) or define it in application.yml.`,'H']],
 '5.8':[
  [`A body fails <code>@Valid</code>. Where do you map that to a 400 JSON error for every controller?`,[`A try/catch in every controller method`,`A servlet filter in front of the dispatcher`,`A custom ErrorController per endpoint`,`A @RestControllerAdvice @ExceptionHandler`],3,`Central, consistent error mapping.`,'E'],
  [`Add a request-id header to every response, including static resources and error pages. Filter or HandlerInterceptor?`,[`HandlerInterceptor`,`A Filter`,`An @Aspect on controllers`,`@ControllerAdvice`],1,`Filters run for everything in the servlet container; interceptors only see requests mapped to handlers.`,'M'],
@@ -5092,7 +5092,7 @@ System.out.println(C.K);</pre>What prints?`,[`S 5`,`5 S`,`S`,`5`],3,`C.K is a co
  [`<code>@Modifying @Query("update Car ...")</code> runs, then you read a Car already loaded in the same persistence context. You see?`,[`The new value`,`Maybe the old value`,`An exception`,`null`],1,`Use clearAutomatically = true, or clear/refresh.`,'H']],
 '5.12':[
  [`Test only a controller's mapping, validation and JSON. Which?`,[`@SpringBootTest with a real server`,`@DataJpaTest`,`@WebMvcTest with MockMvc, mocking the service`,`A plain JUnit test calling the method`],2,`Loads only the MVC layer.`,'E'],
- [`Why prefer Testcontainers (real PostgreSQL) over H2 for repository tests?`,[`Dialect, constraints and locking differ from production`,`H2 is slower than a real database`,`H2 can't run in CI pipelines`,`Testcontainers doesn't need Docker`],0,`Test against the engine you run.`,'M'],
+ [`Why prefer Testcontainers (real PostgreSQL) over H2 for repository tests?`,[`Dialect, constraints and locking differ from production`,`H2 is slower than PostgreSQL for large test datasets`,`H2 can't run inside CI pipelines without a license`,`Testcontainers needs no Docker, so tests start faster`],0,`Test against the engine you run.`,'M'],
  [`The suite is slow because Spring contexts keep reloading. Common cause?`,[`Too many assertions per test`,`Using JUnit 5`,`Using MockMvc`,`Differing @MockBean setups`],3,`Keep test configurations consistent so the cached context is reused.`,'H']],
 '5.13a':[
  [`Pricing is down and the caller has no timeouts or breaker. Typical result?`,[`Threads pile up waiting, and the caller fails too`,`Nothing: the HTTP client gives up after a second`,`It falls back to a cached value automatically`,`It fails fast with a clear error message`],0,`Default HTTP timeouts are often infinite or very long: cascading failure.`,'E'],
@@ -5344,7 +5344,7 @@ T2: y = 1; r2 = x;</pre>Can r1 == 0 and r2 == 0?`,[`No: at least one sees 1`,`On
  [`Two concurrent requests miss <code>@Cacheable</code> for the same key. What happens?`,[`Only one runs the method`,`Both may run it`,`The second waits`,`The second throws`],1,`sync = true coalesces loads per key (supported by Caffeine).`,'H'],
  [`<code>@Scheduled(fixedRate = 1000)</code>, but the task takes 3 s. Default scheduler?`,[`Three runs overlap`,`Missed runs are dropped`,`Runs queue back to back`,`It throws`],2,`The default scheduler has one thread, so runs queue up.`,'H']],
 '5.11':[
- [`<code>Page&lt;Car&gt;</code> query with a JOIN FETCH of a collection. Effect?`,[`Pages in memory, with a warning`,`Pages in SQL as usual`,`Fails at startup`,`Drops the collection`],0,`It loads every row, then slices. Fetch ids first, then the collections.`,'H'],
+ [`<code>Page&lt;Car&gt;</code> query with a JOIN FETCH of a collection. Effect?`,[`Pages in memory, with a warning`,`Pages in SQL with LIMIT as usual`,`Fails at startup with a query error`,`Silently drops the fetched collection`],0,`It loads every row, then slices. Fetch ids first, then the collections.`,'H'],
  [`<code>save()</code> on an entity whose id you assign yourself (not generated)?`,[`An INSERT right away`,`An exception`,`It's ignored`,`A SELECT, then INSERT`],3,`Implement Persistable to tell Spring Data it's new.`,'H']],
 '5.12':[
  [`<code>@DataJpaTest</code> by default?`,[`Uses your real datasource`,`Rolls back each test`,`Starts the web server`,`Loads every bean`],1,`It also replaces your DB with an embedded one unless configured.`,'M'],
@@ -5360,7 +5360,7 @@ T2: y = 1; r2 = x;</pre>Can r1 == 0 and r2 == 0?`,[`No: at least one sees 1`,`On
  [`Where do you store idempotency keys with 10 pods?`,[`A HashMap on each pod`,`The client's local storage`,`A ThreadLocal per request`,`A shared store, unique key`],3,`A DB table or Redis SET NX, not per-pod memory.`,'M']],
 '6.1':[
  [`<code>SELECT … FOR UPDATE</code> instead of a conditional UPDATE. Correct, but what's the cost?`,[`It can still oversell`,`It serialises all buyers`,`It only works on MySQL`,`It bypasses the transaction`],1,`Keep that transaction as short as possible.`,'H'],
- [`PostgreSQL at REPEATABLE READ: two concurrent conditional UPDATEs on the same row?`,[`Both succeed`,`Both fail`,`Second gets a serialization error`,`They deadlock`],2,`"could not serialize access due to concurrent update". Retry the transaction.`,'H']],
+ [`PostgreSQL at REPEATABLE READ: two concurrent conditional UPDATEs on the same row?`,[`Both succeed and stock drops twice`,`Second waits, then re-checks and updates`,`Second gets a serialization error`,`They deadlock and both roll back`],2,`"could not serialize access due to concurrent update". Retry the transaction.`,'H']],
 '6.2':[
  [`Container memory limit 2 GiB with <code>-Xmx2g</code>. The pod is OOMKilled without a Java OOM. Why?`,[`Non-heap memory pushes RSS over`,`The GC leaked native memory`,`Kubernetes counts the heap twice`,`-Xmx is ignored in containers`],0,`Metaspace, thread stacks, code cache and direct buffers add up. Leave headroom (e.g. MaxRAMPercentage=75).`,'H'],
  [`<code>-XX:+HeapDumpOnOutOfMemoryError</code> is set, but no dump appears after a crash. Likely?`,[`Dumps are disabled in Java 17+`,`The flag needs a full GC first`,`The heap was too small to dump`,`Ephemeral disk, or kernel kill`],3,`Point HeapDumpPath at a persistent volume and keep heap below the container limit.`,'H']],
@@ -7237,234 +7237,234 @@ addQ('4.18', [
 </script>
 <script>
 addQ('5.1', [
- [`What is Inversion of Control?`,[`Reversing method order`,`The framework creates and wires objects instead of your code doing it`,`Using interfaces only`,`A database pattern`],1,`Dependency injection is how Spring does it.`,'E'],
- [`What is a Spring bean?`,[`A Java class file`,`An object created and managed by the Spring container`,`A JAR`,`A JSON document`],1,`Declared via @Component or @Bean.`,'E'],
- [`With a single constructor, is <code>@Autowired</code> required on it?`,[`Yes`,`No: Spring uses it automatically`,`Only for interfaces`,`Only in tests`],1,`Since Spring 4.3.`,'M'],
- [`Use @Bean instead of @Component when?`,[`Never`,`Creating objects from third-party classes you can't annotate, or needing custom construction`,`For controllers`,`For entities`],1,`@Bean methods live in @Configuration classes.`,'M'],
- [`What does @Primary do?`,[`Makes a bean load first`,`Marks the default bean when several match by type`,`Makes it a singleton`,`Disables it`],1,`@Qualifier overrides it at an injection point.`,'E']
+ [`What is Inversion of Control?`,[`Lower layers depend on higher layers instead of the other way round`,`The framework creates and wires objects instead of your code doing it`,`Objects look up their own dependencies through a static service locator`,`Interfaces are used everywhere so implementations swap at compile time`],1,`Dependency injection is how Spring does it.`,'E'],
+ [`What is a Spring bean?`,[`A serializable class with getters, setters and a no-arg constructor`,`An object created and managed by the Spring container`,`A configuration entry declared in application.properties`,`A class file loaded by Spring's custom class loader`],1,`Declared via @Component or @Bean.`,'E'],
+ [`With a single constructor, is <code>@Autowired</code> required on it?`,[`Yes: without it Spring can't inject anything`,`No: Spring uses it automatically`,`Only when the constructor is public`,`Only when parameters are interfaces`],1,`Since Spring 4.3.`,'M'],
+ [`Use @Bean instead of @Component when?`,[`For beans that must be singletons, since @Component is prototype`,`For third-party classes you can't annotate, or custom construction`,`For classes that need constructor injection rather than fields`,`For beans that should be created lazily instead of at startup`],1,`@Bean methods live in @Configuration classes.`,'M'],
+ [`What does @Primary do?`,[`Makes the bean initialise before all other beans`,`Marks the default bean when several match by type`,`Forces the bean to be a singleton in every context`,`Exposes the bean to child application contexts only`],1,`@Qualifier overrides it at an injection point.`,'E']
 ], [
- [`Injecting <code>Optional&lt;Foo&gt;</code> or <code>ObjectProvider&lt;Foo&gt;</code> is useful when?`,[`Never`,`The bean may not exist, or should be resolved lazily`,`For collections`,`For static fields`],1,`Avoids startup failure for optional dependencies.`,'H'],
- [`Why is field injection hard to unit test?`,[`It's slow`,`You can't pass dependencies without Spring or reflection; fields can't be final`,`It needs @MockBean`,`It isn't`],1,`Constructor injection lets plain new work.`,'M']
+ [`Injecting <code>Optional&lt;Foo&gt;</code> or <code>ObjectProvider&lt;Foo&gt;</code> is useful when?`,[`The dependency must be injected into a static field`,`The bean may not exist, or should be resolved lazily`,`The bean must be serialised across cluster nodes`,`Forcing the dependency to be created before the caller`],1,`Avoids startup failure for optional dependencies.`,'H'],
+ [`Why is field injection hard to unit test?`,[`Mockito can't create mocks for classes with private injected fields`,`Tests need Spring or reflection to set them; fields can't be final`,`Field values are reset by Spring between each test method run`,`The JIT inlines injected fields, so mocks get ignored at runtime`],1,`Constructor injection lets plain new work.`,'M']
 ]);
 
 addQ('5.2', [
  [`Default bean scope?`,[`prototype`,`singleton`,`request`,`session`],1,`One instance per context.`,'E'],
- [`What does prototype scope mean?`,[`One per JVM`,`A new instance each time the bean is requested`,`One per request`,`One per thread`],1,`Spring doesn't manage its destruction.`,'E'],
- [`Where do proxies for @Transactional get created in the lifecycle?`,[`In the constructor`,`In a BeanPostProcessor after initialisation`,`At compile time`,`On first call`],1,`postProcessAfterInitialization.`,'M'],
- [`Order: constructor, dependency injection, @PostConstruct?`,[`@PostConstruct first`,`Constructor → injection → @PostConstruct`,`Injection → constructor`,`Random`],1,`With constructor injection, the first two happen together.`,'M'],
- [`Where should per-request data live instead of a singleton field?`,[`A static field`,`Method parameters/locals or request-scoped beans`,`A global map`,`System properties`],1,`Keep singletons stateless.`,'E']
+ [`What does prototype scope mean?`,[`One shared instance per HTTP request being handled`,`A new instance each time the bean is requested`,`One instance per thread, reused across requests`,`A template copy cloned from the singleton at startup`],1,`Spring doesn't manage its destruction.`,'E'],
+ [`Where do proxies for @Transactional get created in the lifecycle?`,[`In the constructor via a generated subclass call`,`In a BeanPostProcessor after initialisation`,`At compile time by an annotation processor`,`At the first method call through lazy weaving`],1,`postProcessAfterInitialization.`,'M'],
+ [`Order: constructor, dependency injection, @PostConstruct?`,[`Injection → constructor → @PostConstruct`,`Constructor → injection → @PostConstruct`,`Constructor → @PostConstruct → injection`,`@PostConstruct → constructor → injection`],1,`With constructor injection, the first two happen together.`,'M'],
+ [`Where should per-request data live instead of a singleton field?`,[`A static field guarded by the singleton's monitor`,`Method parameters/locals or request-scoped beans`,`A volatile field on the singleton bean itself`,`An instance field marked transient on the singleton`],1,`Keep singletons stateless.`,'E']
 ], [
- [`What does <code>SmartInitializingSingleton</code> or <code>ApplicationReadyEvent</code> help with?`,[`Logging`,`Running work after all singletons (and proxies) are ready`,`Destroying beans`,`Configuring scopes`],1,`Safer than @PostConstruct for transactional work.`,'H'],
- [`Lazy initialisation (<code>spring.main.lazy-initialization=true</code>) trade-off?`,[`No downside`,`Faster startup, but configuration errors surface at first use instead of at startup`,`Breaks DI`,`Uses more memory`],1,`Often used in dev only.`,'H']
+ [`What does <code>SmartInitializingSingleton</code> or <code>ApplicationReadyEvent</code> help with?`,[`Running cleanup before the context shuts down`,`Running work after all singletons (and proxies) are ready`,`Registering extra bean definitions before instantiation`,`Choosing scopes for beans before they're created`],1,`Safer than @PostConstruct for transactional work.`,'H'],
+ [`Lazy initialisation (<code>spring.main.lazy-initialization=true</code>) trade-off?`,[`Lower memory use, but circular dependencies are no longer detected`,`Faster startup, but config errors appear at first use, not at startup`,`Faster startup, but @Autowired constructors stop being supported`,`Faster requests, because every bean becomes prototype-scoped`],1,`Often used in dev only.`,'H']
 ]);
 
 addQ('5.3', [
- [`What is "advice" in AOP?`,[`A pointcut`,`The code an aspect runs (before/after/around a method)`,`A bean`,`An exception`],1,`Pointcut says where; advice says what.`,'E'],
+ [`What is "advice" in AOP?`,[`The expression that selects which methods to intercept`,`The code an aspect runs (before/after/around a method)`,`The proxy object Spring generates around a bean`,`The point in execution where an aspect may apply`],1,`Pointcut says where; advice says what.`,'E'],
  [`Which advice can skip or replace the target call?`,[`@Before`,`@After`,`@Around`,`@AfterReturning`],2,`It controls proceed().`,'M'],
- [`What's a join point in Spring AOP?`,[`A database join`,`A method execution on a Spring bean`,`A thread`,`A field`],1,`Spring AOP only intercepts method calls.`,'M'],
- [`Why does AOP only apply to Spring beans?`,[`Licensing`,`Interception is done by proxies Spring creates around beans`,`Bytecode limits`,`It applies everywhere`],1,`new MyService() isn't proxied.`,'E'],
- [`Which annotation enables custom @Aspect classes in Spring Boot?`,[`Nothing extra: auto-configured with spring-boot-starter-aop`,`@EnableAll`,`@AspectScan`,`@Proxy`],0,`Boot enables @EnableAspectJAutoProxy for you.`,'M']
+ [`What's a join point in Spring AOP?`,[`Any field access on a Spring bean`,`A method execution on a Spring bean`,`A constructor call on any Java object`,`A pointcut expression combined with advice`],1,`Spring AOP only intercepts method calls.`,'M'],
+ [`Why does AOP only apply to Spring beans?`,[`Aspects are compiled into beans by the Spring Boot plugin`,`Interception is done by proxies Spring creates around beans`,`Only beans are loaded by Spring's instrumenting class loader`,`Non-bean classes lack the metadata the pointcut parser needs`],1,`new MyService() isn't proxied.`,'E'],
+ [`Which annotation enables custom @Aspect classes in Spring Boot?`,[`Nothing extra: auto-configured with spring-boot-starter-aop`,`@AspectScan on the main application class`,`@EnableAop plus an aop.xml file in META-INF`,`@EnableWeaving on a @Configuration class`],0,`Boot enables @EnableAspectJAutoProxy for you.`,'M']
 ], [
- [`AspectJ weaving vs Spring AOP proxies?`,[`Same`,`AspectJ modifies bytecode, so it can intercept self-calls and private methods; proxies can't`,`Proxies are more powerful`,`AspectJ is runtime only`],1,`Spring supports load-time weaving if needed.`,'H'],
- [`A custom @Audited annotation with an @Around aspect: how do you match it?`,[`execution(* *(..))`,`@annotation(com.shop.Audited)`,`within(Audited)`,`bean(Audited)`],1,`Pointcut on the annotation.`,'H']
+ [`AspectJ weaving vs Spring AOP proxies?`,[`Proxies weave bytecode at load time, so they're faster than AspectJ`,`AspectJ weaves bytecode, so it catches self-calls and private methods`,`AspectJ needs interfaces, while proxies work on any concrete class`,`Both use proxies; AspectJ just has a richer pointcut language`],1,`Spring supports load-time weaving if needed.`,'H'],
+ [`A custom @Audited annotation with an @Around aspect: how do you match it?`,[`within(com.shop.Audited)`,`@annotation(com.shop.Audited)`,`target(com.shop.Audited)`,`args(com.shop.Audited)`],1,`Pointcut on the annotation.`,'H']
 ]);
 
 addQ('5.4', [
  [`What does @Transactional do on success?`,[`Rolls back`,`Commits`,`Nothing`,`Retries`],1,`And rolls back on unchecked exceptions.`,'E'],
  [`Default propagation?`,[`REQUIRES_NEW`,`REQUIRED`,`NESTED`,`NEVER`],1,`Join an existing transaction or start one.`,'E'],
- [`MANDATORY propagation means?`,[`Always new`,`Must run inside an existing transaction, otherwise an exception`,`Never in a transaction`,`Optional`],1,`Guards methods that must not run alone.`,'M'],
- [`@Transactional on a private method?`,[`Works`,`Ignored: proxies can't intercept private methods`,`Compile error`,`Only for reads`],1,`Same for self-invocation.`,'E'],
- [`Why keep transactions short?`,[`Style`,`They hold DB connections and locks; long ones block others and exhaust pools`,`Required by JPA`,`For logging`],1,`See 6.4.`,'M']
+ [`MANDATORY propagation means?`,[`Always starts a new transaction, suspending any existing one`,`Must run inside an existing transaction, otherwise an exception`,`Runs without a transaction, throwing if one already exists`,`Joins a transaction if present, otherwise runs non-transactionally`],1,`Guards methods that must not run alone.`,'M'],
+ [`@Transactional on a private method?`,[`Works, but only when called from another bean`,`Ignored: proxies can't intercept private methods`,`Fails at startup with a BeanCreationException`,`Works, but the transaction is always read-only`],1,`Same for self-invocation.`,'E'],
+ [`Why keep transactions short?`,[`Hibernate flushes only at commit, so long ones lose writes`,`They hold connections and locks, blocking others and draining pools`,`The JDBC driver aborts any transaction older than a few seconds`,`Long ones bypass the first-level cache and reload every entity`],1,`See 6.4.`,'M']
 ], [
- [`How do you roll back without throwing?`,[`Impossible`,`TransactionAspectSupport.currentTransactionStatus().setRollbackOnly()`,`return null`,`Call rollback() on the repository`],1,`Rarely needed; usually throw.`,'H'],
- [`@Transactional(timeout = 5) does what?`,[`Retries for 5 s`,`Rolls back if the transaction runs longer than 5 seconds (checked at statement boundaries by most providers)`,`Waits 5 s before commit`,`Sets the lock timeout only`],1,`A safety net for runaway transactions.`,'H']
+ [`How do you roll back without throwing?`,[`TransactionSynchronizationManager.setActualTransactionActive(false)`,`TransactionAspectSupport.currentTransactionStatus().setRollbackOnly()`,`entityManager.getTransaction().rollback() inside the method`,`TransactionAspectSupport.currentTransactionStatus().flush()`],1,`Rarely needed; usually throw.`,'H'],
+ [`@Transactional(timeout = 5) does what?`,[`Retries the transaction up to 5 times before rolling back`,`Rolls back if it runs over 5 seconds (checked at statement boundaries)`,`Waits 5 seconds for row locks, then continues without them`,`Kills the database session after 5 idle seconds in the pool`],1,`A safety net for runaway transactions.`,'H']
 ]);
 
 addQ('5.5', [
- [`What's the persistence context?`,[`The database`,`The set of entities managed in the current transaction (first-level cache)`,`A config file`,`A thread`],1,`find() twice returns the same instance.`,'E'],
+ [`What's the persistence context?`,[`The shared cache of entities across all sessions (second-level cache)`,`The set of entities managed in the current transaction (first-level cache)`,`The mapping metadata Hibernate builds from your @Entity classes`,`The JDBC connection plus its open statements for the request`],1,`find() twice returns the same instance.`,'E'],
  [`Which fetch type is the default for @ManyToOne?`,[`LAZY`,`EAGER`,`NONE`,`BATCH`],1,`Make it LAZY explicitly.`,'M'],
- [`Fix N+1 when listing orders with their items?`,[`More indexes`,`JOIN FETCH / @EntityGraph / batch fetching`,`A bigger pool`,`Caching nothing`],1,`Load associations in one or few queries.`,'E'],
- [`What does <code>merge(detached)</code> return?`,[`void`,`A managed copy; the passed object stays detached`,`The same object, now managed`,`null`],1,`Use the returned instance.`,'M'],
- [`What does <code>@Version</code> add?`,[`Auditing`,`Optimistic locking via a version column`,`Soft deletes`,`Caching`],1,`Detects lost updates.`,'E']
+ [`Fix N+1 when listing orders with their items?`,[`FetchType.EAGER on the items collection`,`JOIN FETCH / @EntityGraph / batch fetching`,`An index on the order_id foreign key`,`A larger connection pool and @Transactional`],1,`Load associations in one or few queries.`,'E'],
+ [`What does <code>merge(detached)</code> return?`,[`The same instance, now attached to the context`,`A managed copy; the passed object stays detached`,`A detached copy; the passed object becomes managed`,`Nothing; it reattaches the passed object in place`],1,`Use the returned instance.`,'M'],
+ [`What does <code>@Version</code> add?`,[`Pessimistic row locking on every read`,`Optimistic locking via a version column`,`Audit history of each change in a table`,`Schema versioning for Flyway migrations`],1,`Detects lost updates.`,'E']
 ], [
- [`Why can <code>equals</code> on entities based on generated id be tricky?`,[`It's fine always`,`The id is null before persist, so equality and hash change after saving`,`ids are strings`,`Hibernate forbids equals`],1,`Use a business key or careful id-based equals with constant hashCode.`,'H'],
- [`What's the second-level cache?`,[`The persistence context`,`A cache shared across sessions/transactions (e.g. with Ehcache/Caffeine)`,`The DB buffer pool`,`Redis only`],1,`Off by default; use for read-mostly reference data.`,'H']
+ [`Why can <code>equals</code> on entities based on generated id be tricky?`,[`Hibernate proxies override equals, so the id is never compared`,`The id is null before persist, so equality and hash change after saving`,`Generated ids are reused after deletes, so stale entities match`,`The id is reassigned on each load, so it differs per session`],1,`Use a business key or careful id-based equals with constant hashCode.`,'H'],
+ [`What's the second-level cache?`,[`A per-transaction cache of entities, cleared on commit (the session)`,`A cache shared across sessions/transactions (e.g. with Ehcache/Caffeine)`,`The database's own buffer pool, which Hibernate tunes automatically`,`A query plan cache that Hibernate keeps for compiled JPQL`],1,`Off by default; use for read-mostly reference data.`,'H']
 ]);
 
 addQ('5.6', [
- [`What is a Spring Boot starter?`,[`A main class`,`A dependency that brings a curated set of libraries and auto-configuration`,`A plugin`,`A profile`],1,`e.g. spring-boot-starter-web.`,'E'],
- [`What starts Tomcat in a Boot web app?`,[`You must install it`,`Auto-configuration creates an embedded server`,`Docker`,`The OS`],1,`The app is a runnable JAR.`,'E'],
- [`Where are auto-configuration classes listed (Boot 3)?`,[`spring.factories only`,`META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`,`application.yml`,`pom.xml`],1,`Older Boot used spring.factories.`,'H'],
- [`@ConditionalOnClass means?`,[`Apply if a class is on the classpath`,`Apply if a bean exists`,`Apply on a profile`,`Apply always`],0,`e.g. only configure Jackson if Jackson is present.`,'M'],
- [`How do you disable a specific auto-configuration?`,[`Delete the JAR`,`@SpringBootApplication(exclude = …) or spring.autoconfigure.exclude`,`Rename the class`,`Use @Lazy`],1,`Or define your own bean so it backs off.`,'M']
+ [`What is a Spring Boot starter?`,[`A main class template that bootstraps the application context`,`A dependency that brings a curated set of libraries and auto-configuration`,`A Maven plugin that generates project skeletons from templates`,`A profile that activates default properties for a module`],1,`e.g. spring-boot-starter-web.`,'E'],
+ [`What starts Tomcat in a Boot web app?`,[`The Maven plugin deploys the app to a local server`,`Auto-configuration creates an embedded server`,`The JVM launches Tomcat from a system install`,`SpringApplication downloads Tomcat on first run`],1,`The app is a runnable JAR.`,'E'],
+ [`Where are auto-configuration classes listed (Boot 3)?`,[`META-INF/spring.factories under the EnableAutoConfiguration key`,`META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`,`META-INF/spring/autoconfigure.properties in each starter`,`application.yml under spring.autoconfigure.include`],1,`Older Boot used spring.factories.`,'H'],
+ [`@ConditionalOnClass means?`,[`Apply if a class is on the classpath`,`Apply if a bean of that class exists`,`Apply if the class matches an active @Profile`,`Apply if the class is in a scanned package`],0,`e.g. only configure Jackson if Jackson is present.`,'M'],
+ [`How do you disable a specific auto-configuration?`,[`@ComponentScan(excludeFilters = …) on the main class`,`@SpringBootApplication(exclude = …) or spring.autoconfigure.exclude`,`@EnableAutoConfiguration(disabled = …) or spring.autoconfigure.skip`,`spring.main.lazy-initialization=true or @Lazy on the class`],1,`Or define your own bean so it backs off.`,'M']
 ], [
- [`What does <code>spring-boot-maven-plugin</code> build?`,[`A WAR only`,`An executable "fat" JAR containing your classes and dependencies`,`Docker images only`,`Native code only`],1,`Also supports building OCI images.`,'M'],
- [`Why does Boot's startup sometimes take seconds, and what helps?`,[`It's always instant`,`Classpath scanning, bean creation, auto-config; helps: fewer starters, lazy init in dev, CDS / AOT / native image`,`Only network`,`Only GC`],1,`Measure with the startup actuator endpoint.`,'H']
+ [`What does <code>spring-boot-maven-plugin</code> build?`,[`A thin JAR plus a lib folder you put on the classpath`,`An executable "fat" JAR containing your classes and dependencies`,`A WAR that must be deployed to an external Tomcat`,`A shaded JAR that relocates all dependency packages`],1,`Also supports building OCI images.`,'M'],
+ [`Why does Boot's startup sometimes take seconds, and what helps?`,[`JIT compilation of all classes; a larger heap fixes it`,`Scanning and bean creation; fewer starters, lazy init or AOT help`,`Downloading dependencies at launch; an offline Maven cache helps`,`GC of startup garbage; switching to ZGC removes the delay`],1,`Measure with the startup actuator endpoint.`,'H']
 ]);
 
 addQ('5.7', [
- [`What activates a profile?`,[`spring.profiles.active=prod (property, env var or arg)`,`A class annotation only`,`The JAR name`,`The OS`],0,`SPRING_PROFILES_ACTIVE as env var.`,'E'],
- [`Which file holds properties for profile dev?`,[`dev.properties`,`application-dev.yml (or .properties)`,`profile-dev.yml`,`application.yml only`],1,`Loaded on top of application.yml.`,'E'],
- [`<code>@Value("\${timeout:5000}")</code> means?`,[`timeout must be 5000`,`Use property timeout, or 5000 if it's missing`,`A syntax error`,`Set timeout to 5000`],1,`Default after the colon.`,'M'],
- [`Where should database passwords come from in production?`,[`application.yml in Git`,`Environment variables or a secret store (Vault, Kubernetes secrets)`,`Hard-coded`,`System.out`],1,`Never commit secrets.`,'E'],
+ [`What activates a profile?`,[`spring.profiles.active=prod (property, env var or arg)`,`A @Profile annotation on the main application class`,`Naming the JAR after the profile, e.g. app-prod.jar`,`spring.config.name=prod passed on the command line`],0,`SPRING_PROFILES_ACTIVE as env var.`,'E'],
+ [`Which file holds properties for profile dev?`,[`application.dev.yml (or .properties)`,`application-dev.yml (or .properties)`,`profile-dev.yml (or .properties)`,`dev.application.yml (or .properties)`],1,`Loaded on top of application.yml.`,'E'],
+ [`<code>@Value("\${timeout:5000}")</code> means?`,[`Use 5000 unless timeout is set to a larger value`,`Use property timeout, or 5000 if it's missing`,`Set timeout to 5000, overriding any configured value`,`Use timeout, capped at a maximum of 5000`],1,`Default after the colon.`,'M'],
+ [`Where should database passwords come from in production?`,[`application-prod.yml committed to Git, encoded with Base64`,`Environment variables or a secret store (Vault, Kubernetes secrets)`,`A constants class compiled into the JAR and obfuscated`,`JVM system properties baked into the Docker image`],1,`Never commit secrets.`,'E'],
  [`Does a command-line argument beat an environment variable?`,[`No`,`Yes`,`Only for ports`,`They merge`],1,`Command line has higher precedence.`,'M']
 ], [
- [`@Profile("!prod") on a bean means?`,[`Only in prod`,`Active in every profile except prod`,`Never active`,`Syntax error`],1,`Profile expressions support !, &, |.`,'M'],
- [`How can you see where a property's value came from at run time?`,[`You can't`,`Actuator /actuator/env shows property sources and values`,`Logs only`,`jstack`],1,`Secure it; it can expose secrets (Boot masks many).`,'H']
+ [`@Profile("!prod") on a bean means?`,[`Active only when a profile other than prod is set`,`Active in every profile except prod`,`Active only in prod, but loaded lazily`,`Excluded from every profile, including prod`],1,`Profile expressions support !, &, |.`,'M'],
+ [`How can you see where a property's value came from at run time?`,[`Actuator /actuator/beans shows each property's origin`,`Actuator /actuator/env shows property sources and values`,`Actuator /actuator/mappings lists properties by source`,`Running jstack prints the active property sources`],1,`Secure it; it can expose secrets (Boot masks many).`,'H']
 ]);
 
 addQ('5.8', [
  [`Which annotation marks a class returning JSON from handler methods?`,[`@Controller`,`@RestController`,`@Service`,`@Component`],1,`@Controller + @ResponseBody.`,'E'],
  [`Read <code>/cars/7</code>'s 7 into a parameter?`,[`@RequestParam`,`@PathVariable`,`@RequestBody`,`@Header`],1,`@RequestParam reads ?query=params.`,'E'],
  [`Which status should a successful POST that creates a resource return?`,[`200`,`201 Created`,`204`,`302`],1,`Often with a Location header.`,'M'],
- [`What converts Java objects to JSON in Spring MVC?`,[`Tomcat`,`HttpMessageConverters (Jackson)`,`The browser`,`Hibernate`],1,`Content negotiation picks one.`,'M'],
- [`What does <code>@Valid @RequestBody CarDto dto</code> trigger on failure?`,[`A 500`,`MethodArgumentNotValidException → 400 by default`,`Nothing`,`A null dto`],1,`Customise the body in @ControllerAdvice.`,'M']
+ [`What converts Java objects to JSON in Spring MVC?`,[`The ViewResolver (Thymeleaf)`,`HttpMessageConverters (Jackson)`,`Tomcat's response encoder (Coyote)`,`HandlerInterceptors (Gson)`],1,`Content negotiation picks one.`,'M'],
+ [`What does <code>@Valid @RequestBody CarDto dto</code> trigger on failure?`,[`ConstraintViolationException → 500 by default`,`MethodArgumentNotValidException → 400 by default`,`BindException → 422 by default`,`HttpMessageNotReadableException → 400 by default`],1,`Customise the body in @ControllerAdvice.`,'M']
 ], [
- [`Where does a HandlerInterceptor run relative to the controller?`,[`Only before`,`preHandle before, postHandle after (before view), afterCompletion at the end`,`Only after`,`In another thread`],1,`Filters wrap the whole servlet.`,'H'],
- [`Idempotent HTTP methods are?`,[`POST only`,`GET, PUT, DELETE (and HEAD, OPTIONS)`,`All of them`,`None`],1,`POST isn't; use idempotency keys (5.13c).`,'M']
+ [`Where does a HandlerInterceptor run relative to the controller?`,[`Before the DispatcherServlet, as a servlet filter in the chain`,`preHandle before, postHandle after, afterCompletion at the very end`,`preHandle before, then postHandle only if an exception is thrown`,`Inside the controller method, wrapped like an @Around aspect`],1,`Filters wrap the whole servlet.`,'H'],
+ [`Idempotent HTTP methods are?`,[`GET, POST, PUT (and HEAD, OPTIONS)`,`GET, PUT, DELETE (and HEAD, OPTIONS)`,`GET, POST, PATCH (and HEAD only)`,`GET and HEAD only (not PUT or DELETE)`],1,`POST isn't; use idempotency keys (5.13c).`,'M']
 ]);
 
 addQ('5.9', [
- [`Authentication vs authorisation?`,[`Same`,`Authentication = who you are; authorisation = what you may do`,`Reversed`,`Only for admins`],1,`401 vs 403.`,'E'],
+ [`Authentication vs authorisation?`,[`Authentication = what you may do; authorisation = who you are`,`Authentication = who you are; authorisation = what you may do`,`Authentication = the login form; authorisation = the session cookie`,`Authentication = for end users; authorisation = for services`],1,`401 vs 403.`,'E'],
  [`Where does a JWT usually travel?`,[`In the URL`,`In the Authorization: Bearer header`,`In the body of every request`,`In a server session`],1,`Sometimes in a cookie.`,'E'],
  [`What part of a JWT proves it wasn't tampered with?`,[`Header`,`Payload`,`Signature`,`Base64`],2,`Signed with a secret or private key.`,'E'],
- [`Where are passwords stored securely?`,[`Plain text`,`Hashed with a slow, salted algorithm like bcrypt/argon2`,`Base64-encoded`,`Encrypted with AES in code`],1,`Spring Security's PasswordEncoder.`,'M'],
- [`@PreAuthorize("hasRole('ADMIN')") does what?`,[`Logs admins`,`Checks the current user's role before the method runs`,`Creates a role`,`Nothing`],1,`Method security (enable with @EnableMethodSecurity).`,'M']
+ [`Where are passwords stored securely?`,[`Hashed once with fast SHA-256 so logins stay quick`,`Hashed with a slow, salted algorithm like bcrypt/argon2`,`Encrypted with AES using a key stored in the code`,`Base64-encoded with a salt so they can't be read`],1,`Spring Security's PasswordEncoder.`,'M'],
+ [`@PreAuthorize("hasRole('ADMIN')") does what?`,[`Checks the role after the method runs, filtering its result`,`Checks the current user's role before the method runs`,`Grants the ADMIN role to the caller for that method`,`Restricts the URL mapped to the method in the filter chain`],1,`Method security (enable with @EnableMethodSecurity).`,'M']
 ], [
- [`HS256 vs RS256 for JWT?`,[`Same`,`HS256 uses one shared secret; RS256 signs with a private key and verifies with a public key`,`RS256 is unsigned`,`HS256 is asymmetric`],1,`RS256 lets many services verify without the signing secret.`,'H'],
- [`Why store JWTs in HttpOnly cookies rather than localStorage in browsers?`,[`Faster`,`JavaScript (and XSS) can't read HttpOnly cookies; then add CSRF protection`,`Required by the spec`,`Cookies never expire`],1,`Trade-off between XSS and CSRF risk.`,'H']
+ [`HS256 vs RS256 for JWT?`,[`HS256 signs with a private key; RS256 uses one shared secret`,`HS256 uses one shared secret; RS256 signs privately, verifies publicly`,`HS256 encrypts the payload; RS256 only signs the header`,`RS256 is unsigned and relies on TLS; HS256 signs the token`],1,`RS256 lets many services verify without the signing secret.`,'H'],
+ [`Why store JWTs in HttpOnly cookies rather than localStorage in browsers?`,[`HttpOnly cookies are encrypted by the browser, so tokens can't leak`,`JavaScript (and XSS) can't read HttpOnly cookies; then add CSRF protection`,`Cookies are sent only over HTTPS, so CSRF is no longer possible`,`localStorage is cleared on every page reload, so tokens get lost`],1,`Trade-off between XSS and CSRF risk.`,'H']
 ]);
 
 addQ('5.10', [
- [`What does <code>@Cacheable("cars")</code> do on a cache hit?`,[`Runs the method anyway`,`Returns the cached value without running the method`,`Clears the cache`,`Throws`],1,`On a miss it runs and stores.`,'E'],
+ [`What does <code>@Cacheable("cars")</code> do on a cache hit?`,[`Runs the method and refreshes the cached value`,`Returns the cached value without running the method`,`Runs the method, then compares it to the cache`,`Returns the cached value, then refreshes it async`],1,`On a miss it runs and stores.`,'E'],
  [`Which annotation removes a cache entry?`,[`@CachePut`,`@CacheEvict`,`@Cacheable`,`@Caching`],1,`@CachePut always runs and updates.`,'M'],
  [`What enables @Scheduled?`,[`Nothing`,`@EnableScheduling`,`@Async`,`@EnableCaching`],1,`Then use fixedRate, fixedDelay or cron.`,'E'],
- [`fixedRate vs fixedDelay?`,[`Same`,`fixedRate: start every N ms; fixedDelay: wait N ms after the previous run finishes`,`fixedDelay is faster`,`fixedRate allows overlap by default`],1,`Default scheduler is single-threaded.`,'M'],
- [`What does @Async return for a value?`,[`The value directly`,`A CompletableFuture (or void)`,`A Thread`,`Optional`],1,`Configure a bounded executor.`,'M']
+ [`fixedRate vs fixedDelay?`,[`fixedDelay: start every N ms; fixedRate: N ms after the last run ends`,`fixedRate: start every N ms; fixedDelay: N ms after the last run ends`,`fixedRate: N ms after the last run ends; fixedDelay: once after N ms`,`fixedDelay waits N ms before the first run; fixedRate starts at once`],1,`Default scheduler is single-threaded.`,'M'],
+ [`What does @Async return for a value?`,[`The value, computed on another thread`,`A CompletableFuture (or void)`,`An Optional filled in later`,`A Thread you can join()`],1,`Configure a bounded executor.`,'M']
 ], [
- [`Cache stampede with @Cacheable: Spring option?`,[`None`,`@Cacheable(sync = true) so only one caller computes per key in this JVM`,`Bigger TTL`,`@Async`],1,`See 6.5 for cross-pod approaches.`,'H'],
- [`Retry with exponential backoff and jitter: why jitter?`,[`Faster`,`To avoid many clients retrying in sync`,`Required by HTTP`,`To reduce logging`],1,`Spring Retry and Resilience4j support it.`,'M']
+ [`Cache stampede with @Cacheable: Spring option?`,[`@CachePut on the method so every caller refreshes the value first`,`@Cacheable(sync = true) so only one caller computes per key in this JVM`,`@Cacheable(sync = true) so one caller computes per key across the cluster`,`@Async on the method so callers don't block while it computes`],1,`See 6.5 for cross-pod approaches.`,'H'],
+ [`Retry with exponential backoff and jitter: why jitter?`,[`To make each retry wait longer than the last`,`To avoid many clients retrying in sync`,`To cap the total time spent on retries`,`To vary the request payload between retries`],1,`Spring Retry and Resilience4j support it.`,'M']
 ]);
 
 addQ('5.11', [
- [`What does <code>JpaRepository&lt;Car, Long&gt;</code> give you?`,[`Nothing`,`CRUD, paging and sorting methods without writing implementations`,`A database`,`Only findAll`],1,`Spring generates the implementation.`,'E'],
+ [`What does <code>JpaRepository&lt;Car, Long&gt;</code> give you?`,[`A generated SQL schema plus migration scripts for the Car table`,`CRUD, paging and sorting methods without writing implementations`,`Only findAll and save; paging needs a separate repository`,`A JDBC template preconfigured with the Car table's columns`],1,`Spring generates the implementation.`,'E'],
  [`<code>findByEmail(String email)</code> becomes?`,[`A runtime reflection call`,`SELECT … WHERE email = ?`,`A full table scan in Java`,`Nothing`],1,`Derived query.`,'E'],
- [`Page vs Slice?`,[`Same`,`Page runs an extra COUNT for totals; Slice only knows if there's a next page`,`Slice counts`,`Page is unsorted`],1,`Slice is cheaper for infinite scroll.`,'M'],
- [`Write a custom JPQL query?`,[`@Sql`,`@Query("select c from Car c where …")`,`@Native`,`@Select`],1,`nativeQuery = true for SQL.`,'E'],
- [`Fetch only id and name for a list page?`,[`Load full entities`,`Use a projection (interface or record DTO)`,`Use EAGER`,`Use a Page`],1,`Less data, no dirty checking.`,'M']
+ [`Page vs Slice?`,[`Slice runs an extra COUNT for totals; Page only knows if there's a next page`,`Page runs an extra COUNT for totals; Slice only knows if there's a next page`,`Page loads all rows and splits them in memory; Slice uses LIMIT`,`Page supports sorting; Slice returns rows in insertion order only`],1,`Slice is cheaper for infinite scroll.`,'M'],
+ [`Write a custom JPQL query?`,[`@Sql("select c from Car c where …")`,`@Query("select c from Car c where …")`,`@Select("select c from Car c where …")`,`@Jpql("select c from Car c where …")`],1,`nativeQuery = true for SQL.`,'E'],
+ [`Fetch only id and name for a list page?`,[`Use FetchType.LAZY on the other columns`,`Use a projection (interface or record DTO)`,`Use a Page with a small page size`,`Use @Transient on the unused fields`],1,`Less data, no dirty checking.`,'M']
 ], [
- [`What does <code>saveAll</code> in a loop of 10,000 entities need to be efficient?`,[`Nothing`,`JDBC batching enabled (hibernate.jdbc.batch_size) and an id strategy that allows batching (not IDENTITY)`,`EAGER fetching`,`A bigger heap only`],1,`IDENTITY ids force one insert at a time.`,'H'],
- [`Specification / Criteria are used for?`,[`Static queries`,`Building dynamic queries from optional filters`,`Schema migration`,`Caching`],1,`Combine predicates at run time.`,'M']
+ [`What does <code>saveAll</code> in a loop of 10,000 entities need to be efficient?`,[`EAGER fetching on all associations so inserts share one query`,`JDBC batching (hibernate.jdbc.batch_size) and a non-IDENTITY id strategy`,`A bigger heap and a call to flush() after every single save`,`IDENTITY ids so the database assigns keys in one round trip`],1,`IDENTITY ids force one insert at a time.`,'H'],
+ [`Specification / Criteria are used for?`,[`Declaring fixed queries checked at startup`,`Building dynamic queries from optional filters`,`Generating schema migrations from entities`,`Caching query results between transactions`],1,`Combine predicates at run time.`,'M']
 ]);
 
 addQ('5.12', [
- [`@SpringBootTest loads?`,[`Only controllers`,`The full application context`,`Nothing`,`Only repositories`],1,`Slowest, most realistic.`,'E'],
- [`@DataJpaTest loads?`,[`Everything`,`JPA components (entities, repositories) with an embedded or configured DB`,`Controllers`,`Nothing`],1,`Transactions roll back after each test.`,'E'],
- [`MockMvc lets you?`,[`Start a real server`,`Call controllers through the MVC stack without a network server`,`Mock the database`,`Load test`],1,`Check status, headers and JSON.`,'M'],
- [`Why test against a real database with Testcontainers?`,[`Speed`,`Same SQL dialect, constraints and behaviour as production`,`It needs no Docker`,`It's required by Spring`],1,`H2 can hide dialect issues.`,'M'],
- [`What's the test pyramid?`,[`Mostly end-to-end tests`,`Many fast unit tests, fewer integration tests, very few end-to-end tests`,`Equal numbers`,`Only integration tests`],1,`Fast feedback with confidence.`,'E']
+ [`@SpringBootTest loads?`,[`Only the web layer and controllers`,`The full application context`,`Only beans in the test's own package`,`A mock context with no real beans`],1,`Slowest, most realistic.`,'E'],
+ [`@DataJpaTest loads?`,[`The full application context, but with transactions disabled`,`JPA components (entities, repositories) with an embedded or configured DB`,`Repositories only, with every query mocked by Mockito`,`Controllers and services, with an in-memory repository stub`],1,`Transactions roll back after each test.`,'E'],
+ [`MockMvc lets you?`,[`Start a real embedded server on a random port for HTTP tests`,`Call controllers through the MVC stack without a network server`,`Mock the repository layer so controllers never touch the DB`,`Run load tests against controllers with many virtual users`],1,`Check status, headers and JSON.`,'M'],
+ [`Why test against a real database with Testcontainers?`,[`Faster test runs than any in-memory database can offer`,`Same SQL dialect, constraints and behaviour as production`,`No Docker dependency, so it runs on any CI agent`,`Spring Boot requires it for @DataJpaTest to start`],1,`H2 can hide dialect issues.`,'M'],
+ [`What's the test pyramid?`,[`Many end-to-end tests, fewer integration tests, very few unit tests`,`Many fast unit tests, fewer integration tests, very few end-to-end tests`,`Equal numbers of unit, integration and end-to-end tests per feature`,`Mostly integration tests, with unit tests only for utility classes`],1,`Fast feedback with confidence.`,'E']
 ], [
- [`What is @TestConfiguration for?`,[`Production config`,`Extra or overriding beans just for tests`,`Profiles`,`Logging`],1,`Doesn't get picked up by component scanning by default.`,'M'],
- [`@ServiceConnection with Testcontainers (Boot 3.1+) does?`,[`Nothing`,`Automatically wires the container's connection details into Spring (no manual properties)`,`Starts Docker`,`Mocks the DB`],1,`Replaces @DynamicPropertySource boilerplate.`,'H']
+ [`What is @TestConfiguration for?`,[`Production beans that tests may not replace`,`Extra or overriding beans just for tests`,`Activating a test profile for the context`,`Configuring log levels during test runs`],1,`Doesn't get picked up by component scanning by default.`,'M'],
+ [`@ServiceConnection with Testcontainers (Boot 3.1+) does?`,[`Starts Docker and pulls the image before any test class loads`,`Wires the container's connection details into Spring automatically`,`Replaces the container with an embedded database when offline`,`Shares one container across JVMs by registering it as a service`],1,`Replaces @DynamicPropertySource boilerplate.`,'H']
 ]);
 
 addQ('5.13a', [
  [`Circuit breaker states?`,[`ON / OFF`,`CLOSED, OPEN, HALF_OPEN`,`READY / BUSY`,`NEW / DONE`],1,`CLOSED = normal.`,'E'],
- [`What happens to calls when the breaker is OPEN?`,[`They wait`,`They fail fast (or use a fallback) without calling the service`,`They're queued`,`They retry forever`],1,`Gives the dependency time to recover.`,'E'],
- [`Which calls are safe to retry?`,[`All`,`Idempotent ones (or protected by an idempotency key)`,`Only POST`,`None`],1,`Retrying a charge can double-charge.`,'M'],
- [`What's a fallback?`,[`An error page`,`An alternative response when the call fails (cache, default, degraded)`,`A retry`,`A timeout`],1,`Graceful degradation.`,'E'],
- [`Why must every remote call have a timeout?`,[`Style`,`Without one, threads can wait forever and the caller collapses`,`HTTP requires it`,`For logging`],1,`Timeouts come first.`,'M']
+ [`What happens to calls when the breaker is OPEN?`,[`They wait in a queue until the breaker moves back to CLOSED`,`They fail fast (or use a fallback) without calling the service`,`They're retried with backoff until the service responds again`,`They pass through, but failures are no longer counted`],1,`Gives the dependency time to recover.`,'E'],
+ [`Which calls are safe to retry?`,[`Any call that failed with a 4xx client error`,`Idempotent ones (or protected by an idempotency key)`,`Only POST calls, since they create new resources`,`Any call, as long as backoff is configured`],1,`Retrying a charge can double-charge.`,'M'],
+ [`What's a fallback?`,[`A second attempt of the same call after a short backoff delay`,`An alternative response when the call fails (cache, default, degraded)`,`A timeout that cancels the call when the service is too slow`,`A breaker state where a few trial calls are let through`],1,`Graceful degradation.`,'E'],
+ [`Why must every remote call have a timeout?`,[`HTTP clients reject requests that don't declare a timeout`,`Without one, threads can wait forever and the caller collapses`,`Timeouts make retries idempotent, so duplicates are avoided`,`Load balancers drop connections that have no client timeout set`],1,`Timeouts come first.`,'M']
 ], [
- [`What is a bulkhead?`,[`A retry policy`,`Isolating resources (threads/permits) per dependency so one can't exhaust all`,`A cache`,`A breaker state`],1,`Like ship compartments.`,'M'],
- [`Sliding window by count vs time in Resilience4j?`,[`Same`,`Count-based uses the last N calls; time-based uses calls in the last N seconds`,`Time-based is deprecated`,`Count-based ignores failures`],1,`Pick what matches traffic patterns.`,'H']
+ [`What is a bulkhead?`,[`A retry policy that spaces attempts out to protect a dependency`,`Separate threads or permits per dependency so one can't exhaust all`,`A breaker state that blocks calls after a failure threshold`,`A rate limiter shared by all dependencies in one global pool`],1,`Like ship compartments.`,'M'],
+ [`Sliding window by count vs time in Resilience4j?`,[`Count-based opens after N failures in a row; time-based after N seconds down`,`Count-based uses the last N calls; time-based uses calls in the last N seconds`,`Time-based uses the last N calls; count-based uses calls in the last N seconds`,`Count-based resets every N calls; time-based ignores slow calls entirely`],1,`Pick what matches traffic patterns.`,'H']
 ]);
 
 addQ('5.13b', [
- [`Why can't a normal database transaction span two microservices?`,[`It can`,`Each service has its own database; there's no shared transaction`,`Java forbids it`,`Kafka forbids it`],1,`Sagas coordinate local transactions instead.`,'E'],
- [`What is a compensating action?`,[`A retry`,`A business "undo" of an earlier step, e.g. refund`,`A rollback in the same DB`,`A timeout`],1,`Must be idempotent.`,'E'],
- [`Orchestration means?`,[`Services react to each other's events`,`A central coordinator tells each service what to do next`,`No coordination`,`2PC`],1,`Choreography is the event-driven alternative.`,'M'],
+ [`Why can't a normal database transaction span two microservices?`,[`HTTP calls are stateless, so they can't carry a transaction ID`,`Each service has its own database; there's no shared transaction`,`Spring only supports @Transactional within a single bean`,`Message brokers like Kafka reject any transactional producer`],1,`Sagas coordinate local transactions instead.`,'E'],
+ [`What is a compensating action?`,[`A database rollback of the earlier step's transaction`,`A business "undo" of an earlier step, e.g. refund`,`A retry of the failed step with a new idempotency key`,`A timeout that cancels the step if it runs too long`],1,`Must be idempotent.`,'E'],
+ [`Orchestration means?`,[`Services react to each other's events with no central owner`,`A central coordinator tells each service what to do next`,`A coordinator runs two-phase commit across all databases`,`Each service polls a shared table to find its next task`],1,`Choreography is the event-driven alternative.`,'M'],
  [`In the outbox pattern, who publishes to Kafka?`,[`The request thread, inside the transaction`,`A separate relay reading the outbox table (polling or CDC)`,`The database`,`The consumer`],1,`After the transaction commits.`,'M'],
  [`What delivery guarantee does the outbox give?`,[`Exactly-once`,`At-least-once`,`At-most-once`,`None`],1,`Consumers must deduplicate.`,'M']
 ], [
- [`Why expose intermediate states (PENDING_PAYMENT) in a saga?`,[`For logging only`,`Steps happen over time; clients must see and handle in-progress states`,`Required by Kafka`,`To lock rows`],1,`No global atomic view exists.`,'M'],
- [`What is two-phase commit's main problem in microservices?`,[`Too fast`,`Blocking coordinator, poor availability, little support in modern brokers/databases at scale`,`It's insecure`,`It needs Kafka`],1,`Sagas trade atomicity for availability.`,'H']
+ [`Why expose intermediate states (PENDING_PAYMENT) in a saga?`,[`Kafka requires each saga state to be published as its own topic`,`Steps happen over time; clients must see and handle in-progress states`,`Intermediate states lock the rows until the saga finishes`,`They let the database roll back the saga automatically on failure`],1,`No global atomic view exists.`,'M'],
+ [`What is two-phase commit's main problem in microservices?`,[`It commits too eagerly, so partial writes are always visible`,`Blocking coordinator, poor availability, little broker/DB support`,`It doesn't encrypt messages between the participants`,`It works only when every service uses Kafka for messaging`],1,`Sagas trade atomicity for availability.`,'H']
 ]);
 
 addQ('5.13c', [
- [`What is an idempotent operation?`,[`One that runs fast`,`One that has the same effect whether it runs once or many times`,`One that can't fail`,`A read-only one`],1,`e.g. setting a value, not incrementing it.`,'E'],
- [`Who generates the idempotency key?`,[`The database`,`The client, once per logical operation`,`The load balancer`,`Kafka`],1,`Retries reuse the same key.`,'E'],
- [`What does the server store with each key?`,[`Nothing`,`The status and the response (plus a request hash)`,`The password`,`The IP address only`],1,`To replay the same response.`,'M'],
- [`Is <code>PUT /cars/7 {price: 100}</code> naturally idempotent?`,[`No`,`Yes: repeating it leaves the same state`,`Only once`,`Only with a key`],1,`Unlike POST /charges.`,'M'],
- [`How long should idempotency keys be kept?`,[`Forever`,`A bounded retention window (e.g. 24 h–7 days), long enough for retries`,`1 second`,`Until restart`],1,`Then expire them.`,'M']
+ [`What is an idempotent operation?`,[`One that returns the same response time on every call`,`One that has the same effect whether it runs once or many times`,`One that never fails, so it never needs to be retried`,`One that only reads data and never changes any state`],1,`e.g. setting a value, not incrementing it.`,'E'],
+ [`Who generates the idempotency key?`,[`The server, once per incoming HTTP request`,`The client, once per logical operation`,`The database, as the order's primary key`,`The client, freshly for every retry attempt`],1,`Retries reuse the same key.`,'E'],
+ [`What does the server store with each key?`,[`The client's credentials so retries can re-authenticate`,`The status and the response (plus a request hash)`,`Only the client IP address and the request time`,`A lock that expires once the first request finishes`],1,`To replay the same response.`,'M'],
+ [`Is <code>PUT /cars/7 {price: 100}</code> naturally idempotent?`,[`No: each PUT creates a new version of the car`,`Yes: repeating it leaves the same state`,`No: only GET and DELETE are idempotent by spec`,`Only if an idempotency key header is sent too`],1,`Unlike POST /charges.`,'M'],
+ [`How long should idempotency keys be kept?`,[`Forever, so any replay at any time returns the original result`,`A bounded retention window (e.g. 24 h–7 days), long enough for retries`,`Only until the response is sent, then delete it right away`,`Until the next deploy, since keys live in application memory`],1,`Then expire them.`,'M']
 ], [
- [`A retry arrives while the first request with the same key is still IN_PROGRESS. Reasonable response?`,[`Process it again`,`409 Conflict (or wait/poll) until the first finishes`,`200 with empty body`,`Delete the key`],1,`Never run the side effect twice.`,'H'],
- [`Why also pass the idempotency key to downstream providers like Stripe?`,[`Logging`,`So their side is protected from duplicates too if your call is retried`,`Required for TLS`,`It's free`],1,`End-to-end protection.`,'M']
+ [`A retry arrives while the first request with the same key is still IN_PROGRESS. Reasonable response?`,[`Process it again, since the first may have crashed`,`409 Conflict (or wait/poll) until the first finishes`,`200 OK with an empty body to stop further retries`,`404 Not Found, since no response is stored yet`],1,`Never run the side effect twice.`,'H'],
+ [`Why also pass the idempotency key to downstream providers like Stripe?`,[`Because Stripe rejects any request that doesn't include a key`,`So their side is protected from duplicates too if your call is retried`,`So the payment is encrypted end to end with the shared key`,`So they can refund automatically when your service crashes`],1,`End-to-end protection.`,'M']
 ]);
 
 addQ('6.1', [
- [`Why can't <code>synchronized</code> prevent overselling across two pods?`,[`It can`,`Each pod is a separate JVM with its own locks`,`synchronized is slow`,`Pods share memory`],1,`Shared state lives in the database.`,'E'],
- [`Which SQL makes "check stock and decrement" atomic?`,[`SELECT then UPDATE`,`UPDATE … SET stock = stock - 1 WHERE id = ? AND stock &gt;= 1`,`DELETE …`,`INSERT …`],1,`Then check rows affected.`,'E'],
- [`What should the app do when the conditional UPDATE affects 0 rows?`,[`Retry forever`,`Report sold out (or conflict) to the user`,`Ignore it`,`Insert stock`],1,`0 rows = condition failed.`,'M'],
- [`What safety net catches bugs that would make stock negative?`,[`A log line`,`A CHECK (stock &gt;= 0) constraint`,`A cron job`,`A cache`],1,`The DB rejects invalid states.`,'M'],
- [`Optimistic locking approach for the same problem?`,[`synchronized`,`@Version on Product, retry on OptimisticLockException`,`Bigger pool`,`READ UNCOMMITTED`],1,`Good when conflicts are rare.`,'M']
+ [`Why can't <code>synchronized</code> prevent overselling across two pods?`,[`synchronized is released whenever a DB call blocks`,`Each pod is a separate JVM with its own locks`,`Pods share memory, but locks aren't visible across them`,`The JIT removes synchronized on Spring singleton beans`],1,`Shared state lives in the database.`,'E'],
+ [`Which SQL makes "check stock and decrement" atomic?`,[`SELECT stock FROM … WHERE id = ?, then UPDATE … SET stock = ?`,`UPDATE … SET stock = stock - 1 WHERE id = ? AND stock &gt;= 1`,`UPDATE … SET stock = ? WHERE id = ? AND version IS NOT NULL`,`INSERT INTO reservations VALUES (?, 1), then SELECT COUNT(*)`],1,`Then check rows affected.`,'E'],
+ [`What should the app do when the conditional UPDATE affects 0 rows?`,[`Retry the UPDATE until a row is affected`,`Report sold out (or conflict) to the user`,`Ignore it, since the order is already saved`,`Insert a new stock row and try the update again`],1,`0 rows = condition failed.`,'M'],
+ [`What safety net catches bugs that would make stock negative?`,[`A unique index on (product_id, stock)`,`A CHECK (stock &gt;= 0) constraint`,`A nightly job that resets negatives to 0`,`An ERROR log line when stock drops below 0`],1,`The DB rejects invalid states.`,'M'],
+ [`Optimistic locking approach for the same problem?`,[`SELECT … FOR UPDATE on Product, then decrement`,`@Version on Product, retry on OptimisticLockException`,`synchronized on Product, retry on InterruptedException`,`READ UNCOMMITTED isolation, retry on deadlock errors`],1,`Good when conflicts are rare.`,'M']
 ], [
- [`Extremely hot item (100k buyers/sec). A common design?`,[`One SQL row for everyone`,`Pre-allocated tokens in Redis (DECR) then async persistence, or splitting stock into buckets`,`synchronized`,`Bigger DB only`],1,`Spread the contention.`,'H'],
- [`A user double-clicks "Buy". Which protects against two orders even with correct stock handling?`,[`CHECK constraint`,`An idempotency key per checkout attempt`,`Indexes`,`READ COMMITTED`],1,`Stock logic doesn't stop duplicate requests.`,'M']
+ [`Extremely hot item (100k buyers/sec). A common design?`,[`One row with SERIALIZABLE isolation and a bigger connection pool`,`Redis DECR tokens with async persistence, or stock split into buckets`,`A synchronized method on the stock service, scaled to more pods`,`A cache of stock in each pod, synced to the DB every minute`],1,`Spread the contention.`,'H'],
+ [`A user double-clicks "Buy". Which protects against two orders even with correct stock handling?`,[`A CHECK constraint on the order total`,`An idempotency key per checkout attempt`,`An index on orders(user_id, created_at)`,`READ COMMITTED isolation on checkout`],1,`Stock logic doesn't stop duplicate requests.`,'M']
 ]);
 
 addQ('6.2', [
- [`What is a memory leak in Java?`,[`Memory the GC forgets`,`Objects still referenced but no longer needed, so the GC can't free them`,`Native code bugs only`,`Large objects`],1,`Reachable but useless.`,'E'],
+ [`What is a memory leak in Java?`,[`Objects the GC forgets to track after a full collection cycle`,`Objects still referenced but no longer needed, so the GC can't free them`,`Unreferenced objects the GC hasn't collected yet at that moment`,`Memory used by large arrays that the JVM can't compact`],1,`Reachable but useless.`,'E'],
  [`Which file format is a Java heap dump?`,[`.jfr`,`.hprof`,`.log`,`.class`],1,`Open it in Eclipse MAT or IntelliJ.`,'E'],
  [`Which tool gives a cheap overview of what's filling the heap?`,[`Thread dump`,`jcmd GC.class_histogram`,`top`,`EXPLAIN`],1,`Counts and bytes per class.`,'M'],
- [`What's wrong with a static <code>HashMap</code> cache with no eviction?`,[`Nothing`,`It grows forever and is shared across threads unsafely`,`It's slow`,`It's immutable`],1,`Use a bounded concurrent cache.`,'E'],
- [`Restarting a leaking service every night is?`,[`A fix`,`A workaround that hides the bug and loses evidence`,`Best practice`,`Required by Kubernetes`],1,`Capture a dump, find the root cause.`,'M']
+ [`What's wrong with a static <code>HashMap</code> cache with no eviction?`,[`Its entries are weakly held, so the GC may drop them`,`It grows forever and is shared across threads unsafely`,`Static maps are copied per thread, wasting memory`,`Lookups slow down as it rehashes on every put`],1,`Use a bounded concurrent cache.`,'E'],
+ [`Restarting a leaking service every night is?`,[`A proper fix, since the heap starts clean each day`,`A workaround that hides the bug and loses evidence`,`Best practice recommended by the JVM documentation`,`A fix, as long as the restart is during low traffic`],1,`Capture a dump, find the root cause.`,'M']
 ], [
- [`What does the "path to GC roots" in MAT show?`,[`Allocation sites`,`The chain of references keeping an object alive`,`CPU usage`,`Thread states`],1,`Points straight at the culprit.`,'M'],
- [`Old gen usage looks like a sawtooth whose low points stay flat. Leak?`,[`Yes`,`Probably not: memory is reclaimed back to a stable level`,`Always`,`Only with G1`],1,`A rising floor is the signal.`,'M']
+ [`What does the "path to GC roots" in MAT show?`,[`The stack traces where the object was allocated`,`The chain of references keeping an object alive`,`The sequence of GC cycles the object survived`,`The threads that last read or wrote the object`],1,`Points straight at the culprit.`,'M'],
+ [`Old gen usage looks like a sawtooth whose low points stay flat. Leak?`,[`Yes: every sawtooth peak means a growing heap`,`Probably not: memory is reclaimed back to a stable level`,`Yes: old gen should drop to near zero after each GC`,`Only if the collector in use is G1 rather than ZGC`],1,`A rising floor is the signal.`,'M']
 ]);
 
 addQ('6.3', [
- [`What is thread-pool starvation?`,[`Too much CPU`,`All pool threads are busy waiting, so queued work that would unblock them never runs`,`A memory leak`,`A deadlock between two locks`],1,`Nothing makes progress.`,'E'],
- [`What does a thread dump typically show in this case?`,[`Found one Java-level deadlock`,`All pool threads WAITING in join/get at the same place`,`High CPU threads`,`Nothing`],1,`No lock cycle is reported.`,'M'],
- [`Why doesn't simply enlarging the pool fix it?`,[`It does`,`It only raises the threshold; enough concurrent outer tasks still fill it`,`Pools can't grow`,`The JVM forbids it`],1,`Remove the blocking dependency.`,'M'],
- [`Best way to wait for two async results without blocking a pool thread?`,[`join() both`,`thenCombine and return the combined future`,`Thread.sleep`,`get() in a loop`],1,`Composition.`,'E'],
- [`What should blocking HTTP calls run on?`,[`The common ForkJoinPool`,`A dedicated bounded I/O executor (or virtual threads)`,`The main thread`,`A parallel stream`],1,`Separate from CPU work.`,'M']
+ [`What is thread-pool starvation?`,[`Two pool threads each hold a lock the other needs, forever`,`Pool threads all block waiting on queued work that can never run`,`The pool's queue fills up, so new tasks get rejected by policy`,`Idle pool threads time out and are never recreated again`],1,`Nothing makes progress.`,'E'],
+ [`What does a thread dump typically show in this case?`,[`Found one Java-level deadlock between two pool threads`,`All pool threads WAITING in join/get at the same place`,`A few RUNNABLE threads burning CPU in a tight loop`,`All pool threads BLOCKED on one synchronized monitor`],1,`No lock cycle is reported.`,'M'],
+ [`Why doesn't simply enlarging the pool fix it?`,[`Bigger pools trigger more GC, which slows the waiting threads`,`It only raises the threshold; enough concurrent outer tasks still fill it`,`The common pool's size is fixed and can't be changed at all`,`New threads only pick up new tasks, never the queued ones`],1,`Remove the blocking dependency.`,'M'],
+ [`Best way to wait for two async results without blocking a pool thread?`,[`join() both futures inside thenApply`,`thenCombine and return the combined future`,`allOf(…).get() on the calling pool thread`,`supplyAsync a task that calls get() on each`],1,`Composition.`,'E'],
+ [`What should blocking HTTP calls run on?`,[`The common ForkJoinPool, via parallel streams`,`A dedicated bounded I/O executor (or virtual threads)`,`A single-thread executor so calls stay ordered`,`An unbounded cached pool so calls never queue`],1,`Separate from CPU work.`,'M']
 ], [
- [`@Async method A calls @Async method B on the same executor and calls .get(). Risk?`,[`None`,`Starvation when all executor threads are A's waiting on B's queued tasks`,`Only slower`,`Compile error`],1,`Same pattern as nested supplyAsync.`,'H'],
- [`Why add timeouts even after fixing starvation?`,[`Style`,`A stuck dependency then fails fast instead of hanging the batch`,`Required by CompletableFuture`,`For logging`],1,`Defence in depth.`,'M']
+ [`@Async method A calls @Async method B on the same executor and calls .get(). Risk?`,[`B's result is lost because futures can't cross executors`,`Starvation when all executor threads are A's waiting on B's queued tasks`,`A deadlock reported by the JVM between A's and B's locks`,`Only extra latency, since get() frees the thread while waiting`],1,`Same pattern as nested supplyAsync.`,'H'],
+ [`Why add timeouts even after fixing starvation?`,[`CompletableFuture requires a timeout on each stage to complete`,`A stuck dependency then fails fast instead of hanging the batch`,`Timeouts clear the pool's queue, so starvation can't come back`,`Timeouts make the HTTP calls idempotent, so retries are safe`],1,`Defence in depth.`,'M']
 ]);
 
 addQ('6.4', [
- [`When does @Transactional borrow a DB connection?`,[`At application start`,`At the first database access in the transaction, held until commit`,`Per statement`,`Never`],1,`Then it's held through everything inside.`,'E'],
- [`Why is an HTTP call inside a transaction dangerous?`,[`It's not`,`The connection sits idle but unavailable while waiting; slow providers exhaust the pool`,`HTTP is slow`,`It breaks JSON`],1,`Move remote calls outside.`,'E'],
- [`Hikari error "Connection is not available, request timed out" usually means?`,[`DB down`,`The pool is empty: connections are held too long or leaked`,`Bad SQL`,`Network DNS`],1,`Check usage time metrics.`,'M'],
- [`Why does a slow checkout affect health checks?`,[`It doesn't`,`Health checks and other endpoints need connections from the same exhausted pool`,`They share threads only`,`Kubernetes bug`],1,`Blast radius of one slow dependency.`,'M'],
+ [`When does @Transactional borrow a DB connection?`,[`At application start, one per bean, held for the bean's life`,`At the first database access in the transaction, held until commit`,`Per SQL statement, returned to the pool after each one`,`At commit time only, when the changes are flushed to the DB`],1,`Then it's held through everything inside.`,'E'],
+ [`Why is an HTTP call inside a transaction dangerous?`,[`HTTP clients roll back the transaction when a response is slow`,`The connection is held idle while waiting; slow calls drain the pool`,`The HTTP call joins the transaction and can't be retried later`,`JSON parsing inside a transaction disables Hibernate's flush`],1,`Move remote calls outside.`,'E'],
+ [`Hikari error "Connection is not available, request timed out" usually means?`,[`The SQL is invalid and the driver rejected the statement`,`The pool is empty: connections are held too long or leaked`,`The query hit a deadlock and the database aborted it`,`The JDBC driver version doesn't match the database server`],1,`Check usage time metrics.`,'M'],
+ [`Why does a slow checkout affect health checks?`,[`Health checks share the checkout's Tomcat thread and wait on it`,`Health checks need connections from the same exhausted pool`,`Kubernetes slows probes down whenever CPU usage is high`,`Actuator pauses health checks while a transaction is open`],1,`Blast radius of one slow dependency.`,'M'],
  [`Where should the confirmation email be sent?`,[`Inside the transaction`,`After commit (AFTER_COMMIT listener or outbox)`,`Before saving`,`In the controller before the service`],1,`Only for committed orders.`,'E']
 ], [
- [`What does <code>spring.jpa.open-in-view=false</code> change?`,[`Disables JPA`,`The persistence context closes after the service layer, so connections aren't held during view/JSON rendering`,`Enables lazy loading everywhere`,`Nothing`],1,`Boot warns when it's enabled by default.`,'H'],
- [`Payment succeeded but the app crashed before marking the order paid. Recovery?`,[`Ignore`,`Reconcile PENDING orders with the provider using the idempotency key / order id`,`Charge again`,`Delete the order`],1,`Design for crashes between steps.`,'H']
+ [`What does <code>spring.jpa.open-in-view=false</code> change?`,[`Lazy loading works in views, since the session stays open longer`,`The EntityManager closes after the service layer, not after rendering`,`JPA repositories are disabled for web controllers in the app`,`Spring stops wrapping controller methods in transactions`],1,`Boot warns when it's enabled by default.`,'H'],
+ [`Payment succeeded but the app crashed before marking the order paid. Recovery?`,[`Charge again with a fresh idempotency key to be safe`,`Reconcile PENDING orders with the provider by order id or key`,`Delete PENDING orders older than an hour and email users`,`Mark every PENDING order as paid when the app restarts`],1,`Design for crashes between steps.`,'H']
 ]);
 
 addQ('6.5', [
- [`What triggers a cache stampede?`,[`A full cache`,`A popular key expiring while many requests arrive`,`Too many keys`,`Slow network only`],1,`All of them miss together.`,'E'],
- [`What does "single-flight" mean?`,[`One request per second`,`For each key, only one request loads it; others wait for that result`,`One thread per pod`,`One cache per service`],1,`Coalescing.`,'E'],
- [`Caffeine's <code>cache.get(key, loader)</code> under concurrent misses?`,[`Calls the loader many times`,`Calls the loader once per key; other callers wait`,`Throws`,`Returns null`],1,`Built-in coalescing within a JVM.`,'M'],
- [`What is negative caching?`,[`Caching errors forever`,`Briefly caching "not found" so missing keys don't hit the DB every time`,`Deleting cache entries`,`A bug`],1,`Defends against cache penetration.`,'M'],
- [`Why does a stampede get worse over time once it starts?`,[`It doesn't`,`The DB slows down, so the reload takes longer and more requests miss meanwhile`,`The cache grows`,`GC`],1,`A feedback loop.`,'M']
+ [`What triggers a cache stampede?`,[`The cache reaching its maximum size and evicting`,`A popular key expiring while many requests arrive`,`Too many distinct keys being written at once`,`A slow network between the app and the cache`],1,`All of them miss together.`,'E'],
+ [`What does "single-flight" mean?`,[`Each pod runs only one request per second for each key`,`For each key, only one request loads it; others wait for that result`,`Only one thread per pod may read the cache at a time`,`Each key is stored in exactly one cache across all services`],1,`Coalescing.`,'E'],
+ [`Caffeine's <code>cache.get(key, loader)</code> under concurrent misses?`,[`Calls the loader once per caller, then keeps the last`,`Calls the loader once per key; other callers wait`,`Throws, since concurrent misses must be handled by you`,`Returns null to the others until the first load ends`],1,`Built-in coalescing within a JVM.`,'M'],
+ [`What is negative caching?`,[`Caching error responses permanently so failures stay consistent`,`Briefly caching "not found" so missing keys don't hit the DB every time`,`Evicting entries early when the DB reports a newer version`,`Storing deltas instead of whole values to save cache memory`],1,`Defends against cache penetration.`,'M'],
+ [`Why does a stampede get worse over time once it starts?`,[`The cache grows with each miss until it evicts the hot key again`,`The DB slows down, so the reload takes longer and more requests miss meanwhile`,`GC pauses from failed lookups block the cache's eviction thread`,`Each miss resets the TTL, so the key keeps expiring sooner`],1,`A feedback loop.`,'M']
 ], [
- [`How do you make only one pod reload a key cluster-wide?`,[`synchronized`,`A distributed lock, e.g. Redis SET key NX PX with a short TTL`,`A static field`,`A bigger TTL`],1,`Others serve stale data or wait.`,'H'],
- [`What does "stale-while-revalidate" mean?`,[`Never refresh`,`Serve the slightly old value while refreshing in the background`,`Serve errors`,`Refresh synchronously`],1,`Like Caffeine's refreshAfterWrite.`,'M']
+ [`How do you make only one pod reload a key cluster-wide?`,[`A synchronized block around the reload in each pod`,`A distributed lock, e.g. Redis SET key NX PX with a short TTL`,`A static AtomicBoolean flag checked before reloading`,`A longer TTL on the key so it expires less often`],1,`Others serve stale data or wait.`,'H'],
+ [`What does "stale-while-revalidate" mean?`,[`Block callers until the value is refreshed, then serve it new`,`Serve the slightly old value while refreshing in the background`,`Serve the old value until a client explicitly purges it`,`Return an error while the value is being revalidated`],1,`Like Caffeine's refreshAfterWrite.`,'M']
 ]);
 
 addQ('6.6', [
- [`Why are Spring singleton beans' fields risky?`,[`They're slow`,`All request threads share them, so mutable fields can race`,`They're final`,`They're on the stack`],1,`Keep beans stateless.`,'E'],
+ [`Why are Spring singleton beans' fields risky?`,[`They're recreated per request, so field values get lost`,`All request threads share them, so mutable fields can race`,`Their fields live on each thread's stack and aren't shared`,`Spring makes their fields final, so they can't be updated`],1,`Keep beans stateless.`,'E'],
  [`Is <code>java.time.DateTimeFormatter</code> thread-safe?`,[`No`,`Yes: it's immutable`,`Only with ThreadLocal`,`Only in Java 21`],1,`Share one instance.`,'E'],
- [`Is <code>StringBuilder</code> thread-safe?`,[`Yes`,`No (StringBuffer is synchronized)`,`Only for append`,`Only in Java 17`],1,`Keep StringBuilders local.`,'M'],
- [`Why do concurrency bugs like this pass unit tests?`,[`They don't`,`Tests are single-threaded; the bug only appears under interleaving`,`JUnit locks objects`,`The JIT prevents them`],1,`Use stress tests and code review.`,'E'],
- [`Fix for a shared SimpleDateFormat if you can't switch to java.time?`,[`Make it static`,`Create one per call, use a ThreadLocal, or synchronize access`,`Make it volatile`,`Nothing`],1,`DateTimeFormatter is still the best fix.`,'M']
+ [`Is <code>StringBuilder</code> thread-safe?`,[`Yes (its append is synchronized)`,`No (StringBuffer is synchronized)`,`No (but StringBuffer isn't either)`,`Yes, since Java 9's compact strings`],1,`Keep StringBuilders local.`,'M'],
+ [`Why do concurrency bugs like this pass unit tests?`,[`JUnit runs each test in a lock, which hides races`,`Tests are single-threaded; the bug only appears under interleaving`,`The JIT removes races in short-running test methods`,`Mockito proxies synchronize every call on a mocked bean`],1,`Use stress tests and code review.`,'E'],
+ [`Fix for a shared SimpleDateFormat if you can't switch to java.time?`,[`Make it a static final field so all threads share it safely`,`Create one per call, use a ThreadLocal, or synchronize access`,`Declare it volatile so every thread sees its latest state`,`Call clone() on it once at startup and share the copy`],1,`DateTimeFormatter is still the best fix.`,'M']
 ], [
- [`Is <code>HashMap</code> safe if threads only read it after it was fully built and safely published?`,[`No, never`,`Yes: concurrent reads of an unchanging, safely published map are fine`,`Only with volatile values`,`Only for String keys`],1,`Publish via final field, volatile, or before starting threads.`,'H'],
- [`Jackson's ObjectMapper: create per request or share?`,[`Per request`,`Share one configured instance; it's thread-safe and expensive to create`,`Per thread`,`Per field`],1,`Don't reconfigure it while in use.`,'M']
+ [`Is <code>HashMap</code> safe if threads only read it after it was fully built and safely published?`,[`No: get() may still rehash the table and corrupt it on reads`,`Yes: concurrent reads of an unchanging, safely published map are fine`,`Only if the values are volatile, so updates become visible`,`No: even reads need ConcurrentHashMap to avoid infinite loops`],1,`Publish via final field, volatile, or before starting threads.`,'H'],
+ [`Jackson's ObjectMapper: create per request or share?`,[`Create one per request, since its internal caches aren't thread-safe`,`Share one configured instance; it's thread-safe and expensive to create`,`Use one per thread via ThreadLocal, as its config isn't synchronized`,`Create one per call; construction is cheap and avoids shared state`],1,`Don't reconfigure it while in use.`,'M']
 ]);
 </script>
 <script>
