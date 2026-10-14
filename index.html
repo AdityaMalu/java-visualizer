@@ -5240,7 +5240,7 @@ finally { throw new RuntimeException("B"); }</pre>The caller sees?`,[`A, with B 
  [`The lightest-weight strategy in modern Java?`,[`A lambda for a functional interface`,`An abstract class per algorithm`,`A static method plus a switch`,`A reflective method call`],0,`Comparator, Function, Supplier: any functional interface is a strategy slot.`,'M'],
  [`<code>enum Fee { WEEKEND { long apply(…) {…} }, … ; abstract long apply(…); }</code> is?`,[`Illegal: enums can't have abstract methods`,`The State pattern`,`A strategy per constant (constant-specific bodies)`,`Template method`],2,`A compact, closed set of strategies.`,'H']],
 '3.7e':[
- [`Auction has <code>@Version</code>. Two pods close it at the same time through JPA. Outcome?`,[`Both commit; the last one wins`,`They deadlock on the row`,`The second waits, then commits`,`One commits; the other gets OptimisticLockException`],3,`The versioned UPDATE matches 0 rows for the loser.`,'H'],
+ [`Auction has <code>@Version</code>. Two pods close it at the same time through JPA. Outcome?`,[`Both commit; the last write wins`,`They deadlock on the row lock`,`The second blocks, then commits too`,`One commits; the other gets OptimisticLockException`],3,`The versioned UPDATE matches 0 rows for the loser.`,'H'],
  [`Auctions must close at 18:00, and you run 4 pods. Where should that transition run?`,[`@Scheduled on every pod is harmless`,`One job, with a lock or conditional UPDATE`,`In the Auction entity's constructor`,`A timer in the client's browser`],1,`Only one pod should do it, and the DB update must be idempotent.`,'H']],
 '3.7f':[
  [`Across microservices, the Observer pattern usually becomes?`,[`Direct HTTP calls to every service`,`Shared database triggers`,`Events on a broker via the Outbox pattern`,`RMI callbacks`],2,`The outbox makes "save" and "publish" atomic.`,'M'],
@@ -6809,7 +6809,7 @@ addQ('2.10', [
  [`<code>List&lt;?&gt;</code> means?`,[`A list of Objects; you can add anything`,`Unknown element type: read only, no adds`,`A raw list with no type checks at all`,`A list that can only contain nulls`],1,`Unbounded wildcard.`,'M'],
  [`Generic method syntax?`,[`public T &lt;T&gt; first(List&lt;T&gt; l)`,`public &lt;T&gt; T first(List&lt;T&gt; l)`,`public T first&lt;T&gt;(List l)`,`public first(List&lt;T&gt; l)`],1,`Type parameters come before the return type.`,'M'],
  [`What does <code>&lt;T extends Comparable&lt;T&gt;&gt;</code> mean?`,[`T must be a subclass of the Comparable class`,`T must be comparable to itself, so compareTo can be called`,`T is any type at all; the bound is a hint`,`T must be a primitive such as int or long`],1,`A bounded type parameter.`,'M'],
- [`Can you create a <code>List&lt;int&gt;</code>?`,[`Yes, generics accept primitive types`,`No: type arguments must be reference types; use List&lt;Integer&gt;`,`Only from Java 21 with value classes`,`Only when declared with var`],1,`Primitives aren't allowed (until Valhalla).`,'E']
+ [`Can you create a <code>List&lt;int&gt;</code>?`,[`Yes: autoboxing makes primitive type arguments legal`,`No: needs a reference type, e.g. List&lt;Integer&gt;`,`Only since Java 21, via value classes`,`Yes, if the variable is declared with var`],1,`Primitives aren't allowed (until Valhalla).`,'E']
 ], [
  [`What is a bridge method?`,[`A deprecated API kept for compatibility`,`A synthetic method javac adds after erasure`,`A method connecting two threads`,`A default method in an interface`],1,`e.g. compareTo(Object) calling compareTo(Car).`,'H'],
  [`Why does <code>Collections.copy(List&lt;? super T&gt; dest, List&lt;? extends T&gt; src)</code> use two wildcards?`,[`Only for style and readability`,`src produces (extends), dest consumes (super)`,`Type erasure requires two wildcards`,`It makes copying faster`],1,`Producer Extends, Consumer Super.`,'H']
@@ -6851,8 +6851,8 @@ addQ('2.13', [
 addQ('2.14', [
  [`Which Optional method throws if empty?`,[`orElse`,`orElseThrow`,`isPresent`,`ofNullable`],1,`Prefer orElseThrow with a clear exception.`,'E'],
  [`<code>Optional.of(null)</code>?`,[`Returns empty`,`Throws NullPointerException`,`Returns Optional[null]`,`Compile error`],1,`Use ofNullable for maybe-null values.`,'M'],
- [`What do records generate?`,[`Setters for every component`,`Final fields, constructor, accessors, equals/hashCode`,`A builder for optional components`,`A public no-arg constructor`],1,`Accessors are named like the components: name().`,'E'],
- [`Can a record extend another class?`,[`Yes, any non-final class`,`No: records extend Record; interfaces only`,`Only abstract classes`,`Only other records`],1,`Records are final too.`,'M'],
+ [`What do records generate?`,[`Private fields, getters, setters, equals/hashCode`,`Final fields, constructor, accessors, equals/hashCode`,`Final fields, no-arg constructor, getX() getters`,`Static fields, a builder, accessors and toString`],1,`Accessors are named like the components: name().`,'E'],
+ [`Can a record extend another class?`,[`Yes: any non-final class, like a normal class`,`No: records extend Record; interfaces only`,`Only abstract classes with a no-arg constructor`,`Only other records, forming record hierarchies`],1,`Records are final too.`,'M'],
  [`Pattern matching: <code>if (obj instanceof String s &amp;&amp; s.length() &gt; 3)</code> — is s usable in the second condition?`,[`No: s is only in scope inside the if body`,`Yes: s is in scope once the instanceof is true`,`Only after an explicit cast to String`,`Only in Java 25 and later`],1,`Flow scoping.`,'M']
 ], [
  [`What is a record pattern: <code>if (o instanceof Point(int x, int y))</code>?`,[`Invalid syntax in current Java`,`Deconstructs the record and binds x and y`,`Creates a new Point from x and y`,`Checks equality against Point(x, y)`],1,`Also works in switch cases.`,'H'],
@@ -6863,7 +6863,7 @@ addQ('2.14', [
 addQ('3.1', [
  [`Which pillar lets one variable of type Shape hold a Circle or a Square and call <code>area()</code> on either?`,[`Encapsulation`,`Polymorphism`,`Abstraction only`,`Composition`],1,`One interface, many behaviours.`,'E'],
  [`What is abstraction?`,[`Hiding fields behind private modifiers`,`Showing what it does, hiding how`,`Copying objects between layers`,`Using abstract classes only`],1,`Interfaces are the main tool.`,'E'],
- [`Which call is resolved by dynamic dispatch?`,[`A static method call`,`A private method call`,`An overridden instance method call`,`A constructor call`],2,`Static, private and final methods are bound statically.`,'M'],
+ [`Which call is resolved by dynamic dispatch?`,[`A static method called via an instance`,`A private method called through this`,`An overridden instance method call`,`A super.method() call in a subclass`],2,`Static, private and final methods are bound statically.`,'M'],
  [`What is a vtable?`,[`A table of the JVM's threads`,`Per-class table of method entries`,`A table in the database schema`,`A GC bookkeeping structure`],1,`Overrides replace their parent's entries.`,'M'],
  [`Why is "a setter for every field" weak encapsulation?`,[`Setters are slow compared with fields`,`Callers can set any state, bypassing the rules`,`Setters can't be overridden later`,`It isn't weak; it's the right approach`],1,`Prefer meaningful methods like withdraw(amount).`,'M']
 ], [
@@ -6874,7 +6874,7 @@ addQ('3.1', [
 addQ('3.2', [
  [`Overloading is decided...`,[`At run time, from the object's class`,`At compile time, from argument types`,`By the JIT after profiling`,`By the class loader`],1,`Overriding is decided at run time.`,'E'],
  [`Which is NOT a valid overload of <code>void log(String s)</code>?`,[`void log(String s, int level)`,`void log(Object o)`,`int log(String s)`,`void log(int code)`],2,`Return type alone doesn't distinguish overloads.`,'M'],
- [`What does <code>@Override</code> do?`,[`Makes the method faster`,`Asks the compiler to verify it overrides`,`Makes the method final`,`Nothing at all`],1,`Catches typos that would create a new overload.`,'E'],
+ [`What does <code>@Override</code> do?`,[`Tells the JVM to dispatch the call dynamically`,`Asks the compiler to verify it overrides`,`Forces subclasses to override the method too`,`Hides the parent method instead of overriding`],1,`Catches typos that would create a new overload.`,'E'],
  [`Overloads <code>m(int...)</code> and <code>m(int, int)</code>. <code>m(1, 2)</code> calls?`,[`m(int...)`,`m(int, int)`,`Ambiguous`,`Neither`],1,`Varargs is the last resort.`,'M'],
  [`Can an override throw a new checked exception the parent method didn't declare?`,[`Yes`,`No`,`Only RuntimeException subclasses (which aren't checked)`,`Only if final`],1,`It may throw fewer or narrower checked exceptions.`,'M']
 ], [
@@ -6889,8 +6889,8 @@ addQ('3.3', [
  [`The parent has only <code>Parent(String name)</code>. Child has no explicit super call. Result?`,[`It works: Java adds super() with null`,`Compile error: no default constructor in Parent`,`Runtime error when Child is created`,`It compiles; name is simply null`],1,`Child must call super(name).`,'M'],
  [`Where do instance initialiser blocks <code>{ … }</code> run?`,[`Before super(), at the very start`,`After super(), with field initialisers`,`After the constructor body finishes`,`Only once per class`],1,`They're copied into each constructor.`,'M']
 ], [
- [`Java 25 flexible constructor bodies allow what before <code>super(...)</code>?`,[`Anything, including using this`,`Statements not touching this (e.g. checks)`,`Nothing at all`,`Only calls to static methods`],1,`JEP 513.`,'H'],
- [`Static fields of Child depend on Parent's static fields. Order guaranteed?`,[`No, the order is unspecified`,`Yes: initialising Child first initialises Parent`,`Only alphabetical by class name`,`Only for final static fields`],1,`Superclass initialisation precedes subclass.`,'M']
+ [`Java 25 flexible constructor bodies allow what before <code>super(...)</code>?`,[`Any statements, including calls on this`,`Statements not touching this (e.g. checks)`,`Only calls to static helper methods`,`Only local variable declarations`],1,`JEP 513.`,'H'],
+ [`Static fields of Child depend on Parent's static fields. Order guaranteed?`,[`No: the JVM may initialise them in any order`,`Yes: initialising Child first initialises Parent`,`Only if both share the same class loader`,`Only for static final compile-time constants`],1,`Superclass initialisation precedes subclass.`,'M']
 ]);
 
 addQ('3.4', [
@@ -6929,111 +6929,111 @@ addQ('3.6', [
 addQ('3.7a', [
  [`How do you stop other code from creating a second instance of a singleton class?`,[`Make the class abstract`,`Make the constructor private`,`Make fields static`,`Use final fields`],1,`And expose one instance.`,'E'],
  [`Eager singleton <code>static final X INSTANCE = new X();</code> is created when?`,[`When the JVM starts`,`When the class is first initialised`,`Never, until getInstance() runs twice`,`On each call to INSTANCE`],1,`Class init is lazy in Java.`,'M'],
- [`Why is double-checked locking easy to get wrong?`,[`It's slow under contention`,`Without volatile, a half-built object leaks`,`It always deadlocks`,`It's illegal in modern Java`],1,`See 4.6.`,'M'],
- [`Why are singletons often criticised?`,[`They're slow`,`Hidden global state, hard to replace in tests`,`They can't have methods`,`They waste memory`],1,`DI singletons avoid most problems.`,'E'],
- [`How many instances does a Spring singleton bean have?`,[`One per thread`,`One per application context`,`One per request`,`One per JVM always`],1,`Two contexts would create two.`,'M']
+ [`Why is double-checked locking easy to get wrong?`,[`The outer check is slow under contention`,`Without volatile, a half-built object leaks`,`The inner synchronized block can deadlock`,`Static fields can't be read outside the lock`],1,`See 4.6.`,'M'],
+ [`Why are singletons often criticised?`,[`They're slow because every call is synchronized`,`Hidden global state, hard to replace in tests`,`They can't implement interfaces or be mocked`,`They force all their methods to be static`],1,`DI singletons avoid most problems.`,'E'],
+ [`How many instances does a Spring singleton bean have?`,[`One per thread using it`,`One per application context`,`One per JVM, globally`,`One per injection point`],1,`Two contexts would create two.`,'M']
 ], [
- [`What does <code>readResolve()</code> fix?`,[`Reflection attacks`,`Deserialization creating a second singleton instance`,`Thread safety`,`Class loading`],1,`Return INSTANCE from it.`,'M'],
- [`Two class loaders load the same singleton class. How many instances?`,[`One`,`Two: each loader has its own class and static state`,`None`,`Undefined`],1,`Singleton is per class per loader.`,'H']
+ [`What does <code>readResolve()</code> fix?`,[`Reflection calling the private constructor twice`,`Deserialization creating a second singleton instance`,`Cloning producing a second singleton instance`,`Two threads racing to create the first instance`],1,`Return INSTANCE from it.`,'M'],
+ [`Two class loaders load the same singleton class. How many instances?`,[`One: static state is shared across the whole JVM`,`Two: each loader has its own class and static state`,`One: the second loader reuses the first's class`,`None: the second load throws a LinkageError`],1,`Singleton is per class per loader.`,'H']
 ]);
 
 addQ('3.7b', [
- [`What does a factory method return?`,[`Always a new concrete class type`,`An object typed as an interface or base class`,`void`,`A Class object`],1,`Callers don't see the concrete type.`,'E'],
+ [`What does a factory method return?`,[`Always a new instance of one concrete class`,`An object typed as an interface or base class`,`A Class object for the caller to instantiate`,`A Supplier that builds the object lazily`],1,`Callers don't see the concrete type.`,'E'],
  [`<code>List.of(...)</code> is an example of?`,[`Builder`,`Static factory method`,`Adapter`,`Observer`],1,`It can return different hidden implementations.`,'E'],
- [`What smell suggests replacing a switch-factory with a registry?`,[`It has 2 cases`,`Every new type means editing the switch`,`It returns interfaces`,`It's static`],1,`Open/closed.`,'M'],
- [`Abstract Factory vs Factory Method?`,[`Same`,`Abstract Factory creates families of related objects; a factory method creates one product`,`Factory method is for singletons`,`Abstract Factory is a builder`],1,`e.g. a UI kit per platform.`,'M'],
- [`In Spring, a FactoryBean is used to?`,[`Create beans whose construction is complex, returning the product from getObject()`,`Replace @Bean`,`Inject lists`,`Configure logging`],0,`e.g. older SessionFactory setups.`,'H']
+ [`What smell suggests replacing a switch-factory with a registry?`,[`The switch has just two or three cases`,`Every new type means editing the switch`,`Its return type is an interface`,`The factory method is declared static`],1,`Open/closed.`,'M'],
+ [`Abstract Factory vs Factory Method?`,[`Same pattern; Abstract Factory is just declared abstract`,`Abstract Factory makes related families; Factory Method one product`,`Factory Method makes related families; Abstract Factory one product`,`Abstract Factory is a Builder that hides construction steps`],1,`e.g. a UI kit per platform.`,'M'],
+ [`In Spring, a FactoryBean is used to?`,[`Build complex objects; getObject() returns the actual bean`,`Replace @Bean methods in Java configuration classes`,`Inject all beans of one type as a List`,`Decide which profile's beans get registered`],0,`e.g. older SessionFactory setups.`,'H']
 ], [
- [`Can a static factory cache and return the same instance?`,[`No`,`Yes, e.g. Integer.valueOf, Boolean.valueOf`,`Only for strings`,`Only singletons`],1,`Constructors always create a new object.`,'M'],
- [`What naming conventions do static factories use?`,[`newX only`,`of, from, valueOf, getInstance, newInstance, create`,`make only`,`Any, there are no conventions`],1,`They describe what the factory does.`,'M']
+ [`Can a static factory cache and return the same instance?`,[`No: a factory must return a new instance`,`Yes, e.g. Integer.valueOf, Boolean.valueOf`,`Only for String, via the string pool`,`Only if the class is an enum singleton`],1,`Constructors always create a new object.`,'M'],
+ [`What naming conventions do static factories use?`,[`new followed by the type name, e.g. newList`,`of, from, valueOf, getInstance, newInstance, create`,`get, set, is and has, like JavaBeans`,`make, build, construct and init`],1,`They describe what the factory does.`,'M']
 ]);
 
 addQ('3.7c', [
- [`What problem does Builder mainly solve?`,[`Thread safety`,`Constructors with many (optional) parameters that are hard to read`,`Memory leaks`,`Slow startup`],1,`Telescoping constructors.`,'E'],
+ [`What problem does Builder mainly solve?`,[`Sharing one instance safely across threads`,`Long constructors with many optional parameters`,`Choosing which subclass to create at run time`,`Slow startup caused by eager object creation`],1,`Telescoping constructors.`,'E'],
  [`Where is the final object created in a builder?`,[`In each setter`,`In build()`,`In the builder's constructor`,`In toString`],1,`After validation.`,'E'],
- [`Why are JavaBeans (setters) worse for required fields?`,[`Slower`,`The object exists in a half-built state between setter calls`,`Can't serialise`,`They're immutable`],1,`And can't be immutable.`,'M'],
- [`Lombok's <code>@Builder(toBuilder = true)</code> gives?`,[`A builder from an existing instance, to make a modified copy`,`A singleton`,`Thread safety`,`JSON support`],0,`Handy for immutable objects.`,'M'],
+ [`Why are JavaBeans (setters) worse for required fields?`,[`Setter calls are slower than one constructor call`,`The object exists in a half-built state between setter calls`,`Objects with setters can't be serialised by Jackson`,`Setters make the object immutable once it's built`],1,`And can't be immutable.`,'M'],
+ [`Lombok's <code>@Builder(toBuilder = true)</code> gives?`,[`A builder from an existing instance, to make a modified copy`,`A builder that checks required fields at compile time`,`A shared static builder reused across all instances`,`A builder whose build() caches the created object`],0,`Handy for immutable objects.`,'M'],
  [`A builder method should return?`,[`void`,`this`,`a new object of the target class`,`null`],1,`For chaining.`,'E']
 ], [
- [`How do you make a builder enforce required fields at compile time?`,[`Impossible`,`Step builder: each step returns an interface exposing only the next required setter`,`Use reflection`,`Make fields static`],1,`Trades simplicity for safety.`,'H'],
- [`Records with many components: alternative to a builder?`,[`None`,`Static factory methods or "withers" returning modified copies`,`Setters`,`Inheritance`],1,`Records can also get builders via libraries.`,'M']
+ [`How do you make a builder enforce required fields at compile time?`,[`Annotate required builder fields with Lombok's @NonNull`,`Step builder: each step's interface exposes only the next setter`,`Validate in build() and throw IllegalStateException`,`Make the builder's required fields static final`],1,`Trades simplicity for safety.`,'H'],
+ [`Records with many components: alternative to a builder?`,[`Public setters generated for each record component`,`Static factory methods or "withers" returning modified copies`,`Extending the record to add the optional fields`,`Reflection to set components after construction`],1,`Records can also get builders via libraries.`,'M']
 ]);
 
 addQ('3.7d', [
- [`Strategy replaces which code smell?`,[`Long parameter lists`,`if/else or switch choosing between algorithms`,`Deep inheritance`,`Static state`],1,`Each branch becomes a class.`,'E'],
+ [`Strategy replaces which code smell?`,[`Long parameter lists in constructors`,`if/else or switch choosing between algorithms`,`Duplicated getters and setters across classes`,`Static mutable state shared across threads`],1,`Each branch becomes a class.`,'E'],
  [`Is a Comparator passed to sort a strategy?`,[`Yes`,`No`,`Only if anonymous`,`Only for Strings`],0,`The sorting algorithm delegates comparison.`,'E'],
  [`Who usually chooses the strategy?`,[`The strategy itself`,`The caller or configuration`,`The JVM`,`The garbage collector`],1,`In State, the object switches itself.`,'M'],
- [`How can Spring pick a strategy per request?`,[`Reflection only`,`Inject Map&lt;String, Strategy&gt; and look up by key`,`Static field`,`It can't`],1,`Bean names are the keys.`,'M'],
- [`What's the risk of strategies with mutable fields as singletons?`,[`None`,`Shared by all threads → race conditions`,`Slow`,`Memory leak only`],1,`Keep strategies stateless.`,'M']
+ [`How can Spring pick a strategy per request?`,[`Use @Primary to switch the bean on each request`,`Inject Map&lt;String, Strategy&gt; and look up by key`,`Store the chosen strategy in a static field`,`Use @Qualifier, which is resolved per request`],1,`Bean names are the keys.`,'M'],
+ [`What's the risk of strategies with mutable fields as singletons?`,[`Each thread gets a copy, wasting memory`,`Shared by all threads → race conditions`,`Spring refuses to create mutable singletons`,`Fields reset to defaults after each call`],1,`Keep strategies stateless.`,'M']
 ], [
- [`Strategy vs Template Method for varying one step?`,[`Same`,`Strategy uses composition (swap at run time); Template uses inheritance (fixed per subclass)`,`Template is runtime`,`Strategy needs abstract classes`],1,`Prefer composition when the variation changes at run time.`,'M'],
+ [`Strategy vs Template Method for varying one step?`,[`Same thing; both rely on inheritance`,`Strategy composes, swappable at run time; Template subclasses`,`Template swaps at run time; Strategy is fixed per subclass`,`Strategy requires abstract classes; Template uses interfaces`],1,`Prefer composition when the variation changes at run time.`,'M'],
  [`Enum with a constant-specific method per constant is?`,[`Invalid`,`A compact strategy set`,`A singleton only`,`An adapter`],1,`e.g. Operation.PLUS.apply(a, b).`,'H']
 ]);
 
 addQ('3.7e', [
- [`In the State pattern, what changes when an event occurs?`,[`The class of the context`,`The current state object the context delegates to`,`The database schema`,`Nothing`],1,`The context swaps its state.`,'E'],
- [`An illegal event in a state should?`,[`Be ignored silently`,`Be rejected clearly (exception / error result)`,`Restart the app`,`Change to a random state`],1,`Fail loudly.`,'E'],
- [`Which Java feature fits a small state machine well?`,[`Arrays`,`An enum with allowed transitions and an exhaustive switch`,`Reflection`,`Threads`],1,`See 7.1.`,'M'],
- [`How do you prevent two servers from both moving an order from PAID to SHIPPED twice?`,[`synchronized`,`UPDATE … WHERE status = 'PAID' and check rows affected`,`A static flag`,`Retry`],1,`Compare-and-set in SQL.`,'M'],
- [`Strategy vs State?`,[`Same structure; caller picks a strategy, an object changes its own state`,`Unrelated`,`State has no classes`,`Strategy changes itself`],0,`Intent differs.`,'M']
+ [`In the State pattern, what changes when an event occurs?`,[`The context's class, via a new subclass instance`,`The current state object the context delegates to`,`The methods exposed on the context's interface`,`The strategy bean injected by the Spring container`],1,`The context swaps its state.`,'E'],
+ [`An illegal event in a state should?`,[`Be ignored so the state stays unchanged`,`Be rejected clearly (exception / error result)`,`Reset the machine to its initial state`,`Be queued until a valid state is reached`],1,`Fail loudly.`,'E'],
+ [`Which Java feature fits a small state machine well?`,[`A HashMap of strings mapping to boolean flags`,`An enum with allowed transitions and an exhaustive switch`,`A class hierarchy using reflection to pick states`,`A dedicated thread per state with a shared queue`],1,`See 7.1.`,'M'],
+ [`How do you prevent two servers from both moving an order from PAID to SHIPPED twice?`,[`Mark the transition method synchronized`,`UPDATE … WHERE status = 'PAID' and check rows affected`,`Keep a static in-memory set of shipped orders`,`Read the status first, then UPDATE if PAID`],1,`Compare-and-set in SQL.`,'M'],
+ [`Strategy vs State?`,[`Same structure; caller picks a strategy, an object changes its own state`,`Unrelated patterns with different class structures`,`State is a Strategy using only enums, no classes`,`Strategies swap themselves; callers pick the state`],0,`Intent differs.`,'M']
 ], [
- [`Where should state transition rules live in a microservice?`,[`In the UI`,`In one domain class/state machine, enforced in the DB too`,`In every controller`,`In SQL triggers only`],1,`Single source of truth.`,'M'],
- [`Why record state transitions as events (e.g. an audit table)?`,[`Required by JPA`,`Debugging and history: who changed what, when`,`Faster updates`,`To avoid indexes`],1,`Often required for orders and payments.`,'M']
+ [`Where should state transition rules live in a microservice?`,[`In the UI, which hides buttons for invalid moves`,`In one domain class/state machine, enforced in the DB too`,`In each controller that handles the request`,`Only in SQL triggers, outside the application`],1,`Single source of truth.`,'M'],
+ [`Why record state transitions as events (e.g. an audit table)?`,[`JPA requires an audit row for every update`,`Debugging and history: who changed what, when`,`It lets you drop indexes on the status column`,`It removes the need for optimistic locking`],1,`Often required for orders and payments.`,'M']
 ]);
 
 addQ('3.7f', [
- [`Observer decouples...`,[`threads from locks`,`the publisher from the code reacting to its events`,`classes from interfaces`,`the database from the cache`],1,`Add reactions without editing the publisher.`,'E'],
+ [`Observer decouples...`,[`threads from the locks they acquire`,`the publisher from the code reacting to its events`,`interfaces from the classes implementing them`,`the database from the cache in front of it`],1,`Add reactions without editing the publisher.`,'E'],
  [`Spring annotation to handle an application event?`,[`@Bean`,`@EventListener`,`@Async`,`@Service`],1,`publisher.publishEvent(event) triggers it.`,'E'],
- [`By default, Spring event listeners run?`,[`On a new thread`,`Synchronously, in the publisher's thread`,`After the JVM exits`,`On a scheduler`],1,`Add @Async for asynchronous handling.`,'M'],
- [`Why use AFTER_COMMIT for "send email" listeners?`,[`Faster`,`So the email only goes out once the data is really saved`,`Required by SMTP`,`To avoid threads`],1,`Rollbacks would otherwise send wrong emails.`,'M'],
- [`What's the risk of many slow synchronous listeners?`,[`None`,`The publisher's request gets slower with each one`,`Memory leak`,`Deadlock always`],1,`Make heavy ones async or move to a queue.`,'M']
+ [`By default, Spring event listeners run?`,[`Asynchronously, on a new thread each`,`Synchronously, in the publisher's thread`,`On Spring's task scheduler thread pool`,`After the publisher's transaction commits`],1,`Add @Async for asynchronous handling.`,'M'],
+ [`Why use AFTER_COMMIT for "send email" listeners?`,[`So the email is sent on a separate async thread`,`So the email only goes out once the data is really saved`,`So a failed email rolls back the saved data`,`So the listener joins the publisher's transaction`],1,`Rollbacks would otherwise send wrong emails.`,'M'],
+ [`What's the risk of many slow synchronous listeners?`,[`Listeners start running on parallel threads`,`The publisher's request gets slower with each one`,`Each listener keeps its event object in memory`,`Listeners always deadlock with the publisher`],1,`Make heavy ones async or move to a queue.`,'M']
 ], [
- [`Listeners in one JVM vs a message broker?`,[`Same guarantees`,`In-JVM events are lost on crash; a broker (Kafka) persists them for other services`,`Brokers are synchronous`,`In-JVM is cross-service`],1,`Use the outbox for reliable cross-service events.`,'H'],
- [`Java's built-in <code>java.util.Observable</code>?`,[`Recommended`,`Deprecated since Java 9; use listener interfaces or event frameworks`,`Removed in Java 8`,`Thread-safe and modern`],1,`Too limited.`,'M']
+ [`Listeners in one JVM vs a message broker?`,[`Same delivery guarantees, just a different API`,`In-JVM events vanish on crash; a broker persists them`,`Brokers are synchronous; in-JVM events are async`,`In-JVM events reach other services; brokers don't`],1,`Use the outbox for reliable cross-service events.`,'H'],
+ [`Java's built-in <code>java.util.Observable</code>?`,[`Recommended for new code over listener interfaces`,`Deprecated since Java 9; use listener interfaces`,`Removed in Java 8 with the move to lambdas`,`Generic since Java 5, typed as Observable&lt;T&gt;`],1,`Too limited.`,'M']
 ]);
 
 addQ('3.7g', [
  [`A decorator implements...`,[`A different interface from the wrapped object`,`The same interface as the object it wraps`,`No interface`,`Only abstract classes`],1,`That's why decorators stack.`,'E'],
- [`Which JDK API is built from decorators?`,[`java.time`,`java.io streams (BufferedInputStream, GZIPInputStream…)`,`java.lang.Math`,`java.util.Random`],1,`Each adds one capability.`,'E'],
- [`Adding caching, logging and retry to a client with decorators instead of subclassing gives?`,[`A class per combination`,`Independent layers you can combine and reorder`,`Slower code`,`Static methods`],1,`Avoids class explosion.`,'M'],
- [`<code>Collections.synchronizedList(list)</code> is a decorator adding?`,[`Sorting`,`A lock around each method call`,`Immutability`,`Caching`],1,`Same List interface.`,'M'],
- [`Does the order of decorators matter?`,[`Never`,`Yes: calls pass through outer layers first`,`Only for I/O`,`Only in tests`],1,`e.g. cache outside retry vs inside.`,'E']
+ [`Which JDK API is built from decorators?`,[`java.time (LocalDate, ZonedDateTime, Instant…)`,`java.io streams (BufferedInputStream, GZIPInputStream…)`,`java.util.Random (SecureRandom, ThreadLocalRandom…)`,`java.lang.Math (StrictMath, Math.abs, Math.max…)`],1,`Each adds one capability.`,'E'],
+ [`Adding caching, logging and retry to a client with decorators instead of subclassing gives?`,[`One subclass for each feature combination`,`Independent layers you can combine and reorder`,`Faster calls, since no extra layers exist`,`A single class holding all three concerns`],1,`Avoids class explosion.`,'M'],
+ [`<code>Collections.synchronizedList(list)</code> is a decorator adding?`,[`Sorting on every insertion`,`A lock around each method call`,`Immutability, rejecting writes`,`A cached copy for fast reads`],1,`Same List interface.`,'M'],
+ [`Does the order of decorators matter?`,[`No: decorators are applied in any order`,`Yes: calls pass through outer layers first`,`Only for java.io streams, not other APIs`,`Only when decorators share mutable state`],1,`e.g. cache outside retry vs inside.`,'E']
 ], [
- [`Spring's <code>@Cacheable</code> plus <code>@Retryable</code> on one method: which concept decides their order?`,[`Alphabetical`,`Advisor/interceptor order (e.g. @Order) in the proxy chain`,`Random`,`Bean name`],1,`The proxy applies interceptors in order.`,'H'],
- [`Decorator vs inheritance for adding behaviour to a final class?`,[`Inheritance works`,`Only a decorator (composition) works, since final classes can't be subclassed`,`Neither`,`Reflection only`],1,`Composition works with any implementation of the interface.`,'M']
+ [`Spring's <code>@Cacheable</code> plus <code>@Retryable</code> on one method: which concept decides their order?`,[`The order the annotations are written on the method`,`Advisor/interceptor order (e.g. @Order) in the proxy chain`,`Alphabetical order of the annotation class names`,`The registration order of the beans by name`],1,`The proxy applies interceptors in order.`,'H'],
+ [`Decorator vs inheritance for adding behaviour to a final class?`,[`Inheritance, by overriding the public methods`,`Only a decorator, since final classes can't be subclassed`,`Neither, because final classes are fully sealed`,`Only reflection, by patching out the final modifier`],1,`Composition works with any implementation of the interface.`,'M']
 ]);
 
 addQ('3.7h', [
  [`A proxy has...`,[`A different interface from the real object`,`The same interface as the real object`,`No methods`,`Only static methods`],1,`Callers can't tell the difference.`,'E'],
- [`A virtual (lazy) proxy is used to?`,[`Encrypt data`,`Delay creating an expensive object until it's needed`,`Log calls`,`Sort objects`],1,`Hibernate's lazy-loaded entities are proxies.`,'M'],
- [`What does a JDK dynamic proxy route every call to?`,[`A subclass`,`An InvocationHandler.invoke method`,`A lambda`,`The JIT`],1,`One handler for all methods.`,'M'],
- [`Why does Hibernate return proxies for lazy associations?`,[`To save code`,`To load the real data only when a method is first called`,`For thread safety`,`For serialization`],1,`Outside a session that load fails (LazyInitializationException).`,'M'],
- [`Spring <code>@Transactional</code> is implemented by?`,[`Bytecode in javac`,`A proxy that starts/commits a transaction around the call`,`A servlet filter`,`A database trigger`],1,`Hence the self-invocation trap.`,'E']
+ [`A virtual (lazy) proxy is used to?`,[`Encrypt data before passing it to the real object`,`Delay creating an expensive object until it's needed`,`Log every call made to the real object`,`Cache results of the real object's method calls`],1,`Hibernate's lazy-loaded entities are proxies.`,'M'],
+ [`What does a JDK dynamic proxy route every call to?`,[`A generated subclass of the target class`,`An InvocationHandler.invoke method`,`A MethodInterceptor.intercept method`,`The target's method via a MethodHandle`],1,`One handler for all methods.`,'M'],
+ [`Why does Hibernate return proxies for lazy associations?`,[`To make entities safe to share across threads`,`To load the real data only when a method is first called`,`To make entities serializable for remote calls`,`To avoid generating SQL for the entity's class`],1,`Outside a session that load fails (LazyInitializationException).`,'M'],
+ [`Spring <code>@Transactional</code> is implemented by?`,[`Bytecode javac injects around the annotated method`,`A proxy that starts/commits a transaction around the call`,`A servlet filter that wraps every HTTP request`,`A database trigger on the method's tables`],1,`Hence the self-invocation trap.`,'E']
 ], [
- [`How can you make an internal call go through the proxy if you must?`,[`Use this`,`Move the method to another bean (cleanest), or inject the bean into itself / use AopContext`,`Make it private`,`Make it static`],1,`Splitting the bean is preferred.`,'M'],
- [`<code>getClass()</code> on an injected @Transactional bean in Spring Boot shows?`,[`Your class`,`A CGLIB-generated subclass like OrderService$$SpringCGLIB$$0`,`Object`,`An interface`],1,`It's a proxy.`,'H']
+ [`How can you make an internal call go through the proxy if you must?`,[`Call it via this, which already is the proxy`,`Move it to another bean, or self-inject / use AopContext`,`Make the method private so the proxy sees it`,`Make the method static so it gets intercepted`],1,`Splitting the bean is preferred.`,'M'],
+ [`<code>getClass()</code> on an injected @Transactional bean in Spring Boot shows?`,[`Your own class, since proxies are invisible`,`A CGLIB subclass, e.g. OrderService$$SpringCGLIB$$0`,`A JDK proxy class like jdk.proxy2.$Proxy42`,`The interface type the bean implements`],1,`It's a proxy.`,'H']
 ]);
 
 addQ('3.7i', [
- [`What does an adapter change?`,[`Behaviour only`,`The interface, so incompatible code fits`,`Nothing`,`Performance`],1,`Translate calls between two interfaces.`,'E'],
- [`<code>InputStreamReader</code> adapts?`,[`chars to bytes`,`a byte InputStream to a character Reader`,`files to URLs`,`threads to tasks`],1,`Using a charset.`,'M'],
+ [`What does an adapter change?`,[`The behaviour, adding features on top`,`The interface, so incompatible code fits`,`The access, controlling who may call it`,`The performance, by caching each call`],1,`Translate calls between two interfaces.`,'E'],
+ [`<code>InputStreamReader</code> adapts?`,[`a character Reader to a byte InputStream`,`a byte InputStream to a character Reader`,`a File path to a buffered InputStream`,`a String to a stream of characters`],1,`Using a charset.`,'M'],
  [`Where should vendor SDK types appear in your code?`,[`Everywhere`,`Only inside the adapter`,`In controllers`,`In entities`],1,`Keep them at the boundary.`,'E'],
- [`Switching payment provider with adapters means?`,[`Rewriting services`,`Writing a new adapter for the same interface`,`Changing the database`,`Nothing works`],1,`Domain code stays unchanged.`,'M'],
- [`Facade vs Adapter in one sentence?`,[`Same`,`Facade simplifies a subsystem; Adapter converts one interface to another`,`Facade converts`,`Adapter simplifies`],1,`Different intents.`,'M']
+ [`Switching payment provider with adapters means?`,[`Rewriting each service that calls the provider`,`Writing a new adapter for the same interface`,`Changing the domain model to match the provider`,`Subclassing the old provider's client library`],1,`Domain code stays unchanged.`,'M'],
+ [`Facade vs Adapter in one sentence?`,[`Same thing; both wrap one class to rename its methods`,`Facade simplifies a subsystem; Adapter converts one interface to another`,`Facade converts interfaces; Adapter simplifies a subsystem`,`Facade adds behaviour; Adapter controls access to an object`],1,`Different intents.`,'M']
 ], [
- [`An adapter receives the vendor's amounts in cents as int. Your domain uses Money. Where do you convert?`,[`In controllers`,`Inside the adapter, both directions`,`In the database`,`In tests`],1,`All translation in one place.`,'M'],
- [`Ports and adapters (hexagonal architecture) means?`,[`Network ports`,`The domain defines interfaces (ports); infrastructure implements them (adapters)`,`Adapters only for UIs`,`A deployment model`],1,`Keeps the core independent of frameworks.`,'H']
+ [`An adapter receives the vendor's amounts in cents as int. Your domain uses Money. Where do you convert?`,[`In the controllers, before calling services`,`Inside the adapter, both directions`,`In the database, via a column converter`,`In each domain service that uses it`],1,`All translation in one place.`,'M'],
+ [`Ports and adapters (hexagonal architecture) means?`,[`Exposing each service on its own network port`,`Domain defines interfaces (ports); infrastructure implements them`,`Adapters wrap only the UI; the domain calls the DB directly`,`A deployment model running each adapter as a container`],1,`Keeps the core independent of frameworks.`,'H']
 ]);
 
 addQ('3.7j', [
- [`Template method puts the fixed algorithm in?`,[`Each subclass`,`A base-class method that calls overridable steps`,`An interface`,`A static utility`],1,`Subclasses fill in steps.`,'E'],
+ [`Template method puts the fixed algorithm in?`,[`Each subclass, which overrides the whole method`,`A base-class method that calls overridable steps`,`An interface whose methods each subclass implements`,`A static utility method taking a lambda per step`],1,`Subclasses fill in steps.`,'E'],
  [`What's a typical modifier for the template method itself?`,[`abstract`,`final`,`static`,`private`],1,`So subclasses can't reorder steps.`,'E'],
- [`Which Spring class follows template + callback?`,[`RestTemplate / JdbcTemplate`,`ApplicationContext`,`Environment`,`BeanFactory`],0,`They handle boilerplate; you pass the varying part.`,'M'],
- [`JUnit's @BeforeEach / @AfterEach around tests is like?`,[`Observer`,`Template method: fixed lifecycle, your test method is the variable step`,`Singleton`,`Builder`],1,`The framework controls the flow.`,'M'],
+ [`Which Spring class follows template + callback?`,[`RestTemplate / JdbcTemplate`,`ApplicationContext / BeanFactory`,`Environment / PropertySource`,`ApplicationEventPublisher / Environment`],0,`They handle boilerplate; you pass the varying part.`,'M'],
+ [`JUnit's @BeforeEach / @AfterEach around tests is like?`,[`Observer: JUnit notifies hooks when tests change`,`Template method: fixed lifecycle, your test is the varying step`,`Singleton: one shared fixture for the whole class`,`Builder: each hook adds a step that builds the test`],1,`The framework controls the flow.`,'M'],
  [`A required step should be declared as?`,[`A hook with a default`,`An abstract method`,`A static method`,`A private method`],1,`Optional steps are hooks.`,'E']
 ], [
- [`Downside of template method compared with passing lambdas (strategy)?`,[`None`,`It needs a subclass per variation, fixed at compile time`,`It's slower`,`It can't have hooks`],1,`Callbacks are often lighter.`,'M'],
- [`Why are abstract test base classes with many hooks sometimes discouraged?`,[`They don't compile`,`Deep test hierarchies hide setup and make tests hard to read`,`JUnit forbids them`,`They're slow`],1,`Prefer composition (extensions, helper objects).`,'H']
+ [`Downside of template method compared with passing lambdas (strategy)?`,[`Virtual calls make it much slower than lambdas`,`It needs a subclass per variation, fixed at compile time`,`It can't offer optional hook methods to subclasses`,`It forces every step to be declared abstract`],1,`Callbacks are often lighter.`,'M'],
+ [`Why are abstract test base classes with many hooks sometimes discouraged?`,[`JUnit 5 forbids abstract classes in test hierarchies`,`Deep test hierarchies hide setup and make tests hard to read`,`Inherited @BeforeEach methods never run in subclasses`,`Each level of inheritance slows test startup a lot`],1,`Prefer composition (extensions, helper objects).`,'H']
 ]);
 </script>
 <script>
