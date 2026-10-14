@@ -179,6 +179,9 @@ button:focus-visible,select:focus-visible,summary:focus-visible{outline:2px soli
 .lvl{display:inline-block;font-size:10.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;border:1px solid currentColor;border-radius:20px;padding:0 7px;margin-right:8px;vertical-align:2px;line-height:17px}
 .lvl-E{color:var(--ok-line)} .lvl-M{color:var(--waiting)} .lvl-H{color:var(--bad-line)}
 .qzempty{margin:0;color:var(--muted)}
+.qz-new{font:inherit;font-size:13px;border:1px solid var(--line);background:var(--panel);color:var(--accent);border-radius:8px;padding:5px 11px;cursor:pointer;margin-left:auto}
+.qz-new:hover{border-color:var(--accent)}
+.qz-bank{flex-basis:100%;margin:0;font-size:12.5px;color:var(--muted)}
 .qz .opts{display:grid;gap:6px;max-width:92ch}
 .qz .opts button{display:flex;gap:10px;align-items:baseline;text-align:left;font:inherit;font-size:14.5px;border:1px solid var(--line);border-left-width:3px;background:var(--soft);color:var(--ink);border-radius:7px;padding:8px 12px;cursor:pointer}
 .qz .opts button:hover:not(:disabled){border-color:var(--accent)}
@@ -6079,7 +6082,7 @@ Object.assign(QUIZ, {
 '0.1':[
  [`Which method signature does the JVM look for to start a program?`,[`public void main(String[] args)`,`public static void main(String[] args)`,`static int main(String args)`,`public static void start(String[] args)`],1,`It must be public, static, void, named main, with a String[] parameter (Java 25 also allows simpler forms in compact source files).`,'E'],
  [`What does <code>javac Hello.java</code> produce?`,[`A native .exe for your OS`,`A .jar archive`,`Hello.class containing bytecode`,`Nothing until you run java`],2,`javac compiles source to platform-neutral bytecode; the JVM runs it.`,'E'],
- [`A file <code>Main.java</code> contains <code>public class App</code>. What happens?`,[`It runs, using App as the entry point`,`Compile error: a public class must be in a file of the same name`,`It compiles, but java Main fails`,`javac renames the class to Main`],1,`One public top-level class per file, and the file is named after it.`,'M']],
+ [`A file <code>Main.java</code> contains <code>public class App</code>. What happens?`,[`It runs, and the JVM uses App as the entry point`,`Compile error: a public class must be in a file of the same name`,`It compiles, but running java Main then fails`,`javac renames the class to Main automatically`],1,`One public top-level class per file, and the file is named after it.`,'M']],
 '0.2':[
  [`<code>int x = 7 / 2;</code> What is x?`,[`3.5`,`4`,`3`,`Compile error`],2,`Integer division drops the fraction (it doesn't round).`,'E'],
  [`<code>int i = 5; int a = i++; int b = ++i;</code> What are a and b?`,[`a = 6, b = 7`,`a = 5, b = 6`,`a = 6, b = 6`,`a = 5, b = 7`],3,`i++ yields 5 (i becomes 6); ++i makes i 7 and yields 7.`,'M'],
@@ -6090,39 +6093,39 @@ Object.assign(QUIZ, {
  [`Classic switch: <code>case 1: x = "one"; case 2: x = "two"; break;</code>. With value 1, x is?`,[`"one"`,`"two"`,`null`,`Compile error`],1,`No break after case 1, so it falls through into case 2.`,'M']],
 '0.4':[
  [`<code>int[] a = new int[3];</code> What is <code>a[2]</code>?`,[`null`,`0`,`Undefined garbage`,`ArrayIndexOutOfBoundsException`],1,`Numeric arrays start filled with 0.`,'E'],
- [`<code>int[] b = a; b[0] = 9;</code> What is <code>a[0]</code>?`,[`9: both names refer to one array`,`0: b is a copy`,`Compile error`,`Depends on the JVM`],0,`Arrays are objects; assignment copies the reference.`,'M'],
+ [`<code>int[] b = a; b[0] = 9;</code> What is <code>a[0]</code>?`,[`9: both names refer to one array`,`0: the assignment made b a copy`,`Compile error: b must be declared new`,`It depends on the JVM implementation`],0,`Arrays are objects; assignment copies the reference.`,'M'],
  [`How do you print an array's contents?`,[`System.out.println(arr)`,`arr.toString()`,`Arrays.toString(arr)`,`String.valueOf(arr)`],2,`Arrays don't override toString, so printing shows type@hash.`,'M']],
 '0.5':[
  [`What does a method with return type <code>void</code> return?`,[`null`,`0`,`Nothing`,`An empty Optional`],2,`void means it returns no value.`,'E'],
  [`A recursive method has no base case. What happens?`,[`It returns 0`,`StackOverflowError`,`OutOfMemoryError: heap`,`The JIT turns it into a loop`],1,`Each call adds a frame until the thread's stack is full.`,'M'],
  [`<code>factorial(3)</code> calls itself down to factorial(1). How many factorial frames exist at the deepest point?`,[`1`,`2`,`4`,`3`],3,`factorial(3), (2) and (1) are all on the stack at once.`,'M']],
 '0.6':[
- [`What does a constructor do?`,[`Destroys an object`,`Initialises a newly created object`,`Copies an object`,`Compares two objects`],1,`It runs once per new object to set its starting state.`,'E'],
+ [`What does a constructor do?`,[`Destroys an old object before reuse`,`Initialises a newly created object`,`Copies an existing object field by field`,`Compares two objects for equality`],1,`It runs once per new object to set its starting state.`,'E'],
  [`<code>Account a = new Account("Ana"); Account c = a; c.deposit(100);</code> Does a's balance change?`,[`Yes: a and c are the same object`,`No: c is a copy`,`Only if deposit is static`,`Compile error`],0,`Object variables hold references; assignment shares the object.`,'M'],
  [`Inside a constructor, what does <code>this.owner = owner</code> do?`,[`Compares the field to the parameter`,`Assigns the field to itself`,`Copies the parameter into the object's field`,`Creates a new object`],2,`this.owner is the field; owner alone is the parameter that shadows it.`,'M']],
 '0.7':[
  [`Which modifier makes a member visible only inside its own class?`,[`private`,`protected`,`(no modifier)`,`final`],0,`private is the most restrictive.`,'E'],
- [`A field has no access modifier. Who can see it?`,[`Everyone`,`Only the class`,`Classes in the same package`,`Only subclasses`],2,`No keyword = package-private.`,'M'],
+ [`A field has no access modifier. Who can see it?`,[`Everyone, like public`,`Only the class itself`,`Classes in the same package`,`Only its subclasses`],2,`No keyword = package-private.`,'M'],
  [`What does an <code>import</code> statement do?`,[`Loads the class into memory at startup`,`Copies the class into your package`,`Makes private members accessible`,`Lets you use a class's short name`],3,`Imports are a compile-time naming shortcut only.`,'M']]
 });
 Object.assign(QUIZ_ADV, {
 '0.1':[
- [`Where does <code>String[] args</code> get its values?`,[`From words typed after the class name on the command line`,`From environment variables`,`From application.properties`,`From System.in`],0,`java Hello a b → args = ["a", "b"].`,'M'],
+ [`Where does <code>String[] args</code> get its values?`,[`From words typed after the class name on the command line`,`From environment variables set before launching java`,`From application.properties on the classpath`,`From whatever the user types into System.in`],0,`java Hello a b → args = ["a", "b"].`,'M'],
  [`Why is main <code>static</code>?`,[`So it runs faster`,`So only one thread can call it`,`So the JVM can call it without creating an object`,`So it can't be overridden by mistake`],2,`No instance of the class exists yet when the program starts.`,'H']],
 '0.2':[
  [`<code>double d = 10 / 4;</code> What is d?`,[`2.5`,`2.0`,`3.0`,`Compile error`],1,`10 / 4 is int division (2), then widened to 2.0.`,'H'],
  [`<code>(int) 3.99</code> and <code>Math.round(3.5)</code>?`,[`4 and 4`,`3 and 3`,`4 and 3`,`3 and 4`],3,`Casting truncates toward zero; Math.round rounds half up.`,'M']],
 '0.3':[
  [`Can a switch expression with <code>-&gt;</code> cases fall through?`,[`Yes, like classic switch`,`Only without default`,`No`,`Only for Strings`],2,`Arrow cases run exactly one branch.`,'M'],
- [`<code>for (int i = 0; i &lt; 3; i++) { }</code> What is i after the loop?`,[`Compile error if used: i is scoped to the loop`,`3`,`2`,`0`],0,`A variable declared in the for header only exists inside the loop.`,'H']],
+ [`<code>for (int i = 0; i &lt; 3; i++) { }</code> What is i after the loop?`,[`Compile error if used: i is scoped to the loop`,`3, the value that ended the loop`,`2, the last value used in the body`,`0, because i is reset after the loop`],0,`A variable declared in the for header only exists inside the loop.`,'H']],
 '0.4':[
  [`<code>int[] a = {1,2}; int[] b = {1,2};</code> What are <code>a == b</code> and <code>Arrays.equals(a, b)</code>?`,[`true, true`,`false, false`,`false, true`,`true, false`],2,`== compares references; Arrays.equals compares contents.`,'M'],
  [`<code>new int[2][3]</code> creates?`,[`One array of 6 ints`,`An array of 2 arrays, each with 3 ints`,`An array of 3 arrays, each with 2 ints`,`A 2×3 matrix object`],1,`Java has arrays of arrays; rows can even have different lengths.`,'H']],
 '0.5':[
  [`<code>void inc(int x) { x++; }</code> called as <code>inc(n)</code> with n = 5. What is n afterwards?`,[`6`,`0`,`Compile error`,`5`],3,`The value is copied into x; changing x doesn't touch n.`,'M'],
- [`Why does Java prefer loops over very deep recursion?`,[`Recursion is not allowed in Java`,`No tail-call optimisation: each call uses a stack frame`,`Loops are always clearer`,`Recursion disables the JIT`],1,`Deep recursion (e.g. 100,000 levels) can overflow the default stack.`,'H']],
+ [`Why does Java prefer loops over very deep recursion?`,[`Recursion isn't allowed in production Java code`,`No tail-call optimisation: each call uses a stack frame`,`Loops are always clearer than recursive code`,`Deep recursion switches off the JIT compiler`],1,`Deep recursion (e.g. 100,000 levels) can overflow the default stack.`,'H']],
 '0.6':[
- [`You write a constructor <code>Account(String owner)</code>. Can you still call <code>new Account()</code>?`,[`No: the default constructor is only provided when you write none`,`Yes, Java always adds one`,`Yes, but fields are null`,`Only via reflection`],0,`Declaring any constructor removes the implicit no-arg one.`,'H'],
+ [`You write a constructor <code>Account(String owner)</code>. Can you still call <code>new Account()</code>?`,[`No: the default constructor is only provided when you write none`,`Yes: Java always adds a no-arg constructor too`,`Yes, but every field of the new object is null`,`Only through reflection, never with new`],0,`Declaring any constructor removes the implicit no-arg one.`,'H'],
  [`A <code>static</code> field <code>count</code> is incremented in the constructor. After 3 objects, what is count?`,[`1 in each object`,`0`,`3, shared by the class`,`Compile error`],2,`Static fields have one copy for the whole class.`,'M']],
 '0.7':[
  [`Can a top-level class be declared <code>private</code>?`,[`Yes`,`Only inside a package-info file`,`Only if it's final`,`No: only public or package-private`],3,`private and protected apply to members and nested classes.`,'M'],
@@ -6497,6 +6500,1228 @@ Object.assign(QUIZ_ADV, {
 });
 </script>
 <script>
+/* ---------- extra questions for the hidden banks: addQ(topic, core[], advanced[]) ---------- */
+const addQ = (no, core, adv) => { QUIZ[no] = (QUIZ[no] || []).concat(core || []); QUIZ_ADV[no] = (QUIZ_ADV[no] || []).concat(adv || []); };
+
+addQ('0.1', [
+ [`What does the JVM do with a <code>.class</code> file?`,[`Turns it back into Java source first`,`Loads its bytecode, verifies it and runs it`,`Sends it to the OS to execute directly`,`Compresses it into a JAR`],1,`The JVM loads, verifies and executes (interprets/JIT-compiles) bytecode.`,'E'],
+ [`What does <code>System.out.println("a" + 1 + 2)</code> print?`,[`a3`,`a12`,`3a`,`Compile error`],1,`Left to right: "a" + 1 = "a1", then + 2 = "a12".`,'M'],
+ [`And <code>System.out.println(1 + 2 + "a")</code>?`,[`12a`,`a3`,`3a`,`Compile error`],2,`1 + 2 = 3 first (int math), then "3" + "a".`,'M'],
+ [`You run <code>java Hello</code> but get "Could not find or load main class Hello". Most likely cause?`,[`main is missing, so the JVM can't start the class`,`The class wasn't compiled, or you're in the wrong folder / classpath`,`The installed JVM is too old for the bytecode`,`The source file still contains a comment block`],1,`java looks for Hello.class on the classpath (current directory by default).`,'E'],
+ [`What does <code>javac</code> report when you forget a semicolon?`,[`A compile error with the file and line`,`A warning, then it runs anyway`,`A runtime exception`,`Nothing: semicolons are optional`],0,`Syntax errors stop compilation before anything runs.`,'E']
+], [
+ [`Can one <code>.java</code> file contain several top-level classes?`,[`No, never: exactly one class per source file`,`Yes, as long as every one of them is public`,`Yes, but at most one may be public (named like the file)`,`Only from Java 25 with compact source files`],2,`Each compiles to its own .class file.`,'M'],
+ [`What is the difference between a JDK and a JRE today?`,[`The JRE is a faster runtime than the JDK's JVM`,`No separate JRE since Java 11: use the JDK or jlink`,`The JDK can compile but can't run programs`,`They're one download with two different names`],1,`jlink can build a trimmed runtime for deployment.`,'H']
+]);
+
+addQ('0.2', [
+ [`Which type would you use for a whole number that may exceed 2.1 billion?`,[`int`,`short`,`long`,`float`],2,`int tops out at 2,147,483,647.`,'E'],
+ [`<code>int r = 17 % 5;</code> What is r?`,[`3`,`2`,`3.4`,`12`],1,`17 = 3 × 5 + 2.`,'E'],
+ [`<code>boolean b = (5 > 3) || (1 / 0 > 0);</code> What happens?`,[`ArithmeticException: / by zero`,`b is false`,`b is true; the right side never runs`,`Compile error`],2,`|| short-circuits once the left side is true.`,'M'],
+ [`<code>int x = 3; x += 2.7;</code> What is x?`,[`5.7`,`5`,`6`,`Compile error`],1,`Compound assignment includes an implicit cast back to int (truncation).`,'H'],
+ [`<code>var count = 10;</code> What type is count?`,[`Object`,`dynamic, it can change later`,`int, inferred at compile time`,`Integer`],2,`var is local type inference; the type is fixed.`,'M']
+], [
+ [`<code>0.1 + 0.2 == 0.3</code> with doubles?`,[`true: double math is exact for one-digit decimals`,`false: binary floating point can't represent these exactly`,`Compile error: doubles can't be compared with ==`,`It depends on the CPU's floating point unit`],1,`Compare with a tolerance or use BigDecimal for exact decimals.`,'M'],
+ [`<code>Math.abs(Integer.MIN_VALUE)</code> returns?`,[`2147483648, the positive value`,`0, because the sign bit is cleared`,`Integer.MIN_VALUE (still negative)`,`ArithmeticException on overflow`],2,`+2147483648 doesn't fit in int, so it overflows back. Math.absExact throws instead.`,'H']
+]);
+
+addQ('0.3', [
+ [`How many times does <code>for (int i = 0; i &lt; 5; i++)</code> run its body?`,[`4`,`5`,`6`,`Forever`],1,`i = 0, 1, 2, 3, 4.`,'E'],
+ [`<code>while (x &gt; 0) { x--; }</code> with x = 0 at the start. How many iterations?`,[`0`,`1`,`Infinite`,`-1`],0,`while checks the condition before the first pass.`,'E'],
+ [`Which loop is best for visiting every element of a List when you don't need the index?`,[`A for loop with list.get(i)`,`do-while`,`The enhanced for: for (T x : list)`,`A switch`],2,`It uses the iterator and works for any Iterable.`,'E'],
+ [`Inside nested loops, a plain <code>break</code> exits?`,[`Both loops`,`Only the innermost loop`,`The method`,`The outer loop only`],1,`Use a labelled break (outer: … break outer;) to exit both.`,'M'],
+ [`A switch expression on a String has cases "A" and "B" but no default. What happens?`,[`Compile error: switch expressions must be exhaustive`,`It returns null for any value not listed`,`It compiles but throws only at run time`,`It falls through to the "B" case by default`],0,`Only enums/sealed types can be exhaustive without default.`,'H']
+], [
+ [`What does <code>case "B", "C" -&gt; …</code> mean in a switch expression?`,[`It matches only "BC"`,`It's a syntax error`,`Either "B" or "C" runs this branch`,`It falls through from B to C`],2,`Multiple labels per case, no fall-through.`,'M'],
+ [`In a switch expression with a block body, how do you produce the value?`,[`return value;`,`yield value;`,`break value;`,`The last expression is used`],1,`yield returns a value from a switch expression block.`,'H']
+]);
+
+addQ('0.4', [
+ [`What is the index of the last element of <code>int[] a = new int[10]</code>?`,[`10`,`9`,`11`,`0`],1,`Indexes run from 0 to length − 1.`,'E'],
+ [`<code>String[] names = new String[3];</code> What does <code>names[0]</code> hold?`,[`""`,`"null"`,`null`,`It throws`],2,`Object arrays start filled with null.`,'E'],
+ [`Can an array's size change after it's created?`,[`Yes, by calling add() on the array`,`No: create a new array or use ArrayList`,`Yes, by assigning a new value to length`,`Only arrays of primitives like int[]`],1,`Arrays are fixed-size.`,'E'],
+ [`<code>int[] a = {5, 2, 9}; Arrays.sort(a);</code> What is a now?`,[`[9, 5, 2]`,`[5, 2, 9]`,`A new array is returned; a is unchanged`,`[2, 5, 9]`],3,`Arrays.sort sorts in place, ascending.`,'M'],
+ [`Which loop prints every element safely?`,[`for (int i = 0; i &lt;= a.length; i++)`,`for (int i = 1; i &lt;= a.length; i++)`,`for (int i = 0; i &lt; a.length; i++)`,`for (int i = a.length; i &gt; 0; i--) print(a[i])`],2,`The others go out of bounds.`,'M']
+], [
+ [`What does <code>Arrays.copyOf(a, 2)</code> return for a = [1, 2, 3, 4]?`,[`[1, 2]`,`[3, 4]`,`[1, 2, 3, 4, 0, 0]`,`It modifies a`],0,`It truncates or pads to the new length.`,'M'],
+ [`Can a 2D array have rows of different lengths?`,[`No, every 2D array is always rectangular`,`Only char arrays, for storing lines of text`,`Yes: it's an array of arrays (jagged)`,`Only when built from an ArrayList of rows`],2,`int[][] g = new int[3][]; then each row can be a different length.`,'H']
+]);
+
+addQ('0.5', [
+ [`Which keyword sends a value back from a method?`,[`yield`,`break`,`return`,`send`],2,`return value; ends the method and passes the value back.`,'E'],
+ [`Two methods: <code>sum(int, int)</code> and <code>sum(int, int, int)</code>. What is this called?`,[`Overriding`,`Overloading`,`Recursion`,`Hiding`],1,`Same name, different parameter lists.`,'E'],
+ [`A local variable declared inside a method is visible where?`,[`In the whole class`,`Only inside that method (its block)`,`In every method called from it`,`Everywhere`],1,`Locals live in the method's stack frame.`,'E'],
+ [`What does this return: <code>int sumTo(int n) { return n == 0 ? 0 : n + sumTo(n - 1); }</code> for n = 4?`,[`4`,`10`,`24`,`StackOverflowError`],1,`4 + 3 + 2 + 1 + 0.`,'M'],
+ [`A <code>void</code> method has <code>return;</code> in the middle. What happens?`,[`Compile error`,`It returns null`,`It ends the method early`,`It's ignored`],2,`return; exits a void method.`,'M']
+], [
+ [`What is varargs: <code>int max(int... nums)</code>?`,[`A method whose return value is optional`,`A method accepting any number of ints, received as an array`,`A generic method that takes any type T`,`A method that calls itself a variable number of times`],1,`Callers write max(1, 5, 3); inside, nums is an int[].`,'M'],
+ [`Method A calls B, B calls C. C throws an exception nobody catches. Which frames are removed?`,[`Only C's frame; B and A keep running normally`,`None: the JVM retries C's frame automatically`,`C's, B's and A's, unwinding until a catch or the thread ends`,`Only A's frame, since it started the chain`],2,`The exception propagates up the call stack.`,'H']
+]);
+
+addQ('0.6', [
+ [`How do you create an object of class Car?`,[`Car c = Car();`,`Car c = new Car();`,`Car c = create Car;`,`new c = Car();`],1,`new allocates the object and runs a constructor.`,'E'],
+ [`What is the default value of an object field of type String?`,[`""`,`null`,`"null"`,`It must be set, or compile error`],1,`Fields get default values; locals don't.`,'E'],
+ [`A constructor has which return type?`,[`void, like any method returning nothing`,`The class type, since it builds an instance`,`None: constructors have no return type`,`Object, the parent of every class`],2,`Adding void turns it into an ordinary method.`,'M'],
+ [`Why make fields <code>private</code> and expose methods instead?`,[`Private fields are faster for the JVM to access`,`So the class controls changes and keeps its data valid`,`Java forbids public fields on normal classes`,`Private fields take up less memory per object`],1,`That's encapsulation.`,'E'],
+ [`<code>class A { int x; }</code> <code>A a1 = new A(); A a2 = new A(); a1.x = 5;</code> What is <code>a2.x</code>?`,[`5`,`0`,`null`,`Compile error`],1,`Each object has its own copy of instance fields.`,'M']
+], [
+ [`What does <code>this(...)</code> as the first line of a constructor do?`,[`Calls the parent class's constructor`,`Calls another constructor of the same class`,`Creates a copy of the current object`,`Returns this to the caller of new`],1,`Constructor chaining avoids duplicated setup.`,'M'],
+ [`A local variable is declared but never assigned, then printed. Result?`,[`It prints 0, the default for an int`,`It prints null, the default for references`,`Compile error: might not have been initialized`,`It throws an exception when printed`],2,`Unlike fields, locals have no default value.`,'H']
+]);
+
+addQ('0.7', [
+ [`Which classes don't need an import?`,[`Classes in java.util, like List and Map`,`Classes in java.lang and in the same package`,`Every class that ships with the JDK`,`None: every class needs an import`],1,`String, Math, Integer… are in java.lang.`,'E'],
+ [`What does the package declaration have to match?`,[`The name of the public class in the file`,`The folder structure of the source file`,`The name of the JAR it will be packaged in`,`Nothing: it's only a label`],1,`com.shop.order ↔ com/shop/order/.`,'E'],
+ [`Which access level should most fields have?`,[`public`,`protected`,`private`,`package-private`],2,`Expose behaviour through methods instead.`,'E'],
+ [`A protected field in class Base (package a). A subclass Child in package b. Can Child's methods use the inherited field?`,[`Yes`,`No`,`Only if static`,`Only with an import`],0,`protected = package + subclasses.`,'M'],
+ [`What does <code>import java.util.*;</code> import?`,[`All classes in java.util and its sub-packages`,`All classes directly in java.util (not sub-packages)`,`Only interfaces`,`Nothing`],1,`java.util.concurrent still needs its own import.`,'M']
+], [
+ [`Two imported packages both contain a class named Date. What happens if you use plain <code>Date</code>?`,[`The first import statement wins`,`Compile error: ambiguous, use the full name`,`The class from the newest JDK module wins`,`It always resolves to java.util.Date`],1,`Write java.sql.Date or java.util.Date explicitly.`,'H'],
+ [`What does <code>import static java.lang.Math.max;</code> let you write?`,[`Only Math.max(a, b), as before`,`max(a, b) without the class name`,`static max = … as a declaration`,`Nothing new compared with import`],1,`Static imports bring static members into scope.`,'M']
+]);
+
+addQ('1.1', [
+ [`Which part of the JVM checks that bytecode won't break memory safety before it runs?`,[`The garbage collector`,`The bytecode verifier`,`javac`,`The JIT`],1,`Verification checks types, stack use and jumps.`,'E'],
+ [`What is a "stack machine" in the context of bytecode?`,[`Bytecode pushes and pops values on an operand stack`,`A machine designed to run recursive code fast`,`The thread's call stack that holds the frames`,`A CPU that executes bytecode natively`],0,`e.g. iload, iadd, istore.`,'M'],
+ [`What's the main job of C1 vs C2 in HotSpot?`,[`C1 interprets bytecode while C2 compiles it`,`C1 compiles fast; C2 optimises the hottest code`,`C1 targets desktops, C2 targets large servers`,`C2 compiles first and C1 cleans up afterwards`],1,`Tiered compilation.`,'M'],
+ [`Which JIT optimisation copies a small method's body into its caller?`,[`Escape analysis`,`Inlining`,`Loop unrolling`,`Deoptimisation`],1,`Inlining enables further optimisations.`,'E'],
+ [`Why does a JMH benchmark run warm-up iterations first?`,[`To warm the disk cache with the class files`,`To let the JIT compile hot code before measuring`,`To load test data into memory first`,`To trigger a full GC before measuring`],1,`Measuring cold code measures the interpreter.`,'M']
+], [
+ [`What does "intrinsic" mean for methods like <code>Math.sqrt</code> or <code>System.arraycopy</code>?`,[`They're written in plain Java like other methods`,`The JIT swaps in hand-tuned machine code`,`They can't be called from application code`,`They're deprecated, kept for compatibility`],1,`The JVM knows these methods specially.`,'H'],
+ [`What does CDS (Class Data Sharing) improve?`,[`GC pause times, by shrinking the young generation`,`Startup time, by reusing pre-parsed class metadata`,`Peak throughput, by compiling everything at startup`,`Network latency, by caching DNS lookups`],1,`AppCDS archives your app's classes too.`,'H']
+]);
+
+addQ('1.2', [
+ [`When is a class typically loaded?`,[`At JVM startup, all at once`,`The first time it's actually needed`,`When javac compiles it`,`Only when Class.forName is called`],1,`Loading is lazy.`,'E'],
+ [`Which loader loads your application's classes from the classpath?`,[`The bootstrap class loader`,`The platform class loader`,`Application (system) class loader`,`The JIT compiler's loader`],2,`It delegates to platform and bootstrap first.`,'E'],
+ [`What happens if a static initialiser throws an exception?`,[`It's retried the next time the class is used`,`ExceptionInInitializerError; the class stays unusable`,`The error is ignored and fields keep defaults`,`The class loader restarts and tries again`],1,`Avoid risky work in static blocks.`,'M'],
+ [`During "preparation", what values do static fields get?`,[`Their declared initial values`,`Default values (0, null, false)`,`Random values`,`None until first use`],1,`Initialisers run later, at initialisation.`,'M'],
+ [`Two threads trigger initialisation of the same class at once. What does the JVM guarantee?`,[`Both threads run the static block once each`,`Static init runs exactly once; the other thread waits`,`The JVM deadlocks the two threads`,`The second thread gets an exception`],1,`That's why the holder idiom is thread-safe.`,'M']
+], [
+ [`Why do app servers use separate class loaders per application?`,[`Class loading runs faster on multi-core servers`,`Apps can use different library versions and unload`,`Only to sandbox each application for security`,`The JVM can't load two WARs any other way`],1,`Each loader defines its own copy of classes.`,'H'],
+ [`Redeploying an app leaks Metaspace over time. Typical cause?`,[`Too many threads are created on each deploy`,`Something outside the app still holds its class loader`,`The heap is set too large for the container`,`Large String constants pile up in the pool`],1,`A class loader leak keeps all its classes alive.`,'H']
+]);
+
+addQ('1.3', [
+ [`Where do static fields' values live?`,[`On the stack of the thread that set them`,`On the heap, with the Class object`,`In CPU registers for faster access`,`In the JIT's code cache with the methods`],1,`Since Java 8, static fields live with the Class mirror on the heap.`,'H'],
+ [`Each thread has its own...`,[`heap`,`stack`,`Metaspace`,`String pool`],1,`The heap is shared by all threads.`,'E'],
+ [`When is a method's local variable memory freed?`,[`At the next garbage collection run`,`When the method returns and its frame pops`,`When the owning thread itself ends`,`Never, locals stay until JVM exit`],1,`Stack frames are freed instantly.`,'E'],
+ [`What does <code>-Xmx2g</code> set?`,[`Stack size`,`Maximum heap size`,`Metaspace size`,`Thread count`],1,`-Xms sets the initial heap.`,'E'],
+ [`Which error means the JVM couldn't create a new thread?`,[`StackOverflowError: thread stack exhausted`,`OutOfMemoryError: unable to create native thread`,`OutOfMemoryError: Java heap space`,`IllegalThreadStateException on start()`],1,`OS limits or native memory ran out, often from unbounded thread creation.`,'M']
+], [
+ [`A container has a 2 GB limit and the JVM uses default settings. Roughly what max heap does it pick?`,[`The full 2 GB container limit`,`About 25% of container memory (512 MB)`,`Unlimited until the kernel stops it`,`A fixed 64 MB, regardless of limits`],1,`MaxRAMPercentage defaults to 25%; services often raise it to ~75%.`,'H'],
+ [`Where do DirectByteBuffers (used by Netty, NIO) allocate memory?`,[`On the Java heap with other objects`,`Off-heap native memory`,`On the calling thread's stack`,`In Metaspace next to class data`],1,`Another reason RSS exceeds -Xmx.`,'H']
+]);
+
+addQ('1.4', [
+ [`What decides whether an object is garbage?`,[`How long ago it was created`,`Whether it's reachable from GC roots`,`How many bytes it occupies`,`Whether its finalize() has already run`],1,`Unreachable = collectable.`,'E'],
+ [`Which of these is a GC root?`,[`A local variable in an active stack frame`,`An object in a HashMap that nothing references`,`An unreachable cycle`,`Any object older than 1 minute`],0,`Also static fields and JNI references.`,'E'],
+ [`What is a stop-the-world pause?`,[`A JVM crash that halts all threads`,`App threads paused while the GC works`,`A thread dump that freezes the app`,`A deadlock among application threads`],1,`Modern collectors keep these short.`,'E'],
+ [`Why does <code>System.gc()</code> usually not help?`,[`It's only a hint, and a forced full GC usually hurts latency`,`It deletes every object, including live ones`,`It's illegal to call since Java 17`,`It turns off the JIT until the next restart`],0,`Let the collector decide.`,'M'],
+ [`Which collector is the default in modern HotSpot for most server JVMs?`,[`Serial`,`CMS`,`G1`,`Epsilon`],2,`CMS was removed in Java 14.`,'M']
+], [
+ [`What are "humongous" objects in G1?`,[`Objects that survived more than 15 collections`,`Objects at least half a region in size, allocated specially`,`Objects stored in Metaspace instead of the heap`,`Objects that override finalize()`],1,`Many large arrays can fragment the heap; bigger regions can help.`,'H'],
+ [`When is ZGC a better choice than G1?`,[`Tiny heaps for short-lived command-line tools`,`Services needing very short pauses, any heap size`,`Batch jobs that only care about throughput`,`Never: G1 is the better choice everywhere`],1,`Generational ZGC (Java 21+) keeps pauses around a millisecond.`,'H']
+]);
+
+addQ('1.5', [
+ [`Which reference type is cleared at the next GC once nothing stronger points to the object?`,[`Strong`,`Soft`,`Weak`,`Phantom`],2,`Soft waits for memory pressure.`,'E'],
+ [`What does <code>weakRef.get()</code> return after the object is collected?`,[`The old object`,`null`,`An exception`,`A new instance`],1,`Always check for null.`,'E'],
+ [`Why can a phantom reference's get() never return the object?`,[`It's a known JDK bug kept for compatibility`,`It's post-mortem only: no resurrection allowed`,`Phantom references always start out as null`,`get() is synchronized on the GC thread`],1,`Used with ReferenceQueue / Cleaner.`,'M'],
+ [`What does a ReferenceQueue tell you?`,[`Which objects are still strongly reachable`,`That a registered reference has been cleared by the GC`,`How long each GC pause took`,`How much heap is still free`],1,`Lets you clean up associated resources.`,'M'],
+ [`Which is a typical use of WeakHashMap?`,[`As the primary store for application data`,`Metadata for objects you don't own, without leaks`,`A thread-safe cache shared by all requests`,`Keeping keys sorted by insertion time`],1,`Entries vanish when keys become unreachable.`,'M']
+], [
+ [`Why is finalize() deprecated for removal?`,[`It runs too often and blocks the GC threads`,`Unpredictable, can resurrect objects, may never run`,`It needs root privileges on the host machine`,`It only works on Linux-based JVMs`],1,`Prefer try-with-resources and Cleaner.`,'H'],
+ [`Strings used as WeakHashMap keys are never removed. Why?`,[`Strings can't be wrapped in weak references`,`Literal Strings are interned, so always reachable`,`WeakHashMap skips String keys entirely`,`Strings are too small for the GC to collect`],1,`Use keys whose lifetime you control.`,'H']
+]);
+
+addQ('1.6', [
+ [`<pre>void inc(int n) { n++; }
+int x = 1; inc(x);</pre>What is x?`,[`2`,`1`,`0`,`Compile error`],1,`The int value is copied.`,'E'],
+ [`<pre>void clear(List&lt;String&gt; l) { l.clear(); }</pre>Called with a list of 3 items. Afterwards the caller's list has?`,[`3 items`,`0 items`,`null`,`It throws`],1,`Same object, mutated through the copied reference.`,'E'],
+ [`<pre>void reset(String s) { s = "new"; }
+String t = "old"; reset(t);</pre>What is t?`,[`"new"`,`"old"`,`null`,`""`],1,`Reassigning the parameter doesn't affect the caller, and Strings are immutable anyway.`,'M'],
+ [`How can a method give back two values to its caller?`,[`Use two return statements in a row`,`Return a small result object or record`,`Swap the values into the caller's variables`,`Pass the variables by reference`],1,`e.g. record MinMax(int min, int max).`,'M'],
+ [`<pre>void grow(StringBuilder sb) { sb.append("!"); sb = new StringBuilder("x"); }
+StringBuilder b = new StringBuilder("hi"); grow(b);</pre>What is b?`,[`hi`,`hi!`,`x`,`x!`],1,`The append mutates the shared object; the reassignment is local.`,'H']
+], [
+ [`Why can't you write a general <code>swap(Integer a, Integer b)</code> that swaps the caller's variables?`,[`Integer objects are final, so they can't move`,`Parameters hold copies of the caller's references`,`Generics forbid swapping wrapper types`,`It works fine with a simple temp variable`],1,`Swap elements inside an array or object instead.`,'M'],
+ [`An array is passed to a method that does <code>arr[0] = 9;</code>. Does the caller see it?`,[`Yes: the method gets a copy of the reference`,`No: arrays are copied when passed in`,`Only for int arrays, not object arrays`,`Only if the parameter is declared final`],0,`Same rule as any object.`,'M']
+]);
+
+addQ('1.7', [
+ [`What is autoboxing?`,[`Converting an Integer into its String form`,`Automatic primitive → wrapper conversion`,`Packing several objects into one JAR entry`,`Sorting boxed values automatically`],1,`Unboxing is the reverse.`,'E'],
+ [`How should two Integer objects be compared for equal values?`,[`a == b, since both are Integers`,`a.equals(b) or Objects.equals(a, b)`,`a.compareTo(b) == 1`,`a.hashCode() == b.hashCode() only`],1,`== compares references.`,'E'],
+ [`<code>Map&lt;String,Integer&gt; m = new HashMap&lt;&gt;(); int n = m.get("x");</code> Result?`,[`n = 0`,`NullPointerException`,`n = -1`,`Compile error`],1,`get returns null, unboxing null throws. Use getOrDefault.`,'M'],
+ [`Why is <code>Long sum = 0L; for (...) sum += i;</code> slow in a hot loop?`,[`Long arithmetic is slower than int on every CPU`,`Each += unboxes and creates a new Long object`,`The sum overflows after a few iterations`,`It isn't slower than using a primitive long`],1,`Use the primitive long.`,'M'],
+ [`<code>Integer a = 1000, b = 1000; a.equals(b)</code>?`,[`true`,`false`,`NullPointerException`,`Compile error`],0,`equals compares values regardless of caching.`,'E']
+], [
+ [`What does <code>Integer.valueOf(127) == Integer.valueOf(127)</code> rely on?`,[`The Integer cache for -128..127`,`The String pool sharing equal values`,`The JIT merging equal objects`,`Escape analysis removing the allocation`],0,`Never rely on it; use equals.`,'M'],
+ [`<code>Character c = 'a'; c == 'a'</code>?`,[`true: c is unboxed to a char`,`false: they're different types`,`Compile error: char vs Character`,`NullPointerException on compare`],0,`Mixed wrapper/primitive == unboxes the wrapper.`,'H']
+]);
+
+addQ('1.8', [
+ [`Which is the right way to check two Strings have the same text?`,[`s1 == s2`,`s1.equals(s2)`,`s1.hashCode() == s2.hashCode()`,`s1.compareTo(s2) == 1`],1,`equals compares characters.`,'E'],
+ [`What does <code>s.toUpperCase()</code> do to s?`,[`Changes s in place to upper case`,`Returns a new String; s is unchanged`,`Throws if s has no lower-case letters`,`Interns s and returns the pooled copy`],1,`Strings are immutable.`,'E'],
+ [`Safest way to compare a variable with a literal when the variable may be null?`,[`input.equals("yes")`,`"yes".equals(input)`,`input == "yes"`,`input.compareTo("yes")`],1,`The literal is never null. Objects.equals also works.`,'M'],
+ [`<code>"a,b,,c".split(",")</code> returns how many elements?`,[`3`,`4`,`5`,`2`],1,`[a, b, "", c]; trailing empty strings would be removed, middle ones aren't.`,'H'],
+ [`Why is StringBuilder preferred over String concatenation in a loop?`,[`StringBuilder is synchronized, so it's safer`,`It appends into one buffer instead of recopying`,`It uses less CPU per character in every case`,`It's immutable, so the JIT can optimise it`],1,`StringBuffer is the old synchronized version.`,'E']
+], [
+ [`Since Java 9, how are Strings stored internally for Latin-1 text?`,[`UTF-16, two bytes per char, always`,`One byte per char (compact strings)`,`UTF-8, variable length per char`,`char arrays, one char per element`],1,`Compact Strings halve memory for Latin-1 content.`,'H'],
+ [`<code>String s = "hi"; String t = s + "";</code> Is <code>s == t</code>?`,[`true: adding an empty string changes nothing`,`false: it's built at run time, a new String`,`Compile error: can't add an empty literal`,`It depends on when the GC last ran`],1,`Only constant expressions are folded into the pool.`,'H']
+]);
+
+addQ('1.9', [
+ [`Can a static method use instance fields directly?`,[`Yes, any static method can read them`,`No: there's no this in a static method`,`Only if the fields are declared public`,`Only inside records, not classes`],1,`It needs an object reference to reach them.`,'E'],
+ [`What does a <code>final</code> method mean?`,[`It can't be called`,`It can't be overridden`,`It runs once`,`It's static`],1,`final class = can't be extended.`,'E'],
+ [`How many copies of a static field exist with 100 objects?`,[`100`,`1`,`0`,`Depends on the GC`],1,`Static belongs to the class.`,'E'],
+ [`<code>final int[] a = {1}; a[0] = 2;</code> Allowed?`,[`No: the array is final, so it can't change`,`Yes: only the reference a is final`,`Only inside a static initialiser block`,`It compiles but fails at run time`],1,`final is about the reference.`,'M'],
+ [`When must a <code>final</code> instance field be assigned?`,[`Any time before the field is first read`,`Exactly once, by the end of every constructor`,`Before main starts, in a static block`,`Never: final fields keep their defaults`],1,`Otherwise compile error.`,'M']
+], [
+ [`Why should inner classes in long-lived callbacks be avoided?`,[`Inner classes are slower to instantiate`,`They hold Outer.this and leak it`,`They can't read the outer class's fields`,`They're deprecated in recent Java versions`],1,`Use static nested classes or lambdas that don't capture this.`,'M'],
+ [`Can you override a static method?`,[`Yes, exactly like instance methods`,`No: a subclass's static method only hides it`,`Only when the static method is final`,`Only for static methods in interfaces`],1,`No dynamic dispatch for statics.`,'H']
+]);
+
+addQ('1.10', [
+ [`Which is NOT required for an immutable class?`,[`final fields`,`no setters`,`defensive copies of mutable inputs`,`a public no-arg constructor`],3,`Immutable classes usually validate everything in one constructor.`,'E'],
+ [`Why are immutable objects naturally thread-safe?`,[`Immutable classes use locks internally`,`Their state never changes, so nothing races`,`Immutable objects are stored on the stack`,`The JIT shields them from other threads`],1,`Share them freely.`,'E'],
+ [`<code>new BigDecimal("1.10").setScale(1, RoundingMode.HALF_UP)</code>?`,[`1.1`,`1.10`,`1`,`ArithmeticException`],0,`Scale 1 → one decimal place.`,'M'],
+ [`How should you compare two BigDecimals for numeric equality?`,[`equals`,`compareTo(...) == 0`,`==`,`hashCode`],1,`equals also compares scale.`,'M'],
+ [`Storing prices as long cents means $12.34 is stored as?`,[`12.34`,`1234`,`12`,`123400`],1,`Integer minor units avoid floating point errors.`,'E']
+], [
+ [`An immutable class returns its internal <code>List</code> from a getter. Safe way?`,[`Return the field directly, since it's final`,`Return List.copyOf(items) or an unmodifiable view`,`Return null and make callers rebuild it`,`Make the getter synchronized`],1,`Don't let callers modify internal state.`,'M'],
+ [`<code>BigDecimal.valueOf(0.1)</code> vs <code>new BigDecimal(0.1)</code>?`,[`They're identical: both store exactly 0.1`,`valueOf gives 0.1; the constructor the exact binary value`,`valueOf throws for values like 0.1`,`The constructor is the safer, exact choice`],1,`Prefer valueOf or the String constructor.`,'H']
+]);
+
+addQ('1.11', [
+ [`A shallow copy duplicates...`,[`Everything, recursively, down to the primitives`,`Only the top-level object; nested objects are shared`,`Nothing: it returns the same reference`,`Only the primitive fields; references become null`],1,`Deep copies duplicate nested mutable objects too.`,'E'],
+ [`Why can immutable fields be shared between a copy and the original?`,[`Immutable fields are static, so they're shared anyway`,`They can't change, so sharing has no side effects`,`The GC makes copies of them when needed`,`They're stored on the stack, not the heap`],1,`Strings, LocalDate, records of immutables.`,'E'],
+ [`What does <code>Object.clone()</code> do by default?`,[`A deep copy that calls each class's constructor`,`Shallow field-by-field copy without calling constructors`,`Serializes the object and reads it back`,`Nothing, unless you override it`],1,`And requires implementing Cloneable.`,'M'],
+ [`Calling clone() on a class that doesn't implement Cloneable throws?`,[`NullPointerException`,`CloneNotSupportedException`,`ClassCastException`,`Nothing`],1,`Cloneable is a marker interface.`,'M'],
+ [`<code>int[] b = a.clone();</code> for an int array. Is it independent of a?`,[`No: array clones always share their storage`,`Yes: primitive arrays copy their values`,`Only the first element is copied over`,`It throws CloneNotSupportedException`],1,`For object arrays it's still shallow (elements shared).`,'M']
+], [
+ [`Why is a copy constructor often preferred to clone()?`,[`It's always faster than clone()`,`It's explicit, type-safe and works with final fields`,`clone() was removed in recent Java versions`,`It deep-copies every field automatically`],1,`Effective Java recommends it.`,'M'],
+ [`Records of immutable components: do they need deep copying?`,[`Yes, every record must be deep-copied`,`No: they can be shared safely`,`Only when equals is overridden`,`Only before being serialized`],1,`Immutability removes the need to copy.`,'H']
+]);
+</script>
+<script>
+addQ('2.1', [
+ [`You need unique user ids with fast "contains" checks. Best choice?`,[`ArrayList`,`HashSet`,`LinkedList`,`ArrayDeque`],1,`O(1) average contains, no duplicates.`,'E'],
+ [`You need a map that iterates in insertion order. Which?`,[`HashMap`,`TreeMap`,`LinkedHashMap`,`EnumMap`],2,`HashMap has no order; TreeMap sorts by key.`,'E'],
+ [`Which should you use as a stack in new code?`,[`Stack`,`Vector`,`ArrayDeque (push/pop)`,`LinkedList only`],2,`Stack is a legacy synchronized class.`,'E'],
+ [`A list is read by many threads and changed rarely (listener registry). Which?`,[`ArrayList`,`CopyOnWriteArrayList`,`LinkedList`,`Vector`],1,`Reads need no locking; writes copy.`,'M'],
+ [`Why declare <code>List&lt;Order&gt; orders = new ArrayList&lt;&gt;()</code> instead of <code>ArrayList&lt;Order&gt;</code>?`,[`Interface-typed variables run faster`,`Code depends on the interface, not the class`,`ArrayList can't be used as a variable type`,`Generics require the interface type there`],1,`Program to interfaces.`,'M']
+], [
+ [`You need the k smallest elements from a stream that never ends, keeping memory bounded. Which structure?`,[`A sorted ArrayList of everything`,`A max-heap (PriorityQueue) of size k`,`A HashSet`,`A LinkedList`],1,`Evict the largest when size exceeds k.`,'H'],
+ [`What does <code>Collections.synchronizedList</code> NOT protect?`,[`Single get and add calls from many threads`,`Iteration and compound check-then-act actions`,`Memory visibility of the list's elements`,`Nothing: every use is fully thread-safe`],1,`Iterate inside synchronized(list) { … }, or use a concurrent collection.`,'H']
+]);
+
+addQ('2.2', [
+ [`What is HashMap's default initial capacity?`,[`10`,`16`,`32`,`100`],1,`It doubles on resize.`,'E'],
+ [`What is the default load factor?`,[`0.5`,`0.75`,`1.0`,`2.0`],1,`Resize when size > capacity × 0.75.`,'E'],
+ [`How does HashMap find the right entry within a bucket?`,[`By comparing hashCode values only`,`By comparing keys with equals`,`By the order the entries were inserted`,`By reference equality (==) only`],1,`hashCode picks the bucket, equals picks the entry.`,'M'],
+ [`Can a HashMap have a null key?`,[`No: null keys throw NullPointerException`,`Yes, one, stored in bucket 0`,`Yes, any number of them, all stored together`,`Only in Java 8 and later versions`],1,`ConcurrentHashMap and Hashtable don't allow null keys.`,'M'],
+ [`What is a hash collision?`,[`Two equal keys inserted twice`,`Two different keys landing in the same bucket`,`The table becoming completely full`,`Inserting a null key into the map`],1,`Collisions are normal; equals resolves them.`,'E']
+], [
+ [`Why is HashMap's capacity always a power of two?`,[`Tradition carried over from Hashtable`,`So the index is a cheap bit mask: hash &amp; (n − 1)`,`Power-of-two tables use less memory`,`It makes the map safe for many threads`],1,`That's also why the hash's high bits are spread down.`,'H'],
+ [`Two threads put into a plain HashMap at the same time. What can go wrong?`,[`Nothing: HashMap synchronizes puts internally`,`Lost entries or corrupted buckets`,`It throws ConcurrentModificationException each time`,`Only throughput suffers; the data stays correct`],1,`Use ConcurrentHashMap.`,'H']
+]);
+
+addQ('2.3', [
+ [`Which methods must be overridden together?`,[`toString and equals`,`equals and hashCode`,`hashCode and compareTo`,`clone and finalize`],1,`From the same fields.`,'E'],
+ [`What does the default <code>Object.equals</code> compare?`,[`All fields`,`References (identity)`,`hashCode values`,`toString output`],1,`Override it for value semantics.`,'E'],
+ [`What do records generate for equals/hashCode?`,[`Nothing`,`Identity-based versions`,`Versions based on all components`,`Only hashCode`],2,`That's why records make good map keys.`,'E'],
+ [`Is <code>x.equals(null)</code> allowed to throw?`,[`Yes, NullPointerException`,`No: it must return false`,`Only for Strings`,`Only if x is null`],1,`Part of the equals contract.`,'M'],
+ [`Why should hashCode be cheap and stable?`,[`It's only called once, when the key is inserted`,`Maps call it on every put/get; a changing hash loses entries`,`Maps use it for sorting keys in order`,`It doesn't matter as long as equals is correct`],1,`Use immutable fields.`,'M']
+], [
+ [`Using <code>instanceof</code> vs <code>getClass() ==</code> in equals: trade-off?`,[`There's no difference between the two`,`instanceof risks symmetry; getClass() blocks subtypes`,`getClass() is faster, nothing else changes`,`instanceof doesn't compile inside equals`],1,`Records and final classes avoid the dilemma.`,'H'],
+ [`A class's hashCode returns 42 for every object. Correct? Fast?`,[`Incorrect and slow: it breaks the contract`,`Correct, but every entry collides: very slow`,`Incorrect but fast: collisions don't matter`,`Correct and fast: one bucket is efficient`],1,`Valid but terrible distribution.`,'H']
+]);
+
+addQ('2.4', [
+ [`TreeMap keys must be...`,[`Strings, since TreeMap sorts alphabetically`,`Comparable, or a Comparator must be supplied`,`Objects with unique hashCode values`,`Integers or other numeric wrapper types`],1,`It orders keys with compareTo / compare.`,'E'],
+ [`<code>treeMap.firstKey()</code> returns?`,[`The first inserted key`,`The smallest key`,`A random key`,`The largest key`],1,`lastKey gives the largest.`,'E'],
+ [`<code>headMap(30)</code> on keys 10, 20, 30, 40?`,[`{10, 20}`,`{10, 20, 30}`,`{30, 40}`,`{40}`],0,`headMap(toKey) excludes toKey by default.`,'M'],
+ [`What is the cost of TreeMap get/put?`,[`O(1)`,`O(log n)`,`O(n)`,`O(n log n)`],1,`Red-black tree.`,'E'],
+ [`LinkedHashMap with accessOrder = false iterates in which order?`,[`Sorted`,`Insertion order`,`Most recently used last`,`Random`],1,`accessOrder = true gives access order.`,'M']
+], [
+ [`<code>removeEldestEntry</code> is called when?`,[`Before every get, to check expiry`,`After each put/putAll, with the eldest entry`,`On every iteration of the map`,`Never automatically: you call it yourself`],1,`Return true to evict it.`,'M'],
+ [`Why might a TreeMap be preferred to a HashMap for an order book (prices)?`,[`Faster lookups than any hash-based map`,`Sorted keys: best bid/ask and price ranges in O(log n)`,`It uses noticeably less memory per entry`,`It's thread-safe for concurrent traders`],1,`firstKey / lastKey / subMap.`,'M']
+]);
+
+addQ('2.5', [
+ [`What happens when an ArrayList's internal array is full and you add?`,[`It throws IllegalStateException`,`It allocates a bigger array (~1.5×) and copies`,`It links a new array chunk to the old one`,`It overwrites the oldest element`],1,`That's why add is amortised O(1).`,'E'],
+ [`<code>new ArrayList&lt;&gt;(1000)</code> sets what?`,[`Size 1000, all elements null`,`Initial capacity 1000; size is 0`,`A maximum size of 1000 elements`,`Nothing: the argument is ignored`],1,`Capacity ≠ size.`,'M'],
+ [`Which is O(1) on a LinkedList?`,[`get(i)`,`addFirst / removeFirst`,`contains`,`indexOf`],1,`Operations at the ends are cheap.`,'E'],
+ [`Iterating a 1M-element LinkedList vs ArrayList: which is typically faster?`,[`LinkedList, since it never has to resize`,`ArrayList: contiguous memory suits CPU caches`,`Same: both are O(n) so they're equally fast`,`It depends only on the GC settings`],1,`Pointer chasing is cache-unfriendly.`,'M'],
+ [`<code>for (int i = 0; i &lt; linkedList.size(); i++) linkedList.get(i)</code> costs?`,[`O(n)`,`O(n²)`,`O(log n)`,`O(1)`],1,`Each get(i) walks the list.`,'H']
+], [
+ [`Does <code>ArrayList.remove</code> shrink the internal array?`,[`Yes, it shrinks after every removal`,`No; call trimToSize() to shrink capacity`,`Only once below 10 elements`,`Only in Java 21 and later`],1,`Capacity stays to avoid re-growing.`,'H'],
+ [`Why does ArrayList implement RandomAccess while LinkedList doesn't?`,[`For licensing reasons inside the JDK`,`It marks that get(i) is O(1)`,`Because ArrayList is synchronized`,`Because serialization needs it`],1,`Collections utilities check it.`,'M']
+]);
+
+addQ('2.6', [
+ [`What is modCount?`,[`The list's current number of elements`,`A count of structural changes`,`The number of open iterators`,`The capacity of the backing array`],1,`Used for fail-fast behaviour.`,'E'],
+ [`Does <code>list.set(i, x)</code> during a for-each loop throw CME?`,[`Yes, any change during iteration throws`,`No: set isn't a structural modification`,`Only for LinkedList, not ArrayList`,`Only when setting the last element`],1,`Structural = size changes.`,'M'],
+ [`Are fail-fast iterators guaranteed to detect all concurrent modifications?`,[`Yes`,`No: it's best-effort`,`Only single-threaded`,`Only on ArrayList`],1,`Don't rely on CME for correctness.`,'M'],
+ [`How do you safely remove while iterating with an explicit iterator?`,[`list.remove(x)`,`it.remove()`,`list.clear()`,`it.next() twice`],1,`Iterator.remove keeps counts in sync.`,'E'],
+ [`Iterating a ConcurrentHashMap while another thread adds keys?`,[`It throws ConcurrentModificationException`,`No CME: weakly consistent iteration`,`Iteration blocks until the writer finishes`,`It always returns duplicate keys`],1,`Concurrent collections are fail-safe.`,'M']
+], [
+ [`A backwards index loop removing elements from an ArrayList: is it safe?`,[`No: it throws ConcurrentModificationException`,`Yes: removing at i doesn't shift indexes you haven't visited`,`Only for LinkedList, not ArrayList`,`Only if you call removeIf instead`],1,`Forward loops skip elements; backward loops don't.`,'H'],
+ [`<code>map.keySet().removeIf(k -&gt; k.startsWith("tmp"))</code> on a HashMap?`,[`It throws ConcurrentModificationException`,`Removes matching entries from the map safely`,`It removes the keys but leaves the values`,`It doesn't compile on a keySet view`],1,`keySet is a view backed by the map.`,'H']
+]);
+
+addQ('2.7', [
+ [`<code>a.compareTo(b)</code> returns a negative number means?`,[`a comes after b`,`a comes before b`,`a equals b`,`error`],1,`Negative: a < b in this ordering.`,'E'],
+ [`Sort names case-insensitively?`,[`list.sort(null), which ignores case`,`list.sort(String.CASE_INSENSITIVE_ORDER)`,`Collections.reverse(list) after sorting`,`list.sort(String::compareTo)`],1,`A ready-made Comparator.`,'E'],
+ [`Sort cars by price descending?`,[`Comparator.comparing(Car::price)`,`Comparator.comparing(Car::price).reversed()`,`Comparator.reverseOrder()`,`list.reverse()`],1,`reversed() flips the comparator.`,'M'],
+ [`Is Java's <code>List.sort</code> (TimSort) stable?`,[`No: equal elements may be reordered`,`Yes: equal elements keep their relative order`,`Only when sorting primitive values`,`Only for lists below a size threshold`],1,`Lets you sort by secondary then primary key.`,'M'],
+ [`How do you sort nulls last with a comparator?`,[`It's impossible with the standard API`,`Comparator.nullsLast(Comparator.naturalOrder())`,`list.removeNulls() before sorting`,`Comparator.reverseOrder() puts them last`],1,`Otherwise compareTo on null throws NPE.`,'M']
+], [
+ [`What does "consistent with equals" mean for compareTo?`,[`compareTo == 0 exactly when equals is true`,`compareTo must call equals internally`,`compareTo returns a boolean like equals`,`Nothing: it's only a naming convention`],0,`BigDecimal is a famous exception (2.0 vs 2.00).`,'H'],
+ [`Arrays.sort on <code>int[]</code> vs on <code>Integer[]</code>?`,[`Both use the same stable algorithm`,`int[] dual-pivot quicksort; Integer[] TimSort`,`Both use unstable quicksort`,`int[] arrays can't be sorted directly`],1,`Stability only matters for objects.`,'H']
+]);
+
+addQ('2.8', [
+ [`What does <code>peek()</code> on a PriorityQueue return?`,[`The element that was added last`,`The head, without removing it`,`A random element from the heap`,`A sorted copy of all elements`],1,`poll() removes it.`,'E'],
+ [`How do you make a max-heap of Integers?`,[`new PriorityQueue&lt;&gt;() with no arguments`,`new PriorityQueue<>(Comparator.reverseOrder())`,`new MaxHeap&lt;&gt;() from java.util`,`new TreeSet&lt;&gt;() used as a heap`],1,`Default is a min-heap.`,'E'],
+ [`Where are a node's children in an array-based binary heap (index i, 0-based)?`,[`i+1 and i+2`,`2i+1 and 2i+2`,`i/2`,`i*i`],1,`Parent is (i−1)/2.`,'M'],
+ [`Is PriorityQueue thread-safe?`,[`Yes, all methods are synchronized`,`No; use PriorityBlockingQueue`,`Only poll() is thread-safe`,`Only when it holds Integers`],1,`Concurrent version exists.`,'M'],
+ [`Building a heap from n elements at once (heapify) costs?`,[`O(n log n)`,`O(n)`,`O(log n)`,`O(n²)`],1,`new PriorityQueue<>(collection) heapifies in O(n).`,'H']
+], [
+ [`Merge k sorted lists of total n elements efficiently?`,[`Concatenate and sort: O(n log n)`,`A min-heap of the k list heads: O(n log k)`,`Binary search each`,`Nested loops`],1,`Poll the smallest head, push that list's next element.`,'H'],
+ [`Why use PriorityQueue for Dijkstra's algorithm?`,[`To store which nodes were already visited`,`To always expand the closest unvisited node next`,`To sort all the edges once at the start`,`To make the algorithm thread-safe`],1,`Each poll gives the current minimum distance.`,'M']
+]);
+
+addQ('2.9', [
+ [`Which creates a truly immutable list?`,[`Arrays.asList(...)`,`List.of(...)`,`new ArrayList<>(...)`,`Collections.synchronizedList(...)`],1,`No add, set or remove.`,'E'],
+ [`<code>Arrays.asList(1, 2, 3).set(0, 9)</code>?`,[`Throws UnsupportedOperationException`,`Works: fixed-size lists allow set`,`Compile error`,`Adds 9`],1,`Only size-changing operations are unsupported.`,'M'],
+ [`<code>List.of(1, 2, 3).set(0, 9)</code>?`,[`It works, setting the first element to 9`,`Throws UnsupportedOperationException`,`It returns a new list with 9 at index 0`,`Compile error: List.of returns a read-only type`],1,`Fully immutable.`,'E'],
+ [`<code>List.copyOf(list)</code> when list is already unmodifiable (from List.of)?`,[`It always makes a fresh copy`,`May return the same instance`,`It throws: the list is already immutable`,`It returns null for immutable input`],1,`No need to copy an immutable list.`,'H'],
+ [`Which allows null elements?`,[`List.of`,`List.copyOf`,`Arrays.asList`,`Set.of`],2,`The of/copyOf factories reject nulls.`,'M']
+], [
+ [`<code>Collections.unmodifiableList(src)</code>: who can still change the contents?`,[`Nobody`,`Anyone holding src`,`Only subclasses`,`The GC`],1,`It's a view, not a copy.`,'M'],
+ [`<code>Set.of("a", "a")</code>?`,[`A set containing a single "a"`,`IllegalArgumentException: duplicate element`,`A set with two equal elements`,`Compile error: duplicate literal`],1,`Set.of rejects duplicates at creation.`,'H']
+]);
+
+addQ('2.10', [
+ [`What does the diamond <code>new ArrayList&lt;&gt;()</code> do?`,[`Creates a raw ArrayList without types`,`Lets the compiler infer the type argument`,`Makes the new list immutable`,`Nothing: it's only a style choice`],1,`Inferred from the target type.`,'E'],
+ [`<code>List&lt;?&gt;</code> means?`,[`A list of Objects; you can add anything`,`Unknown element type: read only, no adds`,`A raw list with no type checks at all`,`A list that can only contain nulls`],1,`Unbounded wildcard.`,'M'],
+ [`Generic method syntax?`,[`public T &lt;T&gt; first(List&lt;T&gt; l)`,`public &lt;T&gt; T first(List&lt;T&gt; l)`,`public T first&lt;T&gt;(List l)`,`public first(List&lt;T&gt; l)`],1,`Type parameters come before the return type.`,'M'],
+ [`What does <code>&lt;T extends Comparable&lt;T&gt;&gt;</code> mean?`,[`T must be a subclass of the Comparable class`,`T must be comparable to itself, so compareTo can be called`,`T is any type at all; the bound is a hint`,`T must be a primitive such as int or long`],1,`A bounded type parameter.`,'M'],
+ [`Can you create a <code>List&lt;int&gt;</code>?`,[`Yes, generics accept primitive types`,`No: type arguments must be reference types; use List&lt;Integer&gt;`,`Only from Java 21 with value classes`,`Only when declared with var`],1,`Primitives aren't allowed (until Valhalla).`,'E']
+], [
+ [`What is a bridge method?`,[`A deprecated API kept for compatibility`,`A synthetic method javac adds after erasure`,`A method connecting two threads`,`A default method in an interface`],1,`e.g. compareTo(Object) calling compareTo(Car).`,'H'],
+ [`Why does <code>Collections.copy(List&lt;? super T&gt; dest, List&lt;? extends T&gt; src)</code> use two wildcards?`,[`Only for style and readability`,`src produces (extends), dest consumes (super)`,`Type erasure requires two wildcards`,`It makes copying faster`],1,`Producer Extends, Consumer Super.`,'H']
+]);
+
+addQ('2.11', [
+ [`Which is a checked exception?`,[`NullPointerException`,`IllegalArgumentException`,`IOException`,`ArithmeticException`],2,`Checked exceptions must be caught or declared.`,'E'],
+ [`When does a <code>finally</code> block NOT run?`,[`When an exception is thrown in try`,`When the try block executes return`,`When System.exit is called (or the JVM crashes)`,`When break or continue leaves the try`],2,`Otherwise it always runs.`,'M'],
+ [`Catch order: <code>catch (Exception e)</code> before <code>catch (IOException e)</code>?`,[`Fine: both catches compile and run`,`Compile error: the second catch is unreachable`,`Runtime error when an IOException is thrown`,`The IOException catch is used first anyway`],1,`Catch more specific types first.`,'M'],
+ [`What does a multi-catch <code>catch (IOException | SQLException e)</code> do?`,[`Catches both types in one block`,`It catches only the first listed type`,`Compile error: catch takes one type`,`It catches every exception type`],0,`e is effectively final there.`,'E'],
+ [`What must a resource in try-with-resources implement?`,[`Closeable only`,`AutoCloseable`,`Serializable`,`Runnable`],1,`Closeable extends AutoCloseable.`,'M']
+], [
+ [`Should you catch <code>Error</code> (e.g. OutOfMemoryError) in business code?`,[`Yes, always catch it and continue`,`No: the JVM may be broken; fail and restart`,`Only inside unit tests`,`Only StackOverflowError should be caught`],1,`Errors aren't meant for normal recovery.`,'H'],
+ [`Why prefer unchecked exceptions in many modern APIs (Spring, JPA)?`,[`Unchecked exceptions are faster to throw`,`Layers needn't declare them; handle centrally`,`Checked exceptions are deprecated`,`Unchecked exceptions can't be caught`],1,`Spring translates SQLExceptions into unchecked DataAccessExceptions.`,'M']
+]);
+
+addQ('2.12', [
+ [`What is a functional interface?`,[`Any interface`,`An interface with exactly one abstract method`,`An interface with only default methods`,`A class with lambdas`],1,`@FunctionalInterface documents and checks it.`,'E'],
+ [`Which functional interface takes a T and returns a boolean?`,[`Function`,`Supplier`,`Predicate`,`Consumer`],2,`Predicate&lt;T&gt;.test(T).`,'E'],
+ [`Which takes nothing and returns a value?`,[`Supplier`,`Consumer`,`Runnable`,`Predicate`],0,`Supplier&lt;T&gt;.get().`,'E'],
+ [`<code>ArrayList::new</code> is which kind of method reference?`,[`Static`,`Bound`,`Unbound`,`Constructor`],3,`Used as Supplier&lt;List&lt;T&gt;&gt; for example.`,'M'],
+ [`Can a lambda throw a checked exception with <code>Function&lt;T,R&gt;</code>?`,[`Yes, any lambda can throw checked exceptions`,`No: apply() declares none, so wrap it`,`Only IOException is allowed`,`Only inside stream pipelines`],1,`A common annoyance with streams.`,'M']
+], [
+ [`How are lambdas compiled?`,[`As anonymous inner classes, one .class file each`,`Via invokedynamic, classes generated at run time`,`They're only ever interpreted`,`As static fields of the enclosing class`],1,`No extra .class file per lambda on disk.`,'H'],
+ [`<code>Function&lt;Integer,Integer&gt; f = x -&gt; x + 1; f.andThen(x -&gt; x * 2).apply(3)</code>?`,[`7`,`8`,`6`,`4`],1,`(3 + 1) × 2.`,'M']
+]);
+
+addQ('2.13', [
+ [`What does <code>map</code> do in a stream?`,[`It filters elements by a condition`,`It transforms each element`,`It sorts the elements`,`It collects them into a Map`],1,`One in, one out.`,'E'],
+ [`What does <code>flatMap</code> do?`,[`It maps each element to a boolean`,`Maps each to a stream, then flattens`,`It sorts nested lists flat`,`Nothing: it's an alias for map`],1,`e.g. orders → their line items.`,'M'],
+ [`<code>IntStream.range(0, 5).sum()</code>?`,[`15`,`10`,`5`,`0`],1,`0 + 1 + 2 + 3 + 4.`,'E'],
+ [`Which is a terminal operation?`,[`filter`,`map`,`collect`,`peek`],2,`Terminal operations trigger processing.`,'E'],
+ [`<code>Stream.of(1,2,3,4).filter(x -&gt; x % 2 == 0).count()</code>?`,[`2`,`4`,`3`,`1`],0,`2 and 4.`,'E']
+], [
+ [`When is a parallel stream likely to help?`,[`Small lists where splitting is cheap`,`Big CPU-bound work on splittable sources`,`Blocking I/O calls such as HTTP`,`LinkedList pipelines with sorted()`],1,`Measure; it uses the shared common pool.`,'H'],
+ [`<code>reduce(0, Integer::sum)</code> vs <code>mapToInt(x -&gt; x).sum()</code>?`,[`reduce is always faster than sum`,`Same result; mapToInt avoids boxing`,`Different results for large values`,`sum() doesn't exist on IntStream`],1,`Primitive streams avoid Integer allocation.`,'M']
+]);
+
+addQ('2.14', [
+ [`Which Optional method throws if empty?`,[`orElse`,`orElseThrow`,`isPresent`,`ofNullable`],1,`Prefer orElseThrow with a clear exception.`,'E'],
+ [`<code>Optional.of(null)</code>?`,[`Returns empty`,`Throws NullPointerException`,`Returns Optional[null]`,`Compile error`],1,`Use ofNullable for maybe-null values.`,'M'],
+ [`What do records generate?`,[`Setters for every component`,`Final fields, constructor, accessors, equals/hashCode`,`A builder for optional components`,`A public no-arg constructor`],1,`Accessors are named like the components: name().`,'E'],
+ [`Can a record extend another class?`,[`Yes, any non-final class`,`No: records extend Record; interfaces only`,`Only abstract classes`,`Only other records`],1,`Records are final too.`,'M'],
+ [`Pattern matching: <code>if (obj instanceof String s &amp;&amp; s.length() &gt; 3)</code> — is s usable in the second condition?`,[`No: s is only in scope inside the if body`,`Yes: s is in scope once the instanceof is true`,`Only after an explicit cast to String`,`Only in Java 25 and later`],1,`Flow scoping.`,'M']
+], [
+ [`What is a record pattern: <code>if (o instanceof Point(int x, int y))</code>?`,[`Invalid syntax in current Java`,`Deconstructs the record and binds x and y`,`Creates a new Point from x and y`,`Checks equality against Point(x, y)`],1,`Also works in switch cases.`,'H'],
+ [`Why shouldn't you call <code>optional.get()</code> without checking?`,[`get() is slow compared with orElse`,`It throws NoSuchElementException when empty`,`get() is deprecated since Java 10`,`It silently returns null when empty`],1,`Use map/orElse/orElseThrow instead.`,'M']
+]);
+</script>
+<script>
+addQ('3.1', [
+ [`Which pillar lets one variable of type Shape hold a Circle or a Square and call <code>area()</code> on either?`,[`Encapsulation`,`Polymorphism`,`Abstraction only`,`Composition`],1,`One interface, many behaviours.`,'E'],
+ [`What is abstraction?`,[`Hiding fields behind private modifiers`,`Showing what it does, hiding how`,`Copying objects between layers`,`Using abstract classes only`],1,`Interfaces are the main tool.`,'E'],
+ [`Which call is resolved by dynamic dispatch?`,[`A static method call`,`A private method call`,`An overridden instance method call`,`A constructor call`],2,`Static, private and final methods are bound statically.`,'M'],
+ [`What is a vtable?`,[`A table of the JVM's threads`,`Per-class table of method entries`,`A table in the database schema`,`A GC bookkeeping structure`],1,`Overrides replace their parent's entries.`,'M'],
+ [`Why is "a setter for every field" weak encapsulation?`,[`Setters are slow compared with fields`,`Callers can set any state, bypassing the rules`,`Setters can't be overridden later`,`It isn't weak; it's the right approach`],1,`Prefer meaningful methods like withdraw(amount).`,'M']
+], [
+ [`Can the JIT avoid the virtual-call overhead?`,[`Never: virtual calls always cost a lookup`,`Yes: it inlines when a call site sees one class`,`Only for static methods`,`Only when classes are final`],1,`Monomorphic / bimorphic inline caches.`,'H'],
+ [`Calling an overridable method from Parent's constructor on a Child: which version runs?`,[`Parent's version, since Parent is being built`,`Child's, before Child's fields are initialised`,`Neither: overridable calls are skipped`,`Compile error: not allowed in constructors`],1,`Dispatch already uses the runtime class.`,'H']
+]);
+
+addQ('3.2', [
+ [`Overloading is decided...`,[`At run time, from the object's class`,`At compile time, from argument types`,`By the JIT after profiling`,`By the class loader`],1,`Overriding is decided at run time.`,'E'],
+ [`Which is NOT a valid overload of <code>void log(String s)</code>?`,[`void log(String s, int level)`,`void log(Object o)`,`int log(String s)`,`void log(int code)`],2,`Return type alone doesn't distinguish overloads.`,'M'],
+ [`What does <code>@Override</code> do?`,[`Makes the method faster`,`Asks the compiler to verify it overrides`,`Makes the method final`,`Nothing at all`],1,`Catches typos that would create a new overload.`,'E'],
+ [`Overloads <code>m(int...)</code> and <code>m(int, int)</code>. <code>m(1, 2)</code> calls?`,[`m(int...)`,`m(int, int)`,`Ambiguous`,`Neither`],1,`Varargs is the last resort.`,'M'],
+ [`Can an override throw a new checked exception the parent method didn't declare?`,[`Yes`,`No`,`Only RuntimeException subclasses (which aren't checked)`,`Only if final`],1,`It may throw fewer or narrower checked exceptions.`,'M']
+], [
+ [`<code>void m(long x)</code> and <code>void m(Integer x)</code>; call <code>m(5)</code>. Which wins and why?`,[`m(Integer): boxing gives an exact match`,`m(long): widening is tried before boxing`,`Ambiguous: compile error`,`Chosen at run time by the value`],1,`Phase 1 (no boxing) finds m(long).`,'M'],
+ [`A subclass defines <code>equals(Car other)</code> instead of <code>equals(Object o)</code>. Effect in a HashSet?`,[`It works: HashSet calls equals(Car)`,`It's an overload; HashSet uses identity`,`Compile error: equals must take Object`,`HashSet calls both versions`],1,`@Override would have flagged it.`,'H']
+]);
+
+addQ('3.3', [
+ [`How many times does a static initialiser run?`,[`Once per object created`,`Once per class (per class loader)`,`Every time a method is called`,`Never, unless called explicitly`],1,`On class initialisation.`,'E'],
+ [`What is the first statement of every constructor (explicit or implicit)?`,[`return`,`super(...) or this(...)`,`static`,`new`],1,`The compiler inserts super() if missing.`,'E'],
+ [`Parent field initialisers run before or after Child's?`,[`After`,`Before`,`At the same time`,`Only if static`],1,`Parent part is built first.`,'E'],
+ [`The parent has only <code>Parent(String name)</code>. Child has no explicit super call. Result?`,[`It works: Java adds super() with null`,`Compile error: no default constructor in Parent`,`Runtime error when Child is created`,`It compiles; name is simply null`],1,`Child must call super(name).`,'M'],
+ [`Where do instance initialiser blocks <code>{ … }</code> run?`,[`Before super(), at the very start`,`After super(), with field initialisers`,`After the constructor body finishes`,`Only once per class`],1,`They're copied into each constructor.`,'M']
+], [
+ [`Java 25 flexible constructor bodies allow what before <code>super(...)</code>?`,[`Anything, including using this`,`Statements not touching this (e.g. checks)`,`Nothing at all`,`Only calls to static methods`],1,`JEP 513.`,'H'],
+ [`Static fields of Child depend on Parent's static fields. Order guaranteed?`,[`No, the order is unspecified`,`Yes: initialising Child first initialises Parent`,`Only alphabetical by class name`,`Only for final static fields`],1,`Superclass initialisation precedes subclass.`,'M']
+]);
+
+addQ('3.4', [
+ [`"has-a" relationships are modelled with?`,[`Inheritance`,`Composition (a field)`,`Interfaces only`,`Static methods`],1,`Car has an Engine.`,'E'],
+ [`What is a forwarding (wrapper) class?`,[`A subclass that adds behaviour`,`Holds an object and delegates to it`,`An abstract base class`,`Only a JDK dynamic proxy`],1,`The basis of decorators.`,'E'],
+ [`Why does composition make testing easier?`,[`Composed code runs faster`,`Collaborators can be swapped for fakes`,`It removes the need for interfaces`,`Tests no longer need any setup`],1,`You can't swap a superclass in a test.`,'M'],
+ [`When is inheritance still appropriate?`,[`Whenever it lets you reuse code`,`For true is-a subtypes, or classes made for it`,`Always, it's the main OOP tool`,`Never, composition is always better`],1,`Effective Java: design for inheritance or prohibit it.`,'M'],
+ [`Why make classes <code>final</code> by default in some codebases?`,[`It makes method calls faster`,`Stops fragile subclassing`,`Spring requires final classes`,`It saves memory per object`],1,`Note: Spring proxies need non-final classes for CGLIB.`,'H']
+], [
+ [`What's the "self-use" problem when extending a class?`,[`Infinite recursion in overridden methods`,`Parent internals call your overrides unexpectedly`,`Static method calls being hidden`,`Memory leaks through subclasses`],1,`The HashSet addAll example.`,'M'],
+ [`Default methods in interfaces vs abstract base classes for sharing code?`,[`They're identical in every way`,`Defaults: no state, many; base: state, one`,`Default methods can hold fields`,`Abstract classes are deprecated`],1,`Trade-off between state and multiple inheritance.`,'H']
+]);
+
+addQ('3.5', [
+ [`Can an interface have instance fields?`,[`Yes, like any class`,`No: only public static final constants`,`Only private instance fields`,`Only from Java 21`],1,`State belongs in classes.`,'E'],
+ [`How many abstract classes can a class extend?`,[`One`,`Two`,`Any number`,`None`],0,`But it can implement many interfaces.`,'E'],
+ [`Can interfaces have static methods?`,[`No`,`Yes, since Java 8`,`Only private`,`Only in records`],1,`e.g. List.of, Comparator.comparing.`,'E'],
+ [`Can an abstract class have a constructor?`,[`No, they can't be instantiated`,`Yes: subclasses call it via super(...)`,`Only private constructors`,`Only static constructors`],1,`It initialises shared state.`,'M'],
+ [`Private methods in interfaces (Java 9+) are for?`,[`Nothing: they can't be called`,`Sharing code between default methods`,`Making default methods final`,`Making the interface thread-safe`],1,`Not visible to implementers.`,'M']
+], [
+ [`Why were default methods added in Java 8?`,[`To allow multiple inheritance of state`,`To evolve interfaces without breaking code`,`To make interface calls faster`,`To support records`],1,`Interface evolution.`,'M'],
+ [`A sealed interface vs an abstract class for a closed set of types?`,[`They're the same thing`,`Sealed limits implementers; enables exhaustive switch`,`Abstract classes give exhaustive switches`,`Sealed interfaces can't have methods`],1,`Sealed + records model sum types.`,'H']
+]);
+
+addQ('3.6', [
+ [`What does "S" in SOLID stand for?`,[`Static`,`Single responsibility`,`Substitution`,`Segregation`],1,`One reason to change.`,'E'],
+ [`Which principle says depend on abstractions, not concretions?`,[`Open/closed`,`Liskov`,`Dependency inversion`,`Interface segregation`],2,`Inject interfaces.`,'E'],
+ [`A <code>UserService</code> validates input, saves to the DB, sends emails and builds PDFs. Which principle is strained?`,[`Liskov`,`Single responsibility`,`Interface segregation`,`None`],1,`Four different reasons to change.`,'E'],
+ [`Strategy and plugin designs mostly help which principle?`,[`Open/closed`,`Single responsibility`,`Liskov`,`None`],0,`Add behaviour by adding classes.`,'M'],
+ [`A subclass override returns null where the parent promised a non-empty list. Which principle breaks?`,[`Interface segregation`,`Liskov substitution`,`Dependency inversion`,`Open/closed`],1,`It weakens the postcondition.`,'M']
+], [
+ [`How does Spring's DI relate to SOLID?`,[`It breaks single responsibility`,`It's dependency inversion in practice`,`It replaces SOLID entirely`,`It only relates to Liskov`],1,`Also eases testing.`,'M'],
+ [`When can applying SOLID hurt?`,[`Never: more SOLID is always better`,`When over-applied as needless indirection`,`Only inside unit tests`,`Only when using records`],1,`Apply where change is likely.`,'H']
+]);
+
+addQ('3.7a', [
+ [`How do you stop other code from creating a second instance of a singleton class?`,[`Make the class abstract`,`Make the constructor private`,`Make fields static`,`Use final fields`],1,`And expose one instance.`,'E'],
+ [`Eager singleton <code>static final X INSTANCE = new X();</code> is created when?`,[`When the JVM starts`,`When the class is first initialised`,`Never, until getInstance() runs twice`,`On each call to INSTANCE`],1,`Class init is lazy in Java.`,'M'],
+ [`Why is double-checked locking easy to get wrong?`,[`It's slow under contention`,`Without volatile, a half-built object leaks`,`It always deadlocks`,`It's illegal in modern Java`],1,`See 4.6.`,'M'],
+ [`Why are singletons often criticised?`,[`They're slow`,`Hidden global state, hard to replace in tests`,`They can't have methods`,`They waste memory`],1,`DI singletons avoid most problems.`,'E'],
+ [`How many instances does a Spring singleton bean have?`,[`One per thread`,`One per application context`,`One per request`,`One per JVM always`],1,`Two contexts would create two.`,'M']
+], [
+ [`What does <code>readResolve()</code> fix?`,[`Reflection attacks`,`Deserialization creating a second singleton instance`,`Thread safety`,`Class loading`],1,`Return INSTANCE from it.`,'M'],
+ [`Two class loaders load the same singleton class. How many instances?`,[`One`,`Two: each loader has its own class and static state`,`None`,`Undefined`],1,`Singleton is per class per loader.`,'H']
+]);
+
+addQ('3.7b', [
+ [`What does a factory method return?`,[`Always a new concrete class type`,`An object typed as an interface or base class`,`void`,`A Class object`],1,`Callers don't see the concrete type.`,'E'],
+ [`<code>List.of(...)</code> is an example of?`,[`Builder`,`Static factory method`,`Adapter`,`Observer`],1,`It can return different hidden implementations.`,'E'],
+ [`What smell suggests replacing a switch-factory with a registry?`,[`It has 2 cases`,`Every new type means editing the switch`,`It returns interfaces`,`It's static`],1,`Open/closed.`,'M'],
+ [`Abstract Factory vs Factory Method?`,[`Same`,`Abstract Factory creates families of related objects; a factory method creates one product`,`Factory method is for singletons`,`Abstract Factory is a builder`],1,`e.g. a UI kit per platform.`,'M'],
+ [`In Spring, a FactoryBean is used to?`,[`Create beans whose construction is complex, returning the product from getObject()`,`Replace @Bean`,`Inject lists`,`Configure logging`],0,`e.g. older SessionFactory setups.`,'H']
+], [
+ [`Can a static factory cache and return the same instance?`,[`No`,`Yes, e.g. Integer.valueOf, Boolean.valueOf`,`Only for strings`,`Only singletons`],1,`Constructors always create a new object.`,'M'],
+ [`What naming conventions do static factories use?`,[`newX only`,`of, from, valueOf, getInstance, newInstance, create`,`make only`,`Any, there are no conventions`],1,`They describe what the factory does.`,'M']
+]);
+
+addQ('3.7c', [
+ [`What problem does Builder mainly solve?`,[`Thread safety`,`Constructors with many (optional) parameters that are hard to read`,`Memory leaks`,`Slow startup`],1,`Telescoping constructors.`,'E'],
+ [`Where is the final object created in a builder?`,[`In each setter`,`In build()`,`In the builder's constructor`,`In toString`],1,`After validation.`,'E'],
+ [`Why are JavaBeans (setters) worse for required fields?`,[`Slower`,`The object exists in a half-built state between setter calls`,`Can't serialise`,`They're immutable`],1,`And can't be immutable.`,'M'],
+ [`Lombok's <code>@Builder(toBuilder = true)</code> gives?`,[`A builder from an existing instance, to make a modified copy`,`A singleton`,`Thread safety`,`JSON support`],0,`Handy for immutable objects.`,'M'],
+ [`A builder method should return?`,[`void`,`this`,`a new object of the target class`,`null`],1,`For chaining.`,'E']
+], [
+ [`How do you make a builder enforce required fields at compile time?`,[`Impossible`,`Step builder: each step returns an interface exposing only the next required setter`,`Use reflection`,`Make fields static`],1,`Trades simplicity for safety.`,'H'],
+ [`Records with many components: alternative to a builder?`,[`None`,`Static factory methods or "withers" returning modified copies`,`Setters`,`Inheritance`],1,`Records can also get builders via libraries.`,'M']
+]);
+
+addQ('3.7d', [
+ [`Strategy replaces which code smell?`,[`Long parameter lists`,`if/else or switch choosing between algorithms`,`Deep inheritance`,`Static state`],1,`Each branch becomes a class.`,'E'],
+ [`Is a Comparator passed to sort a strategy?`,[`Yes`,`No`,`Only if anonymous`,`Only for Strings`],0,`The sorting algorithm delegates comparison.`,'E'],
+ [`Who usually chooses the strategy?`,[`The strategy itself`,`The caller or configuration`,`The JVM`,`The garbage collector`],1,`In State, the object switches itself.`,'M'],
+ [`How can Spring pick a strategy per request?`,[`Reflection only`,`Inject Map&lt;String, Strategy&gt; and look up by key`,`Static field`,`It can't`],1,`Bean names are the keys.`,'M'],
+ [`What's the risk of strategies with mutable fields as singletons?`,[`None`,`Shared by all threads → race conditions`,`Slow`,`Memory leak only`],1,`Keep strategies stateless.`,'M']
+], [
+ [`Strategy vs Template Method for varying one step?`,[`Same`,`Strategy uses composition (swap at run time); Template uses inheritance (fixed per subclass)`,`Template is runtime`,`Strategy needs abstract classes`],1,`Prefer composition when the variation changes at run time.`,'M'],
+ [`Enum with a constant-specific method per constant is?`,[`Invalid`,`A compact strategy set`,`A singleton only`,`An adapter`],1,`e.g. Operation.PLUS.apply(a, b).`,'H']
+]);
+
+addQ('3.7e', [
+ [`In the State pattern, what changes when an event occurs?`,[`The class of the context`,`The current state object the context delegates to`,`The database schema`,`Nothing`],1,`The context swaps its state.`,'E'],
+ [`An illegal event in a state should?`,[`Be ignored silently`,`Be rejected clearly (exception / error result)`,`Restart the app`,`Change to a random state`],1,`Fail loudly.`,'E'],
+ [`Which Java feature fits a small state machine well?`,[`Arrays`,`An enum with allowed transitions and an exhaustive switch`,`Reflection`,`Threads`],1,`See 7.1.`,'M'],
+ [`How do you prevent two servers from both moving an order from PAID to SHIPPED twice?`,[`synchronized`,`UPDATE … WHERE status = 'PAID' and check rows affected`,`A static flag`,`Retry`],1,`Compare-and-set in SQL.`,'M'],
+ [`Strategy vs State?`,[`Same structure; caller picks a strategy, an object changes its own state`,`Unrelated`,`State has no classes`,`Strategy changes itself`],0,`Intent differs.`,'M']
+], [
+ [`Where should state transition rules live in a microservice?`,[`In the UI`,`In one domain class/state machine, enforced in the DB too`,`In every controller`,`In SQL triggers only`],1,`Single source of truth.`,'M'],
+ [`Why record state transitions as events (e.g. an audit table)?`,[`Required by JPA`,`Debugging and history: who changed what, when`,`Faster updates`,`To avoid indexes`],1,`Often required for orders and payments.`,'M']
+]);
+
+addQ('3.7f', [
+ [`Observer decouples...`,[`threads from locks`,`the publisher from the code reacting to its events`,`classes from interfaces`,`the database from the cache`],1,`Add reactions without editing the publisher.`,'E'],
+ [`Spring annotation to handle an application event?`,[`@Bean`,`@EventListener`,`@Async`,`@Service`],1,`publisher.publishEvent(event) triggers it.`,'E'],
+ [`By default, Spring event listeners run?`,[`On a new thread`,`Synchronously, in the publisher's thread`,`After the JVM exits`,`On a scheduler`],1,`Add @Async for asynchronous handling.`,'M'],
+ [`Why use AFTER_COMMIT for "send email" listeners?`,[`Faster`,`So the email only goes out once the data is really saved`,`Required by SMTP`,`To avoid threads`],1,`Rollbacks would otherwise send wrong emails.`,'M'],
+ [`What's the risk of many slow synchronous listeners?`,[`None`,`The publisher's request gets slower with each one`,`Memory leak`,`Deadlock always`],1,`Make heavy ones async or move to a queue.`,'M']
+], [
+ [`Listeners in one JVM vs a message broker?`,[`Same guarantees`,`In-JVM events are lost on crash; a broker (Kafka) persists them for other services`,`Brokers are synchronous`,`In-JVM is cross-service`],1,`Use the outbox for reliable cross-service events.`,'H'],
+ [`Java's built-in <code>java.util.Observable</code>?`,[`Recommended`,`Deprecated since Java 9; use listener interfaces or event frameworks`,`Removed in Java 8`,`Thread-safe and modern`],1,`Too limited.`,'M']
+]);
+
+addQ('3.7g', [
+ [`A decorator implements...`,[`A different interface from the wrapped object`,`The same interface as the object it wraps`,`No interface`,`Only abstract classes`],1,`That's why decorators stack.`,'E'],
+ [`Which JDK API is built from decorators?`,[`java.time`,`java.io streams (BufferedInputStream, GZIPInputStream…)`,`java.lang.Math`,`java.util.Random`],1,`Each adds one capability.`,'E'],
+ [`Adding caching, logging and retry to a client with decorators instead of subclassing gives?`,[`A class per combination`,`Independent layers you can combine and reorder`,`Slower code`,`Static methods`],1,`Avoids class explosion.`,'M'],
+ [`<code>Collections.synchronizedList(list)</code> is a decorator adding?`,[`Sorting`,`A lock around each method call`,`Immutability`,`Caching`],1,`Same List interface.`,'M'],
+ [`Does the order of decorators matter?`,[`Never`,`Yes: calls pass through outer layers first`,`Only for I/O`,`Only in tests`],1,`e.g. cache outside retry vs inside.`,'E']
+], [
+ [`Spring's <code>@Cacheable</code> plus <code>@Retryable</code> on one method: which concept decides their order?`,[`Alphabetical`,`Advisor/interceptor order (e.g. @Order) in the proxy chain`,`Random`,`Bean name`],1,`The proxy applies interceptors in order.`,'H'],
+ [`Decorator vs inheritance for adding behaviour to a final class?`,[`Inheritance works`,`Only a decorator (composition) works, since final classes can't be subclassed`,`Neither`,`Reflection only`],1,`Composition works with any implementation of the interface.`,'M']
+]);
+
+addQ('3.7h', [
+ [`A proxy has...`,[`A different interface from the real object`,`The same interface as the real object`,`No methods`,`Only static methods`],1,`Callers can't tell the difference.`,'E'],
+ [`A virtual (lazy) proxy is used to?`,[`Encrypt data`,`Delay creating an expensive object until it's needed`,`Log calls`,`Sort objects`],1,`Hibernate's lazy-loaded entities are proxies.`,'M'],
+ [`What does a JDK dynamic proxy route every call to?`,[`A subclass`,`An InvocationHandler.invoke method`,`A lambda`,`The JIT`],1,`One handler for all methods.`,'M'],
+ [`Why does Hibernate return proxies for lazy associations?`,[`To save code`,`To load the real data only when a method is first called`,`For thread safety`,`For serialization`],1,`Outside a session that load fails (LazyInitializationException).`,'M'],
+ [`Spring <code>@Transactional</code> is implemented by?`,[`Bytecode in javac`,`A proxy that starts/commits a transaction around the call`,`A servlet filter`,`A database trigger`],1,`Hence the self-invocation trap.`,'E']
+], [
+ [`How can you make an internal call go through the proxy if you must?`,[`Use this`,`Move the method to another bean (cleanest), or inject the bean into itself / use AopContext`,`Make it private`,`Make it static`],1,`Splitting the bean is preferred.`,'M'],
+ [`<code>getClass()</code> on an injected @Transactional bean in Spring Boot shows?`,[`Your class`,`A CGLIB-generated subclass like OrderService$$SpringCGLIB$$0`,`Object`,`An interface`],1,`It's a proxy.`,'H']
+]);
+
+addQ('3.7i', [
+ [`What does an adapter change?`,[`Behaviour only`,`The interface, so incompatible code fits`,`Nothing`,`Performance`],1,`Translate calls between two interfaces.`,'E'],
+ [`<code>InputStreamReader</code> adapts?`,[`chars to bytes`,`a byte InputStream to a character Reader`,`files to URLs`,`threads to tasks`],1,`Using a charset.`,'M'],
+ [`Where should vendor SDK types appear in your code?`,[`Everywhere`,`Only inside the adapter`,`In controllers`,`In entities`],1,`Keep them at the boundary.`,'E'],
+ [`Switching payment provider with adapters means?`,[`Rewriting services`,`Writing a new adapter for the same interface`,`Changing the database`,`Nothing works`],1,`Domain code stays unchanged.`,'M'],
+ [`Facade vs Adapter in one sentence?`,[`Same`,`Facade simplifies a subsystem; Adapter converts one interface to another`,`Facade converts`,`Adapter simplifies`],1,`Different intents.`,'M']
+], [
+ [`An adapter receives the vendor's amounts in cents as int. Your domain uses Money. Where do you convert?`,[`In controllers`,`Inside the adapter, both directions`,`In the database`,`In tests`],1,`All translation in one place.`,'M'],
+ [`Ports and adapters (hexagonal architecture) means?`,[`Network ports`,`The domain defines interfaces (ports); infrastructure implements them (adapters)`,`Adapters only for UIs`,`A deployment model`],1,`Keeps the core independent of frameworks.`,'H']
+]);
+
+addQ('3.7j', [
+ [`Template method puts the fixed algorithm in?`,[`Each subclass`,`A base-class method that calls overridable steps`,`An interface`,`A static utility`],1,`Subclasses fill in steps.`,'E'],
+ [`What's a typical modifier for the template method itself?`,[`abstract`,`final`,`static`,`private`],1,`So subclasses can't reorder steps.`,'E'],
+ [`Which Spring class follows template + callback?`,[`RestTemplate / JdbcTemplate`,`ApplicationContext`,`Environment`,`BeanFactory`],0,`They handle boilerplate; you pass the varying part.`,'M'],
+ [`JUnit's @BeforeEach / @AfterEach around tests is like?`,[`Observer`,`Template method: fixed lifecycle, your test method is the variable step`,`Singleton`,`Builder`],1,`The framework controls the flow.`,'M'],
+ [`A required step should be declared as?`,[`A hook with a default`,`An abstract method`,`A static method`,`A private method`],1,`Optional steps are hooks.`,'E']
+], [
+ [`Downside of template method compared with passing lambdas (strategy)?`,[`None`,`It needs a subclass per variation, fixed at compile time`,`It's slower`,`It can't have hooks`],1,`Callbacks are often lighter.`,'M'],
+ [`Why are abstract test base classes with many hooks sometimes discouraged?`,[`They don't compile`,`Deep test hierarchies hide setup and make tests hard to read`,`JUnit forbids them`,`They're slow`],1,`Prefer composition (extensions, helper objects).`,'H']
+]);
+</script>
+<script>
+addQ('4.1', [
+ [`What does each thread have its own copy of?`,[`Heap objects`,`Its stack and program counter`,`Static fields`,`The String pool`],1,`The heap is shared.`,'E'],
+ [`Why are threads cheaper to switch between than processes?`,[`They share an address space, so no memory map switch is needed`,`They never switch`,`They run on the GPU`,`They don't have stacks`],0,`Processes are isolated.`,'M'],
+ [`Two threads read and write the same object field without coordination. Risk?`,[`None`,`Races and visibility problems`,`Deadlock always`,`Compile error`],1,`Shared mutable state needs coordination.`,'E'],
+ [`What is a context switch?`,[`Changing variable scope`,`The OS pausing one thread and resuming another on a CPU`,`Switching Java versions`,`Calling a method`],1,`It has a cost (saving registers, cache effects).`,'E'],
+ [`A JVM process with 10 threads crashes from an uncaught Error in one thread. What happens to the others?`,[`All die`,`Only that thread ends; the rest keep running`,`The JVM restarts`,`They pause`],1,`Uncaught exceptions end only the thread (unless it's fatal to the JVM).`,'M']
+], [
+ [`Hyper-threading shows 16 logical CPUs on 8 cores. Do CPU-bound tasks get 16× parallel speedup?`,[`Yes`,`No: logical CPUs share core resources; gains are much less than 2× per core`,`Only in Java 21`,`Yes, with virtual threads`],1,`Size CPU pools around available processors, then measure.`,'H'],
+ [`Amdahl's law says...`,[`More threads always help`,`Speedup is limited by the part of the work that must run sequentially`,`GC is the bottleneck`,`Threads double memory`],1,`10% serial work caps speedup at 10×.`,'H']
+]);
+
+addQ('4.2', [
+ [`Which interface returns a result from a task?`,[`Runnable`,`Callable`,`Thread`,`Executor`],1,`call() returns V.`,'E'],
+ [`What does <code>future.get()</code> do?`,[`Returns immediately`,`Blocks until the result (or exception) is ready`,`Cancels the task`,`Starts the task`],1,`Use get(timeout, unit) to bound the wait.`,'E'],
+ [`What does <code>thread.join()</code> do?`,[`Starts the thread`,`Waits for that thread to finish`,`Merges two threads`,`Interrupts it`],1,`join(ms) waits at most ms.`,'E'],
+ [`What is a daemon thread?`,[`A high-priority thread`,`A background thread that doesn't keep the JVM alive`,`A thread that never ends`,`A GC thread only`],1,`setDaemon(true) before start().`,'M'],
+ [`An exception thrown inside a Callable submitted to an executor appears where?`,[`Printed and lost`,`Wrapped in ExecutionException when you call future.get()`,`It kills the pool`,`Nowhere`],1,`getCause() gives the original.`,'M']
+], [
+ [`How do you name threads created by an executor?`,[`You can't`,`Provide a ThreadFactory (e.g. Thread.ofPlatform().name("worker-", 0).factory())`,`Rename after start only`,`Use Thread.setName on the executor`],1,`Readable names make thread dumps useful.`,'M'],
+ [`What does <code>Thread.ofVirtual().start(task)</code> create (Java 21)?`,[`A platform thread`,`A virtual thread running task`,`A thread pool`,`A process`],1,`Cheap, JVM-scheduled threads.`,'M']
+]);
+
+addQ('4.3', [
+ [`A thread calls <code>Thread.sleep(1000)</code>. Its state?`,[`BLOCKED`,`WAITING`,`TIMED_WAITING`,`TERMINATED`],2,`Waiting with a timeout.`,'E'],
+ [`A thread calls <code>otherThread.join()</code> (no timeout). Its state?`,[`RUNNABLE`,`WAITING`,`BLOCKED`,`NEW`],1,`Waits indefinitely for the other to end.`,'E'],
+ [`Can a TERMINATED thread be restarted?`,[`Yes, call start()`,`No: create a new Thread`,`Yes, with run()`,`Only daemons`],1,`start() on it throws IllegalThreadStateException.`,'M'],
+ [`What state is a thread in right after <code>new Thread(r)</code>?`,[`RUNNABLE`,`NEW`,`WAITING`,`READY`],1,`Until start() is called.`,'E'],
+ [`What does <code>Thread.interrupt()</code> do to a thread that is just computing (not waiting)?`,[`Stops it immediately`,`Sets its interrupt flag; the code must check it`,`Kills the JVM`,`Nothing at all`],1,`Interruption is cooperative.`,'M']
+], [
+ [`A thread waiting to enter a ReentrantLock (not synchronized) shows as?`,[`BLOCKED`,`WAITING (parked)`,`RUNNABLE`,`TIMED_WAITING always`],1,`BLOCKED is only for monitor locks.`,'H'],
+ [`What should code do after catching InterruptedException it can't propagate?`,[`Ignore it`,`Restore the flag with Thread.currentThread().interrupt()`,`Call System.exit`,`Throw Error`],1,`So callers can still see the interruption.`,'M']
+]);
+
+addQ('4.4', [
+ [`What is a race condition?`,[`A fast algorithm`,`A result that depends on the timing of threads`,`A deadlock`,`An infinite loop`],1,`Correctness depends on interleaving.`,'E'],
+ [`Which pattern is a check-then-act race?`,[`count++`,`if (!map.containsKey(k)) map.put(k, v) from many threads`,`final fields`,`immutable objects`],1,`Two threads can both see "absent".`,'E'],
+ [`Simplest way to avoid races on shared data?`,[`Use more threads`,`Don't share mutable state: immutability or confinement`,`Add sleep()`,`Use volatile everywhere`],1,`No sharing, no race.`,'M'],
+ [`Lazy initialisation <code>if (instance == null) instance = new X();</code> from many threads. Problem?`,[`None`,`Several instances may be created (and published unsafely)`,`Deadlock`,`Compile error`],1,`Use a holder class or proper locking.`,'M'],
+ [`Why do race bugs often pass tests?`,[`Tests are single-threaded or the bad interleaving is rare`,`Races only occur in production builds`,`JUnit prevents them`,`They don't`],0,`Stress tests and reasoning are needed.`,'M']
+], [
+ [`A "read-modify-write" on a database row from two app instances is...`,[`Safe`,`The same race at a different layer; needs a DB-level guarantee`,`Prevented by synchronized`,`Prevented by @Transactional alone`],1,`See 6.1.`,'M'],
+ [`What does jcstress test?`,[`Performance`,`Concurrency correctness under many interleavings and memory-model effects`,`GC tuning`,`HTTP APIs`],1,`An OpenJDK tool for concurrency tests.`,'H']
+]);
+
+addQ('4.5', [
+ [`A synchronized block <code>synchronized (lock) { … }</code> locks?`,[`The current method`,`The monitor of the lock object`,`The whole class`,`All threads`],1,`Pick a private final lock object.`,'E'],
+ [`Thread A holds a monitor. Thread B tries to enter a block on the same monitor. B's state?`,[`WAITING`,`BLOCKED`,`RUNNABLE`,`TERMINATED`],1,`Waiting for the monitor.`,'E'],
+ [`Is synchronized fair (first come, first served)?`,[`Yes`,`No: any waiting thread may get the lock next`,`Only on Linux`,`Only for static methods`],1,`ReentrantLock(true) offers fairness.`,'M'],
+ [`An exception is thrown inside a synchronized block. Is the lock released?`,[`No, deadlock`,`Yes, automatically`,`Only with finally`,`Only for RuntimeException`],1,`Monitors are released on any exit.`,'M'],
+ [`Why keep synchronized blocks small?`,[`Syntax rules`,`Other threads wait while you hold the lock; long sections kill throughput`,`To save memory`,`The JIT can't compile them`],1,`Never do I/O while holding a lock.`,'E']
+], [
+ [`Why lock on a private final object instead of <code>this</code>?`,[`It's faster`,`Outside code can also lock on this, causing unexpected contention or deadlock`,`this can't be locked`,`Required by the JMM`],1,`Encapsulate your lock.`,'M'],
+ [`Since Java 15, biased locking was...`,[`Made default`,`Disabled and later removed; uncontended locking is already cheap`,`Required`,`Moved to synchronized blocks only`],1,`JEP 374.`,'H']
+]);
+
+addQ('4.6', [
+ [`What does volatile guarantee?`,[`Atomic compound operations`,`Visibility and ordering for reads/writes of that variable`,`Mutual exclusion`,`Fairness`],1,`Not atomicity of count++.`,'E'],
+ [`Good use of volatile?`,[`A shared counter`,`A stop flag set by one thread and read by another`,`A list modified by many threads`,`Money balance updates`],1,`Single writes and reads.`,'E'],
+ [`What is "happens-before"?`,[`A scheduling order`,`A guarantee that one action's effects are visible to another`,`A lock type`,`A GC phase`],1,`Created by locks, volatile, thread start/join, etc.`,'M'],
+ [`Does <code>Thread.start()</code> create a happens-before edge?`,[`No`,`Yes: everything before start() is visible to the new thread`,`Only for volatile fields`,`Only on x86`],1,`Same for join(): the thread's writes are visible afterwards.`,'M'],
+ [`Why can a plain field update be invisible to another thread?`,[`It's always visible`,`Caches, store buffers and JIT optimisations may keep it local without a happens-before edge`,`The GC hides it`,`Because it's private`],1,`The JMM only promises visibility with synchronization.`,'M']
+], [
+ [`Is publishing an immutable object (all final fields) through a plain field safe?`,[`No, never`,`Its fields are seen correctly, but the reference itself may be seen late (or stale)`,`Yes, and the reference is always seen immediately`,`Only with records`],1,`Final-field semantics cover the fields, not when the reference becomes visible.`,'H'],
+ [`What do VarHandle acquire/release modes offer?`,[`Nothing new`,`Weaker (cheaper) ordering than volatile for advanced lock-free code`,`Stronger locks`,`GC control`],1,`Used inside java.util.concurrent.`,'H']
+]);
+
+addQ('4.7', [
+ [`Which class offers atomic increments?`,[`Integer`,`AtomicInteger`,`int`,`volatile int`],1,`incrementAndGet uses CAS.`,'E'],
+ [`What does <code>getAndIncrement()</code> return?`,[`The new value`,`The old value`,`void`,`true/false`],1,`incrementAndGet returns the new value.`,'E'],
+ [`What does "lock-free" mean?`,[`No locks are ever needed anywhere`,`Threads never block on a lock; at least one always makes progress`,`Faster in all cases`,`Single-threaded`],1,`CAS loops retry instead of waiting.`,'M'],
+ [`Atomically set a value only if it's currently 5?`,[`set(5)`,`compareAndSet(5, newValue)`,`getAndSet(5)`,`lazySet(5)`],1,`Returns false if it wasn't 5.`,'M'],
+ [`<code>AtomicInteger.updateAndGet(x -&gt; x * 2)</code> with contention: the lambda may run?`,[`Exactly once`,`More than once, so it must be side-effect free`,`Never`,`On another thread`],1,`CAS retries re-apply it.`,'H']
+], [
+ [`What does <code>AtomicReference&lt;State&gt;</code> enable?`,[`Atomic updates of a reference, e.g. swapping an immutable state object`,`Locking`,`Weak references`,`Thread names`],0,`Combine with immutable objects for lock-free updates.`,'M'],
+ [`LongAdder.sum() under concurrent updates is?`,[`An exact snapshot`,`Not an atomic snapshot: concurrent updates may or may not be included`,`Always zero`,`Blocking`],1,`Great for metrics, not for exact sequencing.`,'H']
+]);
+
+addQ('4.8', [
+ [`What does <code>notifyAll()</code> do?`,[`Wakes every thread waiting on that object's monitor`,`Releases the lock`,`Interrupts all threads`,`Wakes all threads in the JVM`],0,`They then compete for the lock.`,'E'],
+ [`Does <code>wait()</code> release the monitor?`,[`No`,`Yes, while waiting; it's re-acquired before returning`,`Only with a timeout`,`Only for static locks`],1,`Unlike sleep().`,'E'],
+ [`What is a spurious wakeup?`,[`A deadlock`,`A thread returning from wait() without being notified`,`An interrupt`,`A GC pause`],1,`Hence while loops.`,'M'],
+ [`Higher-level replacement for wait/notify producer-consumer?`,[`Thread.sleep`,`BlockingQueue`,`HashMap`,`volatile`],1,`put/take block as needed.`,'E'],
+ [`Which object should you call wait() on?`,[`Any object`,`The object whose lock you hold and that guards the condition`,`Thread.currentThread()`,`System`],1,`Lock, condition and wait must be on the same monitor.`,'M']
+], [
+ [`What is a "lost wakeup"?`,[`A notify that happens before the other thread starts waiting, so it waits forever`,`A GC bug`,`A deadlock between two locks`,`An interrupt`],0,`Checking the condition under the lock prevents it.`,'H'],
+ [`<code>Condition.await()</code> belongs to?`,[`Object`,`A Lock (from lock.newCondition())`,`Thread`,`Executor`],1,`Lock + Conditions = explicit monitors.`,'M']
+]);
+
+addQ('4.9', [
+ [`Which is NOT one of the four deadlock conditions?`,[`Mutual exclusion`,`Hold and wait`,`Circular wait`,`High CPU usage`],3,`The others plus "no preemption".`,'E'],
+ [`What is starvation?`,[`All threads blocked`,`A thread repeatedly losing out and never getting the resource`,`Out of memory`,`A busy loop`],1,`Fair locks can help.`,'M'],
+ [`How does tryLock with a timeout help with deadlocks?`,[`It doesn't`,`A thread gives up instead of waiting forever, then retries or backs off`,`It makes locks fair`,`It sorts locks`],1,`Breaks "hold and wait".`,'M'],
+ [`A thread dump shows thread A waiting for lock X held by B, and B waiting for lock Y held by A. That is?`,[`Livelock`,`Deadlock`,`Starvation`,`A race`],1,`A cycle of waits.`,'E'],
+ [`Does a deadlock use CPU?`,[`Yes, 100%`,`No: deadlocked threads are blocked, idle`,`Only on one core`,`Only with GC`],1,`Hangs with low CPU often mean deadlock or waiting.`,'M']
+], [
+ [`Calling an external callback while holding a lock risks?`,[`Nothing`,`Deadlock: the callback may take other locks in a different order`,`Faster code`,`Memory leak`],1,`"Open calls": call out without holding locks.`,'H'],
+ [`Can deadlocks happen with only one lock?`,[`Never`,`Yes, e.g. a non-reentrant lock taken twice by the same thread, or a pool waiting on its own tasks (6.3)`,`Only in databases`,`Only with synchronized`],1,`Resource deadlocks aren't only about two locks.`,'H']
+]);
+
+addQ('4.10', [
+ [`What does <code>lock.lockInterruptibly()</code> allow?`,[`Locking twice`,`Giving up waiting if the thread is interrupted`,`Fairness`,`Timeouts`],1,`synchronized can't be interrupted while blocked.`,'M'],
+ [`Is ReentrantLock re-entrant?`,[`No`,`Yes: the same thread can lock it again; unlock as many times`,`Only with fairness`,`Only once`],1,`Hence the name.`,'E'],
+ [`ReadWriteLock allows?`,[`Many writers at once`,`Many readers at once, or one writer`,`Readers and writers at once`,`One reader only`],1,`Good for read-mostly data.`,'E'],
+ [`What does a fair ReentrantLock do?`,[`Runs faster`,`Grants the lock roughly in arrival order, reducing starvation but lowering throughput`,`Prevents deadlock`,`Nothing`],1,`Fairness has a cost.`,'M'],
+ [`Where must unlock() go?`,[`At the end of the method`,`In a finally block right after the try that follows lock()`,`Before lock()`,`In a catch block`],1,`Otherwise an exception leaks the lock.`,'E']
+], [
+ [`StampedLock: is it re-entrant?`,[`Yes`,`No: re-acquiring in the same thread can deadlock`,`Only for reads`,`Only optimistic`],1,`Use it carefully, in small sections.`,'H'],
+ [`Why might ReentrantReadWriteLock perform worse than a simple lock?`,[`It can't`,`Bookkeeping overhead; with short critical sections or many writes, a plain lock or immutable snapshot wins`,`It's deprecated`,`It uses the GC`],1,`Measure before choosing.`,'H']
+]);
+
+addQ('4.11', [
+ [`What does <code>latch.countDown()</code> do?`,[`Waits`,`Decrements the count; at zero, waiting threads are released`,`Resets the latch`,`Adds a permit`],1,`await() waits for zero.`,'E'],
+ [`Can a CountDownLatch be reset?`,[`Yes, with reset()`,`No: it's one-shot; use CyclicBarrier or a new latch`,`Only at zero`,`Only in tests`],1,`CyclicBarrier is reusable.`,'M'],
+ [`<code>Semaphore(3)</code> means?`,[`3 threads total in the JVM`,`At most 3 holders of a permit at once`,`3 seconds timeout`,`3 retries`],1,`acquire / release.`,'E'],
+ [`What happens to <code>semaphore.tryAcquire()</code> when no permits are left?`,[`Blocks forever`,`Returns false immediately`,`Throws`,`Creates a permit`],1,`tryAcquire(timeout) waits up to the timeout.`,'M'],
+ [`CyclicBarrier's barrier action runs?`,[`On every await`,`Once per generation, when the last thread arrives`,`Never`,`On a new thread`],1,`Useful to merge partial results.`,'M']
+], [
+ [`What is a Phaser?`,[`A GC phase`,`A flexible barrier where parties can register and deregister across phases`,`A lock`,`A thread pool`],1,`Generalises latch and barrier.`,'H'],
+ [`Using a Semaphore as a simple bulkhead for an API client means?`,[`Retrying calls`,`Limiting concurrent calls to protect the dependency and your threads`,`Caching responses`,`Encrypting calls`],1,`Resilience4j's Bulkhead works similarly.`,'M']
+]);
+
+addQ('4.12', [
+ [`What does ThreadLocal give each thread?`,[`A shared value`,`Its own independent value`,`A lock`,`A stack`],1,`get/set act on the current thread's copy.`,'E'],
+ [`Common legitimate uses of ThreadLocal?`,[`Shared counters`,`Per-request context: user, transaction, logging MDC`,`Caching across threads`,`Locking`],1,`Clean up afterwards.`,'E'],
+ [`Why call remove() in a finally block?`,[`Required by the compiler`,`Pooled threads are reused; leftover values leak into later tasks and memory`,`To speed up GC`,`It isn't needed`],1,`Classic production bug.`,'M'],
+ [`<code>ThreadLocal.withInitial(() -&gt; new SimpleDateFormat(...))</code> does what?`,[`Shares one formatter`,`Gives each thread its own formatter, created on first get()`,`Throws`,`Creates one per call`],1,`A fix for non-thread-safe objects (prefer DateTimeFormatter).`,'M'],
+ [`Does <code>@Async</code> code see the caller's ThreadLocal values?`,[`Yes`,`No: it runs on another thread`,`Only static ThreadLocals`,`Only in tests`],1,`Propagate explicitly.`,'E']
+], [
+ [`With millions of virtual threads, why can heavy ThreadLocal use hurt?`,[`It's not allowed`,`Each virtual thread gets its own copy, multiplying memory`,`They're shared`,`It disables virtual threads`],1,`Scoped values are designed for this.`,'H'],
+ [`How does Spring keep the current transaction for a thread?`,[`A global static`,`TransactionSynchronizationManager, built on ThreadLocals`,`A database table`,`A HashMap keyed by request`],1,`That's why @Transactional work must stay on one thread.`,'H']
+]);
+
+addQ('4.13', [
+ [`Why use a thread pool instead of <code>new Thread</code> per task?`,[`Pools are required by Java`,`Reuse threads and bound concurrency`,`Threads can't be created manually`,`Pools are single-threaded`],1,`Creating threads is expensive and unbounded creation is dangerous.`,'E'],
+ [`<code>Executors.newFixedThreadPool(4)</code> runs at most how many tasks at once?`,[`1`,`4`,`Unlimited`,`Depends on CPU`],1,`Extra tasks wait in an (unbounded) queue.`,'E'],
+ [`What happens after <code>executor.shutdown()</code>?`,[`Running tasks are killed`,`No new tasks accepted; already submitted ones finish`,`Nothing`,`The JVM exits`],1,`shutdownNow() interrupts running tasks.`,'M'],
+ [`What does <code>AbortPolicy</code> (the default) do on rejection?`,[`Runs on the caller`,`Throws RejectedExecutionException`,`Drops silently`,`Drops the oldest`],1,`Choose a policy deliberately.`,'M'],
+ [`For blocking I/O tasks, pool size should be?`,[`Exactly the core count`,`Larger than core count, sized for how long tasks wait (or use virtual threads)`,`1`,`Unlimited`],1,`Threads mostly wait, not compute.`,'M']
+], [
+ [`<code>Executors.newCachedThreadPool()</code> under a traffic spike?`,[`Queues tasks`,`Creates a new thread per waiting task without limit, risking thousands of threads`,`Rejects tasks`,`Uses one thread`],1,`Unbounded threads are as dangerous as unbounded queues.`,'H'],
+ [`Why should you await termination on shutdown?`,[`It's required`,`So in-flight tasks complete before the JVM exits (graceful shutdown)`,`To free memory`,`To clear ThreadLocals`],1,`awaitTermination(timeout) then shutdownNow if needed.`,'M']
+]);
+
+addQ('4.14', [
+ [`What does <code>supplyAsync</code> return?`,[`The value`,`A CompletableFuture that completes with the value later`,`A Thread`,`void`],1,`Non-blocking start.`,'E'],
+ [`Chain another async call that returns a CompletableFuture?`,[`thenApply`,`thenCompose`,`thenAccept`,`join`],1,`thenApply would nest futures.`,'M'],
+ [`Combine two independent futures' results?`,[`thenCompose`,`thenCombine`,`exceptionally`,`orTimeout`],1,`Runs the combiner when both are done.`,'E'],
+ [`Wait for many futures to finish?`,[`anyOf`,`allOf`,`join each in parallel streams`,`thenRun`],1,`anyOf completes with the first.`,'E'],
+ [`What does <code>join()</code> do differently from <code>get()</code>?`,[`Doesn't block`,`Throws unchecked CompletionException instead of checked exceptions`,`Cancels`,`Nothing`],1,`Convenient in lambdas.`,'M']
+], [
+ [`<code>completeOnTimeout(fallback, 1, SECONDS)</code> vs <code>orTimeout(1, SECONDS)</code>?`,[`Same`,`completeOnTimeout completes normally with a fallback; orTimeout completes exceptionally with TimeoutException`,`Both cancel the task`,`orTimeout returns null`],1,`Neither stops the underlying work.`,'H'],
+ [`Does <code>future.cancel(true)</code> on a CompletableFuture interrupt the running task?`,[`Yes`,`No: CompletableFuture's cancel doesn't interrupt the computation`,`Only for virtual threads`,`Only with allOf`],1,`It just completes the future with CancellationException.`,'H']
+]);
+
+addQ('4.15', [
+ [`What kind of tasks suit ForkJoinPool?`,[`Blocking I/O`,`Recursive divide-and-conquer CPU work`,`Single long tasks`,`Database calls`],1,`Split, compute, combine.`,'E'],
+ [`RecursiveTask vs RecursiveAction?`,[`Same`,`RecursiveTask returns a result; RecursiveAction doesn't`,`Action is faster`,`Task is deprecated`],1,`compute() returns V or void.`,'M'],
+ [`What is the common pool's default parallelism?`,[`1`,`Number of available processors − 1`,`100`,`Unlimited`],1,`Shared by the whole JVM.`,'M'],
+ [`What uses the common ForkJoinPool by default?`,[`Tomcat`,`Parallel streams and CompletableFuture async methods without an executor`,`Spring @Scheduled`,`JDBC`],1,`Don't block it.`,'M'],
+ [`Why steal from the opposite end of another worker's deque?`,[`Random choice`,`Older tasks are bigger, so fewer steals are needed and contention with the owner is low`,`To keep order`,`For fairness`],1,`Owner works LIFO at its end.`,'H']
+], [
+ [`What does <code>ForkJoinPool.managedBlock</code> help with?`,[`Nothing`,`Compensating with extra threads when a task must block, avoiding starvation`,`Logging`,`Cancelling tasks`],1,`Used internally by some blocking JDK classes.`,'H'],
+ [`Can you run a parallel stream in your own pool?`,[`No`,`Submitting the stream pipeline to a custom ForkJoinPool works in practice (not a documented guarantee)`,`Yes, with stream.pool(p)`,`Only in Java 25`],1,`Implementation behaviour; prefer explicit executors.`,'H']
+]);
+
+addQ('4.16', [
+ [`Does ConcurrentHashMap allow null keys or values?`,[`Both allowed`,`Neither`,`Null keys only`,`Null values only`],1,`null would be ambiguous with "absent".`,'E'],
+ [`Atomic "insert if absent" in ConcurrentHashMap?`,[`containsKey then put`,`putIfAbsent or computeIfAbsent`,`put twice`,`synchronized(map)`],1,`Single atomic operation.`,'E'],
+ [`Which queue blocks producers when it's full?`,[`ConcurrentLinkedQueue`,`ArrayBlockingQueue`,`PriorityQueue`,`ArrayDeque`],1,`Bounded blocking queue.`,'E'],
+ [`What is ConcurrentSkipListMap?`,[`A hash map`,`A concurrent sorted map (like a thread-safe TreeMap)`,`A queue`,`A cache`],1,`O(log n), lock-free.`,'M'],
+ [`<code>size()</code> on a ConcurrentHashMap under updates is?`,[`Exact`,`An estimate that may be stale`,`Always 0`,`Blocking`],1,`Don't base logic on it.`,'M']
+], [
+ [`Why did ConcurrentHashMap drop segment locks in Java 8?`,[`Bug fixes`,`Finer-grained CAS + per-bin locks scale better and use less memory`,`Licensing`,`To allow nulls`],1,`Reads are lock-free.`,'H'],
+ [`SynchronousQueue has what capacity?`,[`1`,`0: each put waits for a matching take`,`Unlimited`,`16`],1,`Used by cached thread pools for direct hand-off.`,'H']
+]);
+
+addQ('4.17', [
+ [`What's the main benefit of virtual threads?`,[`Faster CPU work`,`Very cheap threads, so blocking I/O code can scale to many concurrent tasks`,`No need for locks`,`Smaller JAR`],1,`Thread-per-request without the cost.`,'E'],
+ [`Which Java version made virtual threads final?`,[`17`,`19`,`21`,`25`],2,`JEP 444.`,'E'],
+ [`How do you enable virtual threads for Spring Boot request handling?`,[`Rewrite controllers`,`spring.threads.virtual.enabled=true (Boot 3.2+, Java 21+)`,`Use WebFlux`,`Add a dependency only`],1,`Tomcat then uses virtual threads.`,'M'],
+ [`What is pinning?`,[`A virtual thread that can't unmount, blocking its carrier`,`A thread with high priority`,`A deadlock`,`Fixing a thread to a CPU`],0,`Mostly synchronized blocks before JDK 24, and native calls.`,'M'],
+ [`Should virtual threads be pooled?`,[`Yes, like platform threads`,`No: create one per task`,`Only for CPU work`,`Only in tests`],1,`Pooling defeats the purpose.`,'E']
+], [
+ [`Which still limits a virtual-thread service calling a database?`,[`Nothing`,`The DB connection pool and the database's capacity`,`The number of carrier threads only`,`The heap size only`],1,`Plan pool sizes and timeouts.`,'M'],
+ [`What does structured concurrency (StructuredTaskScope) add?`,[`Faster threads`,`Treats related subtasks as one unit: they're started, joined, failed and cancelled together`,`A new GC`,`Distributed locks`],1,`Still a preview API in Java 25.`,'H']
+]);
+
+addQ('4.18', [
+ [`Two threads must print alternately. What shared state do they need?`,[`Nothing`,`A lock plus a variable saying whose turn it is`,`Two separate locks only`,`A static final constant`],1,`Each waits until it's their turn.`,'E'],
+ [`Simplest thread-safe lazy singleton in Java?`,[`DCL without volatile`,`The holder idiom or an enum`,`synchronized on every line`,`A static block with sleep`],1,`The JVM handles the safety.`,'E'],
+ [`Producer-consumer interview question: best modern answer?`,[`wait/notify with if`,`A BlockingQueue with put/take`,`Thread.sleep polling`,`volatile list`],1,`Mention wait/notify as the low-level alternative.`,'M'],
+ [`How would you print numbers 1–10 with 3 threads in round-robin order?`,[`Impossible`,`Shared counter + lock/condition (or semaphores), each thread waits until counter % 3 matches its id`,`Three independent loops`,`One volatile int`],1,`Generalises odd/even.`,'M'],
+ [`What makes a classic "bank transfer" concurrency answer correct?`,[`synchronized on one account`,`Locking both accounts in a consistent order (by id) to avoid deadlock`,`volatile balances`,`Random sleeps`],1,`Plus checks inside the locked section.`,'M']
+], [
+ [`Implement a thread-safe bounded cache with LRU eviction quickly?`,[`HashMap + volatile`,`LinkedHashMap LRU wrapped in a lock, or (better) Caffeine`,`ConcurrentHashMap alone`,`An ArrayList`],1,`CHM has no eviction order.`,'H'],
+ [`A rate limiter allowing N requests per second across threads. A simple approach?`,[`Thread.sleep`,`A token bucket (AtomicLong + timestamps) or a Semaphore refilled on a schedule`,`synchronized method with counter that never resets`,`volatile boolean`],1,`Libraries: Resilience4j RateLimiter, Bucket4j.`,'H']
+]);
+</script>
+<script>
+addQ('5.1', [
+ [`What is Inversion of Control?`,[`Reversing method order`,`The framework creates and wires objects instead of your code doing it`,`Using interfaces only`,`A database pattern`],1,`Dependency injection is how Spring does it.`,'E'],
+ [`What is a Spring bean?`,[`A Java class file`,`An object created and managed by the Spring container`,`A JAR`,`A JSON document`],1,`Declared via @Component or @Bean.`,'E'],
+ [`With a single constructor, is <code>@Autowired</code> required on it?`,[`Yes`,`No: Spring uses it automatically`,`Only for interfaces`,`Only in tests`],1,`Since Spring 4.3.`,'M'],
+ [`Use @Bean instead of @Component when?`,[`Never`,`Creating objects from third-party classes you can't annotate, or needing custom construction`,`For controllers`,`For entities`],1,`@Bean methods live in @Configuration classes.`,'M'],
+ [`What does @Primary do?`,[`Makes a bean load first`,`Marks the default bean when several match by type`,`Makes it a singleton`,`Disables it`],1,`@Qualifier overrides it at an injection point.`,'E']
+], [
+ [`Injecting <code>Optional&lt;Foo&gt;</code> or <code>ObjectProvider&lt;Foo&gt;</code> is useful when?`,[`Never`,`The bean may not exist, or should be resolved lazily`,`For collections`,`For static fields`],1,`Avoids startup failure for optional dependencies.`,'H'],
+ [`Why is field injection hard to unit test?`,[`It's slow`,`You can't pass dependencies without Spring or reflection; fields can't be final`,`It needs @MockBean`,`It isn't`],1,`Constructor injection lets plain new work.`,'M']
+]);
+
+addQ('5.2', [
+ [`Default bean scope?`,[`prototype`,`singleton`,`request`,`session`],1,`One instance per context.`,'E'],
+ [`What does prototype scope mean?`,[`One per JVM`,`A new instance each time the bean is requested`,`One per request`,`One per thread`],1,`Spring doesn't manage its destruction.`,'E'],
+ [`Where do proxies for @Transactional get created in the lifecycle?`,[`In the constructor`,`In a BeanPostProcessor after initialisation`,`At compile time`,`On first call`],1,`postProcessAfterInitialization.`,'M'],
+ [`Order: constructor, dependency injection, @PostConstruct?`,[`@PostConstruct first`,`Constructor → injection → @PostConstruct`,`Injection → constructor`,`Random`],1,`With constructor injection, the first two happen together.`,'M'],
+ [`Where should per-request data live instead of a singleton field?`,[`A static field`,`Method parameters/locals or request-scoped beans`,`A global map`,`System properties`],1,`Keep singletons stateless.`,'E']
+], [
+ [`What does <code>SmartInitializingSingleton</code> or <code>ApplicationReadyEvent</code> help with?`,[`Logging`,`Running work after all singletons (and proxies) are ready`,`Destroying beans`,`Configuring scopes`],1,`Safer than @PostConstruct for transactional work.`,'H'],
+ [`Lazy initialisation (<code>spring.main.lazy-initialization=true</code>) trade-off?`,[`No downside`,`Faster startup, but configuration errors surface at first use instead of at startup`,`Breaks DI`,`Uses more memory`],1,`Often used in dev only.`,'H']
+]);
+
+addQ('5.3', [
+ [`What is "advice" in AOP?`,[`A pointcut`,`The code an aspect runs (before/after/around a method)`,`A bean`,`An exception`],1,`Pointcut says where; advice says what.`,'E'],
+ [`Which advice can skip or replace the target call?`,[`@Before`,`@After`,`@Around`,`@AfterReturning`],2,`It controls proceed().`,'M'],
+ [`What's a join point in Spring AOP?`,[`A database join`,`A method execution on a Spring bean`,`A thread`,`A field`],1,`Spring AOP only intercepts method calls.`,'M'],
+ [`Why does AOP only apply to Spring beans?`,[`Licensing`,`Interception is done by proxies Spring creates around beans`,`Bytecode limits`,`It applies everywhere`],1,`new MyService() isn't proxied.`,'E'],
+ [`Which annotation enables custom @Aspect classes in Spring Boot?`,[`Nothing extra: auto-configured with spring-boot-starter-aop`,`@EnableAll`,`@AspectScan`,`@Proxy`],0,`Boot enables @EnableAspectJAutoProxy for you.`,'M']
+], [
+ [`AspectJ weaving vs Spring AOP proxies?`,[`Same`,`AspectJ modifies bytecode, so it can intercept self-calls and private methods; proxies can't`,`Proxies are more powerful`,`AspectJ is runtime only`],1,`Spring supports load-time weaving if needed.`,'H'],
+ [`A custom @Audited annotation with an @Around aspect: how do you match it?`,[`execution(* *(..))`,`@annotation(com.shop.Audited)`,`within(Audited)`,`bean(Audited)`],1,`Pointcut on the annotation.`,'H']
+]);
+
+addQ('5.4', [
+ [`What does @Transactional do on success?`,[`Rolls back`,`Commits`,`Nothing`,`Retries`],1,`And rolls back on unchecked exceptions.`,'E'],
+ [`Default propagation?`,[`REQUIRES_NEW`,`REQUIRED`,`NESTED`,`NEVER`],1,`Join an existing transaction or start one.`,'E'],
+ [`MANDATORY propagation means?`,[`Always new`,`Must run inside an existing transaction, otherwise an exception`,`Never in a transaction`,`Optional`],1,`Guards methods that must not run alone.`,'M'],
+ [`@Transactional on a private method?`,[`Works`,`Ignored: proxies can't intercept private methods`,`Compile error`,`Only for reads`],1,`Same for self-invocation.`,'E'],
+ [`Why keep transactions short?`,[`Style`,`They hold DB connections and locks; long ones block others and exhaust pools`,`Required by JPA`,`For logging`],1,`See 6.4.`,'M']
+], [
+ [`How do you roll back without throwing?`,[`Impossible`,`TransactionAspectSupport.currentTransactionStatus().setRollbackOnly()`,`return null`,`Call rollback() on the repository`],1,`Rarely needed; usually throw.`,'H'],
+ [`@Transactional(timeout = 5) does what?`,[`Retries for 5 s`,`Rolls back if the transaction runs longer than 5 seconds (checked at statement boundaries by most providers)`,`Waits 5 s before commit`,`Sets the lock timeout only`],1,`A safety net for runaway transactions.`,'H']
+]);
+
+addQ('5.5', [
+ [`What's the persistence context?`,[`The database`,`The set of entities managed in the current transaction (first-level cache)`,`A config file`,`A thread`],1,`find() twice returns the same instance.`,'E'],
+ [`Which fetch type is the default for @ManyToOne?`,[`LAZY`,`EAGER`,`NONE`,`BATCH`],1,`Make it LAZY explicitly.`,'M'],
+ [`Fix N+1 when listing orders with their items?`,[`More indexes`,`JOIN FETCH / @EntityGraph / batch fetching`,`A bigger pool`,`Caching nothing`],1,`Load associations in one or few queries.`,'E'],
+ [`What does <code>merge(detached)</code> return?`,[`void`,`A managed copy; the passed object stays detached`,`The same object, now managed`,`null`],1,`Use the returned instance.`,'M'],
+ [`What does <code>@Version</code> add?`,[`Auditing`,`Optimistic locking via a version column`,`Soft deletes`,`Caching`],1,`Detects lost updates.`,'E']
+], [
+ [`Why can <code>equals</code> on entities based on generated id be tricky?`,[`It's fine always`,`The id is null before persist, so equality and hash change after saving`,`ids are strings`,`Hibernate forbids equals`],1,`Use a business key or careful id-based equals with constant hashCode.`,'H'],
+ [`What's the second-level cache?`,[`The persistence context`,`A cache shared across sessions/transactions (e.g. with Ehcache/Caffeine)`,`The DB buffer pool`,`Redis only`],1,`Off by default; use for read-mostly reference data.`,'H']
+]);
+
+addQ('5.6', [
+ [`What is a Spring Boot starter?`,[`A main class`,`A dependency that brings a curated set of libraries and auto-configuration`,`A plugin`,`A profile`],1,`e.g. spring-boot-starter-web.`,'E'],
+ [`What starts Tomcat in a Boot web app?`,[`You must install it`,`Auto-configuration creates an embedded server`,`Docker`,`The OS`],1,`The app is a runnable JAR.`,'E'],
+ [`Where are auto-configuration classes listed (Boot 3)?`,[`spring.factories only`,`META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`,`application.yml`,`pom.xml`],1,`Older Boot used spring.factories.`,'H'],
+ [`@ConditionalOnClass means?`,[`Apply if a class is on the classpath`,`Apply if a bean exists`,`Apply on a profile`,`Apply always`],0,`e.g. only configure Jackson if Jackson is present.`,'M'],
+ [`How do you disable a specific auto-configuration?`,[`Delete the JAR`,`@SpringBootApplication(exclude = …) or spring.autoconfigure.exclude`,`Rename the class`,`Use @Lazy`],1,`Or define your own bean so it backs off.`,'M']
+], [
+ [`What does <code>spring-boot-maven-plugin</code> build?`,[`A WAR only`,`An executable "fat" JAR containing your classes and dependencies`,`Docker images only`,`Native code only`],1,`Also supports building OCI images.`,'M'],
+ [`Why does Boot's startup sometimes take seconds, and what helps?`,[`It's always instant`,`Classpath scanning, bean creation, auto-config; helps: fewer starters, lazy init in dev, CDS / AOT / native image`,`Only network`,`Only GC`],1,`Measure with the startup actuator endpoint.`,'H']
+]);
+
+addQ('5.7', [
+ [`What activates a profile?`,[`spring.profiles.active=prod (property, env var or arg)`,`A class annotation only`,`The JAR name`,`The OS`],0,`SPRING_PROFILES_ACTIVE as env var.`,'E'],
+ [`Which file holds properties for profile dev?`,[`dev.properties`,`application-dev.yml (or .properties)`,`profile-dev.yml`,`application.yml only`],1,`Loaded on top of application.yml.`,'E'],
+ [`<code>@Value("\${timeout:5000}")</code> means?`,[`timeout must be 5000`,`Use property timeout, or 5000 if it's missing`,`A syntax error`,`Set timeout to 5000`],1,`Default after the colon.`,'M'],
+ [`Where should database passwords come from in production?`,[`application.yml in Git`,`Environment variables or a secret store (Vault, Kubernetes secrets)`,`Hard-coded`,`System.out`],1,`Never commit secrets.`,'E'],
+ [`Does a command-line argument beat an environment variable?`,[`No`,`Yes`,`Only for ports`,`They merge`],1,`Command line has higher precedence.`,'M']
+], [
+ [`@Profile("!prod") on a bean means?`,[`Only in prod`,`Active in every profile except prod`,`Never active`,`Syntax error`],1,`Profile expressions support !, &, |.`,'M'],
+ [`How can you see where a property's value came from at run time?`,[`You can't`,`Actuator /actuator/env shows property sources and values`,`Logs only`,`jstack`],1,`Secure it; it can expose secrets (Boot masks many).`,'H']
+]);
+
+addQ('5.8', [
+ [`Which annotation marks a class returning JSON from handler methods?`,[`@Controller`,`@RestController`,`@Service`,`@Component`],1,`@Controller + @ResponseBody.`,'E'],
+ [`Read <code>/cars/7</code>'s 7 into a parameter?`,[`@RequestParam`,`@PathVariable`,`@RequestBody`,`@Header`],1,`@RequestParam reads ?query=params.`,'E'],
+ [`Which status should a successful POST that creates a resource return?`,[`200`,`201 Created`,`204`,`302`],1,`Often with a Location header.`,'M'],
+ [`What converts Java objects to JSON in Spring MVC?`,[`Tomcat`,`HttpMessageConverters (Jackson)`,`The browser`,`Hibernate`],1,`Content negotiation picks one.`,'M'],
+ [`What does <code>@Valid @RequestBody CarDto dto</code> trigger on failure?`,[`A 500`,`MethodArgumentNotValidException → 400 by default`,`Nothing`,`A null dto`],1,`Customise the body in @ControllerAdvice.`,'M']
+], [
+ [`Where does a HandlerInterceptor run relative to the controller?`,[`Only before`,`preHandle before, postHandle after (before view), afterCompletion at the end`,`Only after`,`In another thread`],1,`Filters wrap the whole servlet.`,'H'],
+ [`Idempotent HTTP methods are?`,[`POST only`,`GET, PUT, DELETE (and HEAD, OPTIONS)`,`All of them`,`None`],1,`POST isn't; use idempotency keys (5.13c).`,'M']
+]);
+
+addQ('5.9', [
+ [`Authentication vs authorisation?`,[`Same`,`Authentication = who you are; authorisation = what you may do`,`Reversed`,`Only for admins`],1,`401 vs 403.`,'E'],
+ [`Where does a JWT usually travel?`,[`In the URL`,`In the Authorization: Bearer header`,`In the body of every request`,`In a server session`],1,`Sometimes in a cookie.`,'E'],
+ [`What part of a JWT proves it wasn't tampered with?`,[`Header`,`Payload`,`Signature`,`Base64`],2,`Signed with a secret or private key.`,'E'],
+ [`Where are passwords stored securely?`,[`Plain text`,`Hashed with a slow, salted algorithm like bcrypt/argon2`,`Base64-encoded`,`Encrypted with AES in code`],1,`Spring Security's PasswordEncoder.`,'M'],
+ [`@PreAuthorize("hasRole('ADMIN')") does what?`,[`Logs admins`,`Checks the current user's role before the method runs`,`Creates a role`,`Nothing`],1,`Method security (enable with @EnableMethodSecurity).`,'M']
+], [
+ [`HS256 vs RS256 for JWT?`,[`Same`,`HS256 uses one shared secret; RS256 signs with a private key and verifies with a public key`,`RS256 is unsigned`,`HS256 is asymmetric`],1,`RS256 lets many services verify without the signing secret.`,'H'],
+ [`Why store JWTs in HttpOnly cookies rather than localStorage in browsers?`,[`Faster`,`JavaScript (and XSS) can't read HttpOnly cookies; then add CSRF protection`,`Required by the spec`,`Cookies never expire`],1,`Trade-off between XSS and CSRF risk.`,'H']
+]);
+
+addQ('5.10', [
+ [`What does <code>@Cacheable("cars")</code> do on a cache hit?`,[`Runs the method anyway`,`Returns the cached value without running the method`,`Clears the cache`,`Throws`],1,`On a miss it runs and stores.`,'E'],
+ [`Which annotation removes a cache entry?`,[`@CachePut`,`@CacheEvict`,`@Cacheable`,`@Caching`],1,`@CachePut always runs and updates.`,'M'],
+ [`What enables @Scheduled?`,[`Nothing`,`@EnableScheduling`,`@Async`,`@EnableCaching`],1,`Then use fixedRate, fixedDelay or cron.`,'E'],
+ [`fixedRate vs fixedDelay?`,[`Same`,`fixedRate: start every N ms; fixedDelay: wait N ms after the previous run finishes`,`fixedDelay is faster`,`fixedRate allows overlap by default`],1,`Default scheduler is single-threaded.`,'M'],
+ [`What does @Async return for a value?`,[`The value directly`,`A CompletableFuture (or void)`,`A Thread`,`Optional`],1,`Configure a bounded executor.`,'M']
+], [
+ [`Cache stampede with @Cacheable: Spring option?`,[`None`,`@Cacheable(sync = true) so only one caller computes per key in this JVM`,`Bigger TTL`,`@Async`],1,`See 6.5 for cross-pod approaches.`,'H'],
+ [`Retry with exponential backoff and jitter: why jitter?`,[`Faster`,`To avoid many clients retrying in sync`,`Required by HTTP`,`To reduce logging`],1,`Spring Retry and Resilience4j support it.`,'M']
+]);
+
+addQ('5.11', [
+ [`What does <code>JpaRepository&lt;Car, Long&gt;</code> give you?`,[`Nothing`,`CRUD, paging and sorting methods without writing implementations`,`A database`,`Only findAll`],1,`Spring generates the implementation.`,'E'],
+ [`<code>findByEmail(String email)</code> becomes?`,[`A runtime reflection call`,`SELECT … WHERE email = ?`,`A full table scan in Java`,`Nothing`],1,`Derived query.`,'E'],
+ [`Page vs Slice?`,[`Same`,`Page runs an extra COUNT for totals; Slice only knows if there's a next page`,`Slice counts`,`Page is unsorted`],1,`Slice is cheaper for infinite scroll.`,'M'],
+ [`Write a custom JPQL query?`,[`@Sql`,`@Query("select c from Car c where …")`,`@Native`,`@Select`],1,`nativeQuery = true for SQL.`,'E'],
+ [`Fetch only id and name for a list page?`,[`Load full entities`,`Use a projection (interface or record DTO)`,`Use EAGER`,`Use a Page`],1,`Less data, no dirty checking.`,'M']
+], [
+ [`What does <code>saveAll</code> in a loop of 10,000 entities need to be efficient?`,[`Nothing`,`JDBC batching enabled (hibernate.jdbc.batch_size) and an id strategy that allows batching (not IDENTITY)`,`EAGER fetching`,`A bigger heap only`],1,`IDENTITY ids force one insert at a time.`,'H'],
+ [`Specification / Criteria are used for?`,[`Static queries`,`Building dynamic queries from optional filters`,`Schema migration`,`Caching`],1,`Combine predicates at run time.`,'M']
+]);
+
+addQ('5.12', [
+ [`@SpringBootTest loads?`,[`Only controllers`,`The full application context`,`Nothing`,`Only repositories`],1,`Slowest, most realistic.`,'E'],
+ [`@DataJpaTest loads?`,[`Everything`,`JPA components (entities, repositories) with an embedded or configured DB`,`Controllers`,`Nothing`],1,`Transactions roll back after each test.`,'E'],
+ [`MockMvc lets you?`,[`Start a real server`,`Call controllers through the MVC stack without a network server`,`Mock the database`,`Load test`],1,`Check status, headers and JSON.`,'M'],
+ [`Why test against a real database with Testcontainers?`,[`Speed`,`Same SQL dialect, constraints and behaviour as production`,`It needs no Docker`,`It's required by Spring`],1,`H2 can hide dialect issues.`,'M'],
+ [`What's the test pyramid?`,[`Mostly end-to-end tests`,`Many fast unit tests, fewer integration tests, very few end-to-end tests`,`Equal numbers`,`Only integration tests`],1,`Fast feedback with confidence.`,'E']
+], [
+ [`What is @TestConfiguration for?`,[`Production config`,`Extra or overriding beans just for tests`,`Profiles`,`Logging`],1,`Doesn't get picked up by component scanning by default.`,'M'],
+ [`@ServiceConnection with Testcontainers (Boot 3.1+) does?`,[`Nothing`,`Automatically wires the container's connection details into Spring (no manual properties)`,`Starts Docker`,`Mocks the DB`],1,`Replaces @DynamicPropertySource boilerplate.`,'H']
+]);
+
+addQ('5.13a', [
+ [`Circuit breaker states?`,[`ON / OFF`,`CLOSED, OPEN, HALF_OPEN`,`READY / BUSY`,`NEW / DONE`],1,`CLOSED = normal.`,'E'],
+ [`What happens to calls when the breaker is OPEN?`,[`They wait`,`They fail fast (or use a fallback) without calling the service`,`They're queued`,`They retry forever`],1,`Gives the dependency time to recover.`,'E'],
+ [`Which calls are safe to retry?`,[`All`,`Idempotent ones (or protected by an idempotency key)`,`Only POST`,`None`],1,`Retrying a charge can double-charge.`,'M'],
+ [`What's a fallback?`,[`An error page`,`An alternative response when the call fails (cache, default, degraded)`,`A retry`,`A timeout`],1,`Graceful degradation.`,'E'],
+ [`Why must every remote call have a timeout?`,[`Style`,`Without one, threads can wait forever and the caller collapses`,`HTTP requires it`,`For logging`],1,`Timeouts come first.`,'M']
+], [
+ [`What is a bulkhead?`,[`A retry policy`,`Isolating resources (threads/permits) per dependency so one can't exhaust all`,`A cache`,`A breaker state`],1,`Like ship compartments.`,'M'],
+ [`Sliding window by count vs time in Resilience4j?`,[`Same`,`Count-based uses the last N calls; time-based uses calls in the last N seconds`,`Time-based is deprecated`,`Count-based ignores failures`],1,`Pick what matches traffic patterns.`,'H']
+]);
+
+addQ('5.13b', [
+ [`Why can't a normal database transaction span two microservices?`,[`It can`,`Each service has its own database; there's no shared transaction`,`Java forbids it`,`Kafka forbids it`],1,`Sagas coordinate local transactions instead.`,'E'],
+ [`What is a compensating action?`,[`A retry`,`A business "undo" of an earlier step, e.g. refund`,`A rollback in the same DB`,`A timeout`],1,`Must be idempotent.`,'E'],
+ [`Orchestration means?`,[`Services react to each other's events`,`A central coordinator tells each service what to do next`,`No coordination`,`2PC`],1,`Choreography is the event-driven alternative.`,'M'],
+ [`In the outbox pattern, who publishes to Kafka?`,[`The request thread, inside the transaction`,`A separate relay reading the outbox table (polling or CDC)`,`The database`,`The consumer`],1,`After the transaction commits.`,'M'],
+ [`What delivery guarantee does the outbox give?`,[`Exactly-once`,`At-least-once`,`At-most-once`,`None`],1,`Consumers must deduplicate.`,'M']
+], [
+ [`Why expose intermediate states (PENDING_PAYMENT) in a saga?`,[`For logging only`,`Steps happen over time; clients must see and handle in-progress states`,`Required by Kafka`,`To lock rows`],1,`No global atomic view exists.`,'M'],
+ [`What is two-phase commit's main problem in microservices?`,[`Too fast`,`Blocking coordinator, poor availability, little support in modern brokers/databases at scale`,`It's insecure`,`It needs Kafka`],1,`Sagas trade atomicity for availability.`,'H']
+]);
+
+addQ('5.13c', [
+ [`What is an idempotent operation?`,[`One that runs fast`,`One that has the same effect whether it runs once or many times`,`One that can't fail`,`A read-only one`],1,`e.g. setting a value, not incrementing it.`,'E'],
+ [`Who generates the idempotency key?`,[`The database`,`The client, once per logical operation`,`The load balancer`,`Kafka`],1,`Retries reuse the same key.`,'E'],
+ [`What does the server store with each key?`,[`Nothing`,`The status and the response (plus a request hash)`,`The password`,`The IP address only`],1,`To replay the same response.`,'M'],
+ [`Is <code>PUT /cars/7 {price: 100}</code> naturally idempotent?`,[`No`,`Yes: repeating it leaves the same state`,`Only once`,`Only with a key`],1,`Unlike POST /charges.`,'M'],
+ [`How long should idempotency keys be kept?`,[`Forever`,`A bounded retention window (e.g. 24 h–7 days), long enough for retries`,`1 second`,`Until restart`],1,`Then expire them.`,'M']
+], [
+ [`A retry arrives while the first request with the same key is still IN_PROGRESS. Reasonable response?`,[`Process it again`,`409 Conflict (or wait/poll) until the first finishes`,`200 with empty body`,`Delete the key`],1,`Never run the side effect twice.`,'H'],
+ [`Why also pass the idempotency key to downstream providers like Stripe?`,[`Logging`,`So their side is protected from duplicates too if your call is retried`,`Required for TLS`,`It's free`],1,`End-to-end protection.`,'M']
+]);
+
+addQ('6.1', [
+ [`Why can't <code>synchronized</code> prevent overselling across two pods?`,[`It can`,`Each pod is a separate JVM with its own locks`,`synchronized is slow`,`Pods share memory`],1,`Shared state lives in the database.`,'E'],
+ [`Which SQL makes "check stock and decrement" atomic?`,[`SELECT then UPDATE`,`UPDATE … SET stock = stock - 1 WHERE id = ? AND stock &gt;= 1`,`DELETE …`,`INSERT …`],1,`Then check rows affected.`,'E'],
+ [`What should the app do when the conditional UPDATE affects 0 rows?`,[`Retry forever`,`Report sold out (or conflict) to the user`,`Ignore it`,`Insert stock`],1,`0 rows = condition failed.`,'M'],
+ [`What safety net catches bugs that would make stock negative?`,[`A log line`,`A CHECK (stock &gt;= 0) constraint`,`A cron job`,`A cache`],1,`The DB rejects invalid states.`,'M'],
+ [`Optimistic locking approach for the same problem?`,[`synchronized`,`@Version on Product, retry on OptimisticLockException`,`Bigger pool`,`READ UNCOMMITTED`],1,`Good when conflicts are rare.`,'M']
+], [
+ [`Extremely hot item (100k buyers/sec). A common design?`,[`One SQL row for everyone`,`Pre-allocated tokens in Redis (DECR) then async persistence, or splitting stock into buckets`,`synchronized`,`Bigger DB only`],1,`Spread the contention.`,'H'],
+ [`A user double-clicks "Buy". Which protects against two orders even with correct stock handling?`,[`CHECK constraint`,`An idempotency key per checkout attempt`,`Indexes`,`READ COMMITTED`],1,`Stock logic doesn't stop duplicate requests.`,'M']
+]);
+
+addQ('6.2', [
+ [`What is a memory leak in Java?`,[`Memory the GC forgets`,`Objects still referenced but no longer needed, so the GC can't free them`,`Native code bugs only`,`Large objects`],1,`Reachable but useless.`,'E'],
+ [`Which file format is a Java heap dump?`,[`.jfr`,`.hprof`,`.log`,`.class`],1,`Open it in Eclipse MAT or IntelliJ.`,'E'],
+ [`Which tool gives a cheap overview of what's filling the heap?`,[`Thread dump`,`jcmd GC.class_histogram`,`top`,`EXPLAIN`],1,`Counts and bytes per class.`,'M'],
+ [`What's wrong with a static <code>HashMap</code> cache with no eviction?`,[`Nothing`,`It grows forever and is shared across threads unsafely`,`It's slow`,`It's immutable`],1,`Use a bounded concurrent cache.`,'E'],
+ [`Restarting a leaking service every night is?`,[`A fix`,`A workaround that hides the bug and loses evidence`,`Best practice`,`Required by Kubernetes`],1,`Capture a dump, find the root cause.`,'M']
+], [
+ [`What does the "path to GC roots" in MAT show?`,[`Allocation sites`,`The chain of references keeping an object alive`,`CPU usage`,`Thread states`],1,`Points straight at the culprit.`,'M'],
+ [`Old gen usage looks like a sawtooth whose low points stay flat. Leak?`,[`Yes`,`Probably not: memory is reclaimed back to a stable level`,`Always`,`Only with G1`],1,`A rising floor is the signal.`,'M']
+]);
+
+addQ('6.3', [
+ [`What is thread-pool starvation?`,[`Too much CPU`,`All pool threads are busy waiting, so queued work that would unblock them never runs`,`A memory leak`,`A deadlock between two locks`],1,`Nothing makes progress.`,'E'],
+ [`What does a thread dump typically show in this case?`,[`Found one Java-level deadlock`,`All pool threads WAITING in join/get at the same place`,`High CPU threads`,`Nothing`],1,`No lock cycle is reported.`,'M'],
+ [`Why doesn't simply enlarging the pool fix it?`,[`It does`,`It only raises the threshold; enough concurrent outer tasks still fill it`,`Pools can't grow`,`The JVM forbids it`],1,`Remove the blocking dependency.`,'M'],
+ [`Best way to wait for two async results without blocking a pool thread?`,[`join() both`,`thenCombine and return the combined future`,`Thread.sleep`,`get() in a loop`],1,`Composition.`,'E'],
+ [`What should blocking HTTP calls run on?`,[`The common ForkJoinPool`,`A dedicated bounded I/O executor (or virtual threads)`,`The main thread`,`A parallel stream`],1,`Separate from CPU work.`,'M']
+], [
+ [`@Async method A calls @Async method B on the same executor and calls .get(). Risk?`,[`None`,`Starvation when all executor threads are A's waiting on B's queued tasks`,`Only slower`,`Compile error`],1,`Same pattern as nested supplyAsync.`,'H'],
+ [`Why add timeouts even after fixing starvation?`,[`Style`,`A stuck dependency then fails fast instead of hanging the batch`,`Required by CompletableFuture`,`For logging`],1,`Defence in depth.`,'M']
+]);
+
+addQ('6.4', [
+ [`When does @Transactional borrow a DB connection?`,[`At application start`,`At the first database access in the transaction, held until commit`,`Per statement`,`Never`],1,`Then it's held through everything inside.`,'E'],
+ [`Why is an HTTP call inside a transaction dangerous?`,[`It's not`,`The connection sits idle but unavailable while waiting; slow providers exhaust the pool`,`HTTP is slow`,`It breaks JSON`],1,`Move remote calls outside.`,'E'],
+ [`Hikari error "Connection is not available, request timed out" usually means?`,[`DB down`,`The pool is empty: connections are held too long or leaked`,`Bad SQL`,`Network DNS`],1,`Check usage time metrics.`,'M'],
+ [`Why does a slow checkout affect health checks?`,[`It doesn't`,`Health checks and other endpoints need connections from the same exhausted pool`,`They share threads only`,`Kubernetes bug`],1,`Blast radius of one slow dependency.`,'M'],
+ [`Where should the confirmation email be sent?`,[`Inside the transaction`,`After commit (AFTER_COMMIT listener or outbox)`,`Before saving`,`In the controller before the service`],1,`Only for committed orders.`,'E']
+], [
+ [`What does <code>spring.jpa.open-in-view=false</code> change?`,[`Disables JPA`,`The persistence context closes after the service layer, so connections aren't held during view/JSON rendering`,`Enables lazy loading everywhere`,`Nothing`],1,`Boot warns when it's enabled by default.`,'H'],
+ [`Payment succeeded but the app crashed before marking the order paid. Recovery?`,[`Ignore`,`Reconcile PENDING orders with the provider using the idempotency key / order id`,`Charge again`,`Delete the order`],1,`Design for crashes between steps.`,'H']
+]);
+
+addQ('6.5', [
+ [`What triggers a cache stampede?`,[`A full cache`,`A popular key expiring while many requests arrive`,`Too many keys`,`Slow network only`],1,`All of them miss together.`,'E'],
+ [`What does "single-flight" mean?`,[`One request per second`,`For each key, only one request loads it; others wait for that result`,`One thread per pod`,`One cache per service`],1,`Coalescing.`,'E'],
+ [`Caffeine's <code>cache.get(key, loader)</code> under concurrent misses?`,[`Calls the loader many times`,`Calls the loader once per key; other callers wait`,`Throws`,`Returns null`],1,`Built-in coalescing within a JVM.`,'M'],
+ [`What is negative caching?`,[`Caching errors forever`,`Briefly caching "not found" so missing keys don't hit the DB every time`,`Deleting cache entries`,`A bug`],1,`Defends against cache penetration.`,'M'],
+ [`Why does a stampede get worse over time once it starts?`,[`It doesn't`,`The DB slows down, so the reload takes longer and more requests miss meanwhile`,`The cache grows`,`GC`],1,`A feedback loop.`,'M']
+], [
+ [`How do you make only one pod reload a key cluster-wide?`,[`synchronized`,`A distributed lock, e.g. Redis SET key NX PX with a short TTL`,`A static field`,`A bigger TTL`],1,`Others serve stale data or wait.`,'H'],
+ [`What does "stale-while-revalidate" mean?`,[`Never refresh`,`Serve the slightly old value while refreshing in the background`,`Serve errors`,`Refresh synchronously`],1,`Like Caffeine's refreshAfterWrite.`,'M']
+]);
+
+addQ('6.6', [
+ [`Why are Spring singleton beans' fields risky?`,[`They're slow`,`All request threads share them, so mutable fields can race`,`They're final`,`They're on the stack`],1,`Keep beans stateless.`,'E'],
+ [`Is <code>java.time.DateTimeFormatter</code> thread-safe?`,[`No`,`Yes: it's immutable`,`Only with ThreadLocal`,`Only in Java 21`],1,`Share one instance.`,'E'],
+ [`Is <code>StringBuilder</code> thread-safe?`,[`Yes`,`No (StringBuffer is synchronized)`,`Only for append`,`Only in Java 17`],1,`Keep StringBuilders local.`,'M'],
+ [`Why do concurrency bugs like this pass unit tests?`,[`They don't`,`Tests are single-threaded; the bug only appears under interleaving`,`JUnit locks objects`,`The JIT prevents them`],1,`Use stress tests and code review.`,'E'],
+ [`Fix for a shared SimpleDateFormat if you can't switch to java.time?`,[`Make it static`,`Create one per call, use a ThreadLocal, or synchronize access`,`Make it volatile`,`Nothing`],1,`DateTimeFormatter is still the best fix.`,'M']
+], [
+ [`Is <code>HashMap</code> safe if threads only read it after it was fully built and safely published?`,[`No, never`,`Yes: concurrent reads of an unchanging, safely published map are fine`,`Only with volatile values`,`Only for String keys`],1,`Publish via final field, volatile, or before starting threads.`,'H'],
+ [`Jackson's ObjectMapper: create per request or share?`,[`Per request`,`Share one configured instance; it's thread-safe and expensive to create`,`Per thread`,`Per field`],1,`Don't reconfigure it while in use.`,'M']
+]);
+</script>
+<script>
+addQ('7.1', [
+ [`What does <code>OrderStatus.values()</code> return?`,[`A Set`,`An array of all constants in declaration order`,`A Map`,`A List of names`],1,`A new array each call.`,'E'],
+ [`Can enum constants have their own fields?`,[`No`,`Yes, set through the enum's constructor`,`Only static fields`,`Only booleans`],1,`e.g. PAID(false).`,'E'],
+ [`An enum's constructor is...`,[`public`,`implicitly private`,`protected`,`static`],1,`You can't call it yourself.`,'M'],
+ [`Why is an enum good for statuses instead of String constants?`,[`Strings are slower`,`The compiler only allows valid values and switches can be checked for exhaustiveness`,`Enums use less disk`,`Strings can't be compared`],1,`Typos become compile errors.`,'E'],
+ [`<code>OrderStatus.PAID.compareTo(OrderStatus.SHIPPED)</code> compares?`,[`Names alphabetically`,`Ordinal positions`,`Hash codes`,`It throws`],1,`Declaration order.`,'M']
+], [
+ [`Can an enum implement an interface?`,[`No`,`Yes, and each constant can provide its own implementation`,`Only Comparable`,`Only if abstract`],1,`Useful for strategy-like enums.`,'M'],
+ [`Why is switching on an enum's ordinal stored in the DB risky?`,[`Slow`,`Reordering or inserting constants changes ordinals and corrupts meaning`,`Ordinals are random`,`It's not risky`],1,`Store names (EnumType.STRING).`,'M']
+]);
+
+addQ('7.2', [
+ [`What does <code>Foo.class</code> give you?`,[`An instance of Foo`,`The Class object describing Foo`,`The source file`,`A proxy`],1,`Entry point for reflection.`,'E'],
+ [`Which retention keeps an annotation available at run time?`,[`SOURCE`,`CLASS`,`RUNTIME`,`DEFAULT`],2,`Needed for reflection-based frameworks.`,'E'],
+ [`<code>@Override</code> has which retention?`,[`RUNTIME`,`SOURCE`,`CLASS`,`None`],1,`It's only for the compiler.`,'M'],
+ [`What does <code>getDeclaredFields()</code> return?`,[`Only public fields including inherited`,`All fields declared in this class, including private (not inherited)`,`Only static fields`,`Methods`],1,`getFields() returns public ones, including inherited.`,'M'],
+ [`Why is reflection slower than direct calls?`,[`It isn't`,`Extra checks, boxing of arguments and harder JIT optimisation`,`It uses the network`,`It runs in another thread`],1,`Fine at startup, avoid in hot paths.`,'M']
+], [
+ [`MethodHandles vs reflection?`,[`Same`,`MethodHandles are lower-level, typed handles the JIT can optimise much better`,`MethodHandles are slower`,`Reflection is newer`],1,`Used under the hood by lambdas and modern reflection.`,'H'],
+ [`Can annotations hold arbitrary objects as values?`,[`Yes`,`No: only primitives, String, Class, enums, other annotations and arrays of these`,`Only Strings`,`Only ints`],1,`Values must be compile-time constants.`,'H']
+]);
+
+addQ('7.3', [
+ [`<code>Collectors.groupingBy(Order::city)</code> produces?`,[`List&lt;Order&gt;`,`Map&lt;String, List&lt;Order&gt;&gt;`,`Set&lt;String&gt;`,`Map&lt;String, Order&gt;`],1,`Values are lists by default.`,'E'],
+ [`Count orders per city?`,[`groupingBy(Order::city)`,`groupingBy(Order::city, counting())`,`toMap(Order::city, 1)`,`partitioningBy(Order::city)`],1,`Downstream counting.`,'E'],
+ [`<code>joining(", ")</code> on [a, b, c]?`,[`abc`,`a, b, c`,`[a, b, c]`,`a,b,c,`],1,`Separator between elements.`,'E'],
+ [`Names of customers per city?`,[`groupingBy(Order::city, mapping(Order::customer, toList()))`,`groupingBy(Order::customer)`,`toMap(Order::city, Order::customer)`,`counting()`],0,`mapping transforms before collecting.`,'M'],
+ [`Which collector keeps the first value on duplicate keys?`,[`toMap(k, v)`,`toMap(k, v, (a, b) -&gt; a)`,`toMap(k, v, (a, b) -&gt; b)`,`groupingBy(k)`],1,`The merge function decides.`,'M']
+], [
+ [`<code>teeing(c1, c2, merger)</code> (Java 12) does?`,[`Runs two collectors on the same elements and merges their results`,`Splits a stream in two`,`Sorts`,`Joins strings`],0,`e.g. min and max in one pass.`,'H'],
+ [`Why might <code>groupingByConcurrent</code> be used with parallel streams?`,[`Sorted output`,`It builds a ConcurrentMap directly, avoiding expensive map merging`,`It's required`,`Fewer keys`],1,`Order of values isn't preserved.`,'H']
+]);
+
+addQ('7.4', [
+ [`Which type represents a birthday?`,[`Instant`,`LocalDate`,`ZonedDateTime`,`Duration`],1,`A calendar date without time or zone.`,'E'],
+ [`Are java.time objects mutable?`,[`Yes`,`No: methods return new instances`,`Only LocalDate`,`Only Instant`],1,`Thread-safe as a result.`,'E'],
+ [`Exact elapsed time between two Instants?`,[`Period.between`,`Duration.between`,`ChronoUnit.YEARS`,`LocalDate.until`],1,`Period is for calendar amounts.`,'E'],
+ [`Parse "2026-03-31" into a date?`,[`new Date("2026-03-31")`,`LocalDate.parse("2026-03-31")`,`Instant.parse("2026-03-31")`,`Integer.parseInt`],1,`ISO format by default.`,'M'],
+ [`Why store timestamps in UTC?`,[`Smaller`,`A single unambiguous timeline; convert to local zones only for display`,`Required by Java`,`Faster sorting only`],1,`Avoids DST and region confusion.`,'M']
+], [
+ [`In autumn, a local time like 02:30 can occur twice (DST overlap). What does atZone pick?`,[`It throws`,`The earlier offset by default (withLaterOffsetAtOverlap() to choose the later)`,`Random`,`The later offset`],1,`Ambiguous local times need a policy.`,'H'],
+ [`<code>LocalDate.of(2024, 2, 29).plusYears(1)</code>?`,[`2025-02-29`,`2025-02-28`,`2025-03-01`,`Exception`],1,`Clamped to the last valid day.`,'M']
+]);
+
+addQ('7.5', [
+ [`Read a small text file in one line?`,[`new File(path).read()`,`Files.readString(Path.of(path))`,`System.in.read()`,`Paths.read(path)`],1,`Java 11+.`,'E'],
+ [`What's the difference between InputStream and Reader?`,[`None`,`InputStream reads bytes; Reader reads characters (decoded with a charset)`,`Reader is faster`,`InputStream is for files only`],1,`Wrap with InputStreamReader to convert.`,'E'],
+ [`Why use try-with-resources for files?`,[`Style`,`Files get closed even if an exception happens`,`It reads faster`,`It's required`],1,`Avoids leaking file handles.`,'E'],
+ [`Convert an object to JSON in Spring apps?`,[`toString()`,`Jackson's ObjectMapper`,`Serializable`,`String.format`],1,`Spring MVC uses it automatically.`,'E'],
+ [`What does <code>serialVersionUID</code> protect against?`,[`SQL injection`,`Deserializing data written by an incompatible class version`,`Memory leaks`,`Thread races`],1,`Mismatches throw InvalidClassException.`,'M']
+], [
+ [`What does Jackson's <code>FAIL_ON_UNKNOWN_PROPERTIES = false</code> allow?`,[`Missing fields`,`Ignoring JSON fields your class doesn't have, so newer producers don't break older consumers`,`Null values`,`Faster parsing`],1,`Spring Boot disables failing by default.`,'H'],
+ [`Why is <code>Files.walk(dir)</code> wrapped in try-with-resources?`,[`It isn't needed`,`It returns a lazy Stream holding open directory handles`,`It's slow`,`For sorting`],1,`Same for Files.lines and Files.list.`,'M']
+]);
+
+addQ('7.6', [
+ [`Which version added <code>var</code> for local variables?`,[`8`,`10`,`14`,`17`],1,`Local variable type inference.`,'E'],
+ [`Which LTS is the minimum for Spring Boot 3?`,[`8`,`11`,`17`,`21`],2,`And jakarta.* packages.`,'E'],
+ [`Text blocks (""") became standard in?`,[`11`,`15`,`17`,`21`],1,`Multi-line strings.`,'M'],
+ [`Records became standard in?`,[`14`,`16`,`17`,`21`],1,`Previewed in 14 and 15.`,'M'],
+ [`Virtual threads became standard in?`,[`17`,`19`,`21`,`25`],2,`JEP 444.`,'E']
+], [
+ [`What does "helpful NullPointerExceptions" (Java 14+) add?`,[`Nothing`,`Messages naming exactly which variable or call was null`,`Automatic null checks`,`Optional everywhere`],1,`e.g. Cannot invoke "String.length()" because "name" is null.`,'M'],
+ [`Moving from javax.* to jakarta.* matters for which upgrade?`,[`Java 8 → 11 only`,`Spring Boot 2 → 3 (Jakarta EE 9+)`,`Java 21 → 25`,`None`],1,`Imports like javax.persistence become jakarta.persistence.`,'M']
+]);
+
+addQ('8.1', [
+ [`What does atomicity guarantee?`,[`Speed`,`All statements in a transaction take effect, or none do`,`Isolation`,`Durability`],1,`The A in ACID.`,'E'],
+ [`Which level prevents dirty reads but allows non-repeatable reads?`,[`READ UNCOMMITTED`,`READ COMMITTED`,`REPEATABLE READ`,`SERIALIZABLE`],1,`The most common default.`,'E'],
+ [`What is a phantom read?`,[`Reading deleted data`,`New rows appearing when a range query is repeated`,`Reading uncommitted data`,`A lost update`],1,`Prevented by SERIALIZABLE.`,'M'],
+ [`MySQL InnoDB's default isolation level?`,[`READ COMMITTED`,`REPEATABLE READ`,`SERIALIZABLE`,`READ UNCOMMITTED`],1,`PostgreSQL defaults to READ COMMITTED.`,'M'],
+ [`Set isolation for one Spring method?`,[`Not possible`,`@Transactional(isolation = Isolation.REPEATABLE_READ)`,`In application.yml only`,`With @Lock`],1,`Per transaction.`,'M']
+], [
+ [`What is MVCC?`,[`A Java framework`,`Multi-version concurrency control: readers see snapshots while writers create new row versions`,`A lock type`,`A GC`],1,`Readers don't block writers.`,'H'],
+ [`Lost update: two transactions read 100, both write 100 − 10. Which isolation catches it in PostgreSQL?`,[`READ COMMITTED`,`REPEATABLE READ (the second write fails with a serialization error)`,`READ UNCOMMITTED`,`None`],1,`Or use SELECT … FOR UPDATE / @Version.`,'H']
+]);
+
+addQ('8.2', [
+ [`What's the most common index structure in relational databases?`,[`Hash table`,`B-tree`,`Linked list`,`Bitmap`],1,`Supports equality and range queries.`,'E'],
+ [`Does a primary key create an index?`,[`No`,`Yes, automatically`,`Only in MySQL`,`Only if named`],1,`Unique constraints too.`,'E'],
+ [`Why does every extra index slow down inserts?`,[`It doesn't`,`Each insert must also update every index`,`Indexes lock tables`,`Indexes use the CPU cache`],1,`Write cost vs read benefit.`,'E'],
+ [`<code>WHERE name LIKE 'abc%'</code> vs <code>LIKE '%abc'</code>: which can use a B-tree index on name?`,[`Both`,`Only 'abc%' (prefix)`,`Only '%abc'`,`Neither`],1,`A leading wildcard can't use the sort order.`,'M'],
+ [`What does EXPLAIN (without ANALYZE) show?`,[`Real timings`,`The planned execution strategy and estimated costs`,`The data`,`Locks`],1,`ANALYZE runs it and shows actual numbers.`,'M']
+], [
+ [`What is a partial index?`,[`A broken index`,`An index on only rows matching a condition, e.g. WHERE status = 'PENDING'`,`An index on half the columns`,`A temporary index`],1,`Small and useful for rare values.`,'H'],
+ [`Why does the planner sometimes ignore an existing index?`,[`Bug`,`It estimates a sequential scan is cheaper (low selectivity, small table, stale statistics)`,`Indexes expire`,`Only on Mondays`],1,`Run ANALYZE to refresh statistics.`,'H']
+]);
+
+addQ('8.3', [
+ [`What does a JDBC driver do?`,[`Compiles Java`,`Implements JDBC for a specific database`,`Pools connections`,`Writes SQL for you`],1,`e.g. the PostgreSQL driver.`,'E'],
+ [`Which object runs parameterised SQL?`,[`Statement`,`PreparedStatement`,`ResultSet`,`DriverManager`],1,`With ? placeholders.`,'E'],
+ [`How do you read the next row of a ResultSet?`,[`rs.get()`,`rs.next()`,`rs.read()`,`rs.row()`],1,`Returns false when there are no more rows.`,'E'],
+ [`Default pool in Spring Boot?`,[`Tomcat JDBC`,`HikariCP`,`C3P0`,`DBCP 1`],1,`Fast and well tuned.`,'M'],
+ [`What does <code>con.setAutoCommit(false)</code> start?`,[`A new connection`,`A manual transaction: you must commit or roll back`,`Read-only mode`,`Batching`],1,`What @Transactional does for you.`,'M']
+], [
+ [`What does <code>maximumPoolSize</code> too large risk?`,[`Nothing`,`Overloading the database with connections and context switching, slowing everything`,`Faster queries`,`Less memory`],1,`More connections isn't more throughput.`,'H'],
+ [`Why use <code>getBigDecimal</code> instead of <code>getDouble</code> for money columns?`,[`Speed`,`Exact decimal values without binary floating point errors`,`Required by JDBC`,`It's shorter`],1,`See 1.10.`,'M']
+]);
+
+addQ('8.4', [
+ [`What is a Kafka topic?`,[`A database table`,`A named stream of events, split into partitions`,`A consumer`,`A broker`],1,`Producers write, consumers read.`,'E'],
+ [`What is an offset?`,[`A timestamp`,`The position of a message within a partition`,`A partition id`,`A message key`],1,`Consumers commit offsets to track progress.`,'E'],
+ [`Two different consumer groups subscribe to the same topic. Each gets?`,[`Half the messages`,`All the messages, independently`,`None`,`Duplicates only`],1,`Groups don't share progress.`,'E'],
+ [`Are Kafka messages deleted once consumed?`,[`Yes`,`No: they're kept for the retention period`,`Only if acknowledged`,`Only in the first group`],1,`Enables replay.`,'M'],
+ [`What does a message key influence?`,[`Encryption`,`Which partition the message goes to (and so its ordering)`,`Retention`,`Compression`],1,`Same key → same partition.`,'M']
+], [
+ [`What is a consumer lag metric?`,[`Network latency`,`How far a group's committed offset is behind the latest offset`,`GC time`,`Message size`],1,`Rising lag means consumers can't keep up.`,'M'],
+ [`What does an idempotent producer (enable.idempotence=true) prevent?`,[`Consumer duplicates`,`Duplicate writes to a partition caused by producer retries`,`Rebalances`,`Data loss on disk`],1,`Default in recent clients.`,'H']
+]);
+
+addQ('9.1', [
+ [`What does <code>assertEquals(expected, actual)</code> do when they differ?`,[`Logs a warning`,`Fails the test with both values in the message`,`Throws NullPointerException`,`Passes`],1,`Order matters for readable messages.`,'E'],
+ [`What does <code>when(mock.find(1)).thenReturn(car)</code> do?`,[`Calls the real method`,`Stubs the mock to return car for find(1)`,`Verifies a call`,`Creates a car`],1,`Arrange step.`,'E'],
+ [`Which JUnit 5 annotation runs before each test?`,[`@Before`,`@BeforeEach`,`@BeforeAll`,`@Setup`],1,`@BeforeAll runs once per class.`,'E'],
+ [`How do you assert an exception in JUnit 5?`,[`@Test(expected = …)`,`assertThrows(Type.class, () -> …)`,`try/catch only`,`assertException`],1,`@Test(expected) was JUnit 4.`,'M'],
+ [`<code>verify(repo, never()).save(any())</code> checks?`,[`save was called once`,`save was never called`,`save threw`,`Nothing`],1,`Useful for "no side effect on invalid input".`,'M']
+], [
+ [`What is a spy in Mockito?`,[`A mock with no behaviour`,`A wrapper around a real object; unstubbed methods call the real code`,`A test listener`,`A logger`],1,`Use sparingly.`,'M'],
+ [`Why is <code>Thread.sleep</code> in tests a smell?`,[`It's fine`,`Tests become slow and flaky; wait on a condition (Awaitility) or inject a Clock`,`It's not allowed`,`It breaks JUnit`],1,`Make time and async completion controllable.`,'H']
+]);
+
+addQ('9.2', [
+ [`Which command lists running JVMs?`,[`java -list`,`jcmd (with no arguments) or jps`,`top only`,`javap`],1,`Then target a pid.`,'E'],
+ [`What does a thread dump contain?`,[`All objects`,`Each thread's state and stack trace`,`GC logs`,`CPU temperatures`],1,`Plus locks held and waited for.`,'E'],
+ [`Which file format does Java Flight Recorder produce?`,[`.hprof`,`.jfr`,`.log`,`.class`],1,`Open with JDK Mission Control.`,'E'],
+ [`Why take several thread dumps instead of one?`,[`Tools require three`,`To tell stuck threads (same frame every time) from busy ones`,`Each dump shows different threads`,`For compression`],1,`A few seconds apart.`,'M'],
+ [`What's the first thing to check for "OutOfMemoryError: Metaspace"?`,[`Heap size`,`Class loading: generated classes or class loader leaks`,`Thread count`,`Disk space`],1,`See 1.3 and 1.2.`,'M']
+], [
+ [`async-profiler flame graphs show?`,[`Memory layout`,`Where CPU time (or allocations) is spent, stacked by call path`,`Network traffic`,`GC pauses only`],1,`Wide bars = hot code paths.`,'H'],
+ [`<code>-XX:+ExitOnOutOfMemoryError</code> is useful in containers because?`,[`It prevents OOM`,`The JVM exits immediately so the orchestrator restarts a clean instance`,`It increases heap`,`It writes a dump`],1,`Pair with HeapDumpOnOutOfMemoryError.`,'H']
+]);
+
+addQ('9.3', [
+ [`What identifies a Maven dependency?`,[`Its file name`,`groupId, artifactId and version`,`Its URL`,`Its size`],1,`Coordinates.`,'E'],
+ [`Which scope keeps JUnit out of the production JAR?`,[`compile`,`test`,`runtime`,`provided`],1,`Test-only dependencies.`,'E'],
+ [`Command to see the full dependency tree in Maven?`,[`mvn tree`,`mvn dependency:tree`,`mvn deps`,`mvn list`],1,`Gradle: gradle dependencies.`,'E'],
+ [`What does <code>mvn package</code> run?`,[`Only compile`,`Compile, test, then package (earlier phases included)`,`Deploy`,`Only tests`],1,`The lifecycle runs phases in order.`,'M'],
+ [`Gradle's default conflict resolution picks?`,[`The nearest`,`The highest version`,`The first declared`,`The oldest`],1,`Maven picks the nearest.`,'M']
+], [
+ [`Gradle <code>api</code> vs <code>implementation</code>?`,[`Same`,`api exposes the dependency to consumers' compile classpath; implementation keeps it internal`,`implementation is for tests`,`api is deprecated`],1,`implementation speeds builds and hides internals.`,'H'],
+ [`What does a BOM import (<code>&lt;scope&gt;import&lt;/scope&gt;</code>) do?`,[`Adds all libraries`,`Brings in managed versions without adding dependencies`,`Imports Java classes`,`Nothing`],1,`e.g. spring-boot-dependencies, testcontainers-bom.`,'M']
+]);
+
+addQ('9.4', [
+ [`Which log level is typical in production?`,[`TRACE`,`DEBUG`,`INFO`,`OFF`],2,`DEBUG temporarily, when investigating.`,'E'],
+ [`Which library is the logging facade most Java code uses?`,[`Log4j 1`,`SLF4J`,`System.out`,`JUL only`],1,`Logback or Log4j2 implement it.`,'E'],
+ [`Which metric type measures request durations and percentiles?`,[`Counter`,`Timer`,`Gauge`,`Tag`],1,`Counters only count.`,'M'],
+ [`What is a trace id?`,[`A thread id`,`An id shared by all spans of one request across services`,`A log level`,`A user id`],1,`Propagated in headers.`,'E'],
+ [`Why is structured (JSON) logging useful?`,[`Smaller files`,`Fields are searchable and filterable in log tools`,`Faster writes`,`Required by SLF4J`],1,`e.g. filter by orderId.`,'M']
+], [
+ [`What is an SLO?`,[`A logger`,`A service-level objective, e.g. 99.9% of requests under 300 ms`,`A GC setting`,`A database index`],1,`Alert when you're burning the error budget.`,'H'],
+ [`Why sample traces instead of recording 100%?`,[`Tracing is illegal`,`Volume and cost; keep enough to diagnose (often all errors plus a sample)`,`Traces are inaccurate`,`No reason`],1,`Tail-based sampling keeps interesting ones.`,'H']
+]);
+
+addQ('9.5', [
+ [`What file declares a Java module?`,[`module.xml`,`module-info.java`,`pom.xml`,`MANIFEST.MF`],1,`At the source root.`,'E'],
+ [`Which keyword declares a dependency on another module?`,[`imports`,`requires`,`uses`,`needs`],1,`requires java.sql;`,'E'],
+ [`Which module is always available without requires?`,[`java.sql`,`java.base`,`java.desktop`,`java.logging`],1,`Contains java.lang, java.util…`,'M'],
+ [`What does <code>exports</code> NOT allow by itself?`,[`Using public types`,`Deep reflection into private members`,`Compiling against it`,`Importing it`],1,`That needs opens.`,'M'],
+ [`Since which version are JDK internals strongly encapsulated by default?`,[`9`,`11`,`16/17`,`21`],2,`JEP 396 (16) then 403 (17).`,'M']
+], [
+ [`What is an automatic module?`,[`A generated module-info`,`A plain JAR placed on the module path, named from its manifest or file name`,`A JDK module`,`A test module`],1,`Helps migration.`,'H'],
+ [`<code>requires transitive</code> means?`,[`Optional dependency`,`Modules requiring this one also get read access to that dependency`,`Runtime only`,`Test only`],1,`Implied readability.`,'H']
+]);
+
+addQ('10.1', [
+ [`Mono emits how many values at most?`,[`Many`,`One`,`Zero always`,`Two`],1,`Flux emits many.`,'E'],
+ [`What starts a Reactor pipeline?`,[`Creating it`,`Subscribing to it`,`Calling map`,`Logging it`],1,`Lazy until subscribe.`,'E'],
+ [`What does <code>block()</code> do on a Mono?`,[`Nothing`,`Waits for and returns the value, blocking the current thread`,`Cancels it`,`Subscribes asynchronously`],1,`Avoid it on event-loop threads.`,'M'],
+ [`Combine two Monos' results when both complete?`,[`flatMap`,`zip / zipWith`,`take`,`filter`],1,`Runs them concurrently.`,'M'],
+ [`Recover from an error with another publisher?`,[`onErrorResume`,`map`,`doOnNext`,`subscribe`],0,`onErrorReturn for a plain value.`,'M']
+], [
+ [`concatMap vs flatMap?`,[`Same`,`concatMap preserves order and runs inner publishers one at a time; flatMap may interleave`,`flatMap is ordered`,`concatMap is faster always`],1,`Choose by whether order matters.`,'H'],
+ [`What does <code>Flux.interval(Duration.ofSeconds(1))</code> run on?`,[`The caller`,`Schedulers.parallel() by default`,`A new thread per tick`,`The main thread`],1,`Time-based operators use the parallel scheduler.`,'H']
+]);
+
+addQ('10.2', [
+ [`What is an event loop?`,[`A for loop`,`A thread that handles many connections' events without blocking`,`A GC phase`,`A Kafka consumer`],1,`Netty powers WebFlux.`,'E'],
+ [`Non-blocking database access for WebFlux?`,[`JDBC`,`R2DBC`,`JPA`,`JdbcTemplate`],1,`JDBC is blocking.`,'E'],
+ [`Which Spring property enables virtual threads in MVC?`,[`spring.mvc.virtual=true`,`spring.threads.virtual.enabled=true`,`server.virtual=on`,`None`],1,`Java 21+, Boot 3.2+.`,'M'],
+ [`Who benefits from virtual threads most?`,[`CPU-heavy number crunching`,`I/O-heavy request handling`,`GC tuning`,`Startup time`],1,`Waiting is cheap.`,'E'],
+ [`Detect blocking calls in reactive code during tests?`,[`jstack`,`BlockHound`,`JFR only`,`EXPLAIN`],1,`Fails tests that block event loops.`,'M']
+], [
+ [`Why can a reactive stack trace be hard to read?`,[`It's encrypted`,`Work hops threads and operators, so the stack shows framework frames, not your call chain`,`It's empty`,`It's in Kotlin`],1,`Use checkpoint() or Reactor debug tooling.`,'M'],
+ [`Server-Sent Events streaming 10,000 updates per second to clients: which fits better?`,[`Blocking MVC with platform threads`,`WebFlux with Flux and backpressure`,`JDBC`,`@Scheduled`],1,`Streaming is reactive's strength.`,'H']
+]);
+
+addQ('11.1', [
+ [`What's the time complexity of accessing <code>array[i]</code>?`,[`O(n)`,`O(1)`,`O(log n)`,`O(n²)`],1,`Direct address calculation.`,'E'],
+ [`Binary search on n sorted items is?`,[`O(n)`,`O(log n)`,`O(1)`,`O(n log n)`],1,`Halving each step.`,'E'],
+ [`Sorting n items with a comparison sort is at best?`,[`O(n)`,`O(n log n)`,`O(log n)`,`O(n²)`],1,`Merge/TimSort.`,'E'],
+ [`What's the space complexity of a HashSet holding n items?`,[`O(1)`,`O(n)`,`O(log n)`,`O(n²)`],1,`Memory grows with the input.`,'E'],
+ [`Two separate (not nested) loops over n items?`,[`O(n²)`,`O(n)`,`O(2ⁿ)`,`O(log n)`],1,`O(n) + O(n) = O(n).`,'M']
+], [
+ [`Amortised O(1) for ArrayList.add means?`,[`Every add is O(1)`,`Occasional O(n) resizes average out to O(1) per add`,`It's O(log n)`,`It's random`],1,`Doubling-style growth.`,'M'],
+ [`Recursion that splits the problem in half and does O(n) work per level (merge sort)?`,[`O(n)`,`O(n log n)`,`O(n²)`,`O(log n)`],1,`log n levels × n work.`,'H']
+]);
+
+addQ('11.2', [
+ [`Reverse an array in place with two pointers: where do they start?`,[`Both at 0`,`One at each end, swapping and moving inward`,`At the middle`,`Randomly`],1,`O(n) time, O(1) space.`,'E'],
+ [`Check if a string is a palindrome efficiently?`,[`Reverse and compare (O(n) extra)`,`Two pointers from both ends comparing characters`,`Sort it`,`Use a HashMap`],1,`O(1) extra space.`,'E'],
+ [`Fixed-size window sum: when moving the window by one, you?`,[`Recompute the whole sum`,`Add the new element and subtract the one leaving`,`Sort the window`,`Restart`],1,`O(1) per move.`,'E'],
+ [`Remove duplicates from a sorted array in place?`,[`Nested loops`,`Slow/fast pointers: copy each new value forward`,`HashSet only`,`Sort again`],1,`O(n), O(1) space.`,'M'],
+ [`Merge two sorted arrays?`,[`Concatenate and sort`,`Two pointers taking the smaller head each time: O(n + m)`,`Binary search`,`HashMap`],1,`Merge step of merge sort.`,'M']
+], [
+ [`Smallest subarray with sum ≥ target (positive numbers). Approach?`,[`All subarrays O(n²)`,`Variable sliding window: expand right, shrink left while sum ≥ target`,`Sort`,`Binary search only`],1,`O(n).`,'H'],
+ [`Why does the sliding window fail for "subarray sum = k" with negative numbers?`,[`It doesn't`,`Shrinking no longer reliably decreases the sum; use prefix sums + HashMap`,`Negative numbers are invalid`,`Sorting fixes it`],1,`Monotonicity is lost.`,'H']
+]);
+
+addQ('11.3', [
+ [`Check if two strings are anagrams in O(n)?`,[`Sort both always`,`Count letters with a map or int[26] and compare`,`Nested loops`,`Binary search`],1,`Sorting is O(n log n).`,'E'],
+ [`First duplicate in an array?`,[`Nested loops`,`Scan with a HashSet; the first failed add is the answer`,`Sort`,`Two pointers`],1,`O(n).`,'E'],
+ [`What does <code>map.getOrDefault(k, 0)</code> return for a missing key?`,[`null`,`0`,`Throws`,`k`],1,`Handy for counting.`,'E'],
+ [`Most frequent element?`,[`Sort and guess`,`Frequency map, then the max entry`,`Binary search`,`Stack`],1,`O(n).`,'M'],
+ [`Longest consecutive sequence (e.g. 100, 4, 200, 1, 3, 2 → 4) in O(n)?`,[`Sort`,`Put all in a HashSet; start counting only from numbers whose n−1 is absent`,`Nested loops`,`Heap`],1,`Each number is visited a constant number of times.`,'H']
+], [
+ [`Subarray sum equals k (with negatives) in O(n)?`,[`Sliding window`,`Prefix sums with a HashMap of prefix → count`,`Sorting`,`Binary search`],1,`Count prefixes equal to current − k.`,'H'],
+ [`Why use int[26] instead of a HashMap for lowercase letter counts?`,[`HashMap can't count`,`Faster and smaller: direct indexing, no boxing or hashing`,`Required`,`Thread safety`],1,`When the alphabet is small and known.`,'M']
+]);
+
+addQ('11.4', [
+ [`Binary search requires the data to be?`,[`Unique`,`Sorted (or monotonic)`,`Small`,`In a HashMap`],1,`Otherwise halving is meaningless.`,'E'],
+ [`What's the loop condition in the standard version?`,[`lo &lt; hi - 1`,`lo &lt;= hi`,`lo != hi`,`true`],1,`With hi = length − 1.`,'E'],
+ [`What does <code>Collections.binarySearch(list, key)</code> need?`,[`An unsorted list`,`A list sorted in ascending order (by the same comparator)`,`A LinkedList`,`A Set`],1,`Otherwise results are undefined.`,'E'],
+ [`On a LinkedList, is binary search O(log n)?`,[`Yes`,`No: reaching the middle is O(n), so overall it's O(n)`,`It's O(1)`,`It's not allowed`],1,`Random access matters.`,'M'],
+ [`Find the square root (floor) of n without Math.sqrt?`,[`Linear scan only`,`Binary search on the answer: largest x with x*x ≤ n`,`Sort`,`HashMap`],1,`O(log n).`,'M']
+], [
+ [`Search in a rotated sorted array (e.g. 4 5 6 7 0 1 2)?`,[`Impossible in O(log n)`,`Binary search: at each step one half is sorted; check if target lies in it`,`Linear only`,`Sort first`],1,`Still O(log n).`,'H'],
+ [`Lower bound (first index with a[i] ≥ x) loop typically uses?`,[`lo &lt;= hi with hi = mid - 1 on match`,`lo &lt; hi with hi = mid when a[mid] ≥ x, else lo = mid + 1`,`A linear scan`,`Recursion only`],1,`Half-open interval variant.`,'H']
+]);
+
+addQ('11.5', [
+ [`BFS uses which structure?`,[`Stack`,`Queue`,`Heap`,`Hash table only`],1,`FIFO gives level order.`,'E'],
+ [`DFS is naturally written with?`,[`A queue`,`Recursion (or an explicit stack)`,`A heap`,`Sorting`],1,`Go deep, backtrack.`,'E'],
+ [`Why keep a visited set?`,[`Speed only`,`To avoid processing nodes twice and looping forever on cycles`,`To sort output`,`To save memory`],1,`Trees don't need it (no cycles).`,'E'],
+ [`Time complexity of BFS/DFS on a graph?`,[`O(V × E)`,`O(V + E)`,`O(log V)`,`O(V²) always`],1,`Each vertex and edge once.`,'M'],
+ [`Level-order traversal of a binary tree uses?`,[`DFS`,`BFS with a queue`,`Binary search`,`A heap`],1,`Process level by level.`,'M']
+], [
+ [`Number of islands in a grid of 0/1 cells?`,[`Sort cells`,`For each unvisited land cell, run BFS/DFS to mark its island, count launches`,`Binary search`,`DP only`],1,`Classic flood fill.`,'H'],
+ [`Shortest path with weighted edges (non-negative)?`,[`BFS`,`Dijkstra with a PriorityQueue`,`DFS`,`Binary search`],1,`BFS only works for unweighted graphs.`,'M']
+]);
+
+addQ('11.6', [
+ [`What's memoisation?`,[`Writing notes`,`Caching results of function calls to reuse them`,`Sorting`,`A loop`],1,`Top-down DP.`,'E'],
+ [`Climbing stairs (1 or 2 steps): ways(n) = ?`,[`ways(n−1) × ways(n−2)`,`ways(n−1) + ways(n−2)`,`n²`,`2n`],1,`Like Fibonacci.`,'E'],
+ [`Bottom-up DP fills the table in which order?`,[`Random`,`From base cases towards the answer`,`From the answer backwards`,`Alphabetical`],1,`So dependencies are ready.`,'E'],
+ [`Why does greedy fail for coins {1, 3, 4} and amount 6?`,[`It doesn't`,`Taking 4 first leads to 4+1+1 (3 coins), but 3+3 (2 coins) is better`,`Coins must be sorted`,`6 is too big`],1,`DP checks every choice.`,'M'],
+ [`Space for the climbing-stairs DP can be reduced to?`,[`O(n²)`,`O(1): keep only the last two values`,`O(log n)`,`O(n) minimum`],1,`Rolling variables.`,'M']
+], [
+ [`Longest common subsequence of strings of length n and m: table size and time?`,[`O(n + m)`,`O(n × m) for both`,`O(log n)`,`O(2ⁿ)`],1,`dp[i][j] from dp[i−1][j−1], dp[i−1][j], dp[i][j−1].`,'H'],
+ [`0/1 knapsack: why iterate capacity backwards in the 1-D DP version?`,[`Style`,`So each item is used at most once (values from this item's round aren't reused)`,`Faster`,`To sort items`],1,`Forwards would allow unlimited copies.`,'H']
+]);
+</script>
+<script>
 /* ---------- interview priority per topic: must = asked in most Java backend interviews, good = often asked or very useful, extra = beyond typical interviews ---------- */
 const IMP = {};
 '1.3 1.4 1.6 1.7 1.8 1.9 1.10 2.1 2.2 2.3 2.5 2.6 2.7 2.10 2.11 2.12 2.13 3.1 3.2 3.4 3.5 3.6 3.7a 3.7b 3.7c 3.7d 3.7h 4.1 4.2 4.3 4.4 4.5 4.6 4.7 4.9 4.13 4.14 4.16 5.1 5.2 5.3 5.4 5.5 5.13a 6.1 6.4'.split(' ').forEach(n => IMP[n] = 'must');
@@ -6604,7 +7829,7 @@ function render(){
   $('count').textContent = `Step ${si+1} / ${t.R.length}`;
   $('prev').disabled = si===0; $('next').disabled = si===t.R.length-1;
   $('dots').innerHTML = t.R.map((_,i)=>`<button aria-label="Step ${i+1}" class="${i<si?'done':''} ${i===si?'cur':''}" data-i="${i}"></button>`).join('');
-  $('say').innerHTML = s.say + (si===t.R.length-1 && t.quiz.length ? `<p class="qhint">End of the walkthrough. <button type="button" data-goquiz>Take the quiz ↓</button><span>${t.quiz.length} core${t.quizAdv.length ? ` + ${t.quizAdv.length} advanced` : ''} questions</span></p>` : '');
+  $('say').innerHTML = s.say + (si===t.R.length-1 && t.quiz.length ? `<p class="qhint">End of the walkthrough. <button type="button" data-goquiz>Take the quiz ↓</button><span>new questions on every try</span></p>` : '');
 
   const lines = t.codes[s.cv].split('\n');
   const who = {};
@@ -6741,38 +7966,68 @@ function renderTheory(){
     `<p class="th-next">Next: step through the walkthrough below to see it happen, then check yourself with the quiz at the bottom.</p>`;
 }
 
-/* ---------- quiz: Core / Advanced set, level filter, one answer per question.
-   Best score per set is kept in this browser, and only counted with "All levels". ---------- */
-const QKEY = 'jv-quiz-best-v1', FKEY = 'jv-quiz-filter-v1';
+/* ---------- quiz: each attempt draws a few questions from a hidden per-topic bank.
+   Unseen questions are preferred (tracked in this browser), options are shuffled on every draw,
+   and the bank itself is never listed. Best score per set is kept, counted only with "All levels". ---------- */
+const QKEY = 'jv-quiz-best-v1', FKEY = 'jv-quiz-filter-v1', SEEN_KEY = 'jv-quiz-seen-v1';
 const LV = {E:'Easy', M:'Medium', H:'Hard'};
-let best = {}, quizFor = -1, qa = [], qlist = [], qf = {set:'core', level:'all'};
+const DRAW = {core:3, adv:2};
+let best = {}, seen = {}, quizFor = -1, qa = [], qlist = [], lastDraw = [], qf = {set:'core', level:'all'};
 try { best = JSON.parse(localStorage.getItem(QKEY) || '{}') || {}; } catch(e){ best = {}; }
+try { seen = JSON.parse(localStorage.getItem(SEEN_KEY) || '{}') || {}; } catch(e){ seen = {}; }
 try { Object.assign(qf, JSON.parse(localStorage.getItem(FKEY) || '{}')); } catch(e){}
 function saveBest(){ try { localStorage.setItem(QKEY, JSON.stringify(best)); } catch(e){} }
+function saveSeen(){ try { localStorage.setItem(SEEN_KEY, JSON.stringify(seen)); } catch(e){} }
 function saveFilter(){ try { localStorage.setItem(FKEY, JSON.stringify(qf)); } catch(e){} }
 const setOf = (t, set) => set==='adv' ? t.quizAdv : t.quiz;
+const drawSize = (t, set) => Math.min(DRAW[set], setOf(t, set).length);
 const bestKey = (t, set) => set==='adv' ? t.id+':adv' : t.id;
+const shuffle = arr => { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 function updateTicks(){
   document.querySelectorAll('#rail em.tick').forEach(el=>{
     const t = T.find(x=>x.id===el.dataset.t); if (!t) return;
+    const nc = drawSize(t,'core'), na = drawSize(t,'adv');
     const b = best[bestKey(t,'core')], ba = best[bestKey(t,'adv')];
-    const full = b === t.quiz.length, fullAdv = t.quizAdv.length && ba === t.quizAdv.length;
-    el.textContent = b === undefined && ba === undefined ? '' : full && fullAdv ? '★' : full ? '✓' : b === undefined ? '' : `${b}/${t.quiz.length}`;
+    const full = b === nc, fullAdv = na && ba === na;
+    el.textContent = b === undefined && ba === undefined ? '' : full && fullAdv ? '★' : full ? '✓' : b === undefined ? '' : `${b}/${nc}`;
     el.classList.toggle('full', !!full);
-    el.title = [b!==undefined ? `Core best ${b}/${t.quiz.length}` : '', ba!==undefined ? `Advanced best ${ba}/${t.quizAdv.length}` : ''].filter(Boolean).join(' · ');
+    el.title = [b!==undefined ? `Core best ${b}/${nc}` : '', ba!==undefined ? `Advanced best ${ba}/${na}` : ''].filter(Boolean).join(' · ');
+  });
+}
+/* pick n questions: unseen first (random), then the least recently drawn; never repeat the previous draw if avoidable */
+function drawQuestions(t){
+  const key = t.id + ':' + qf.set, pool = setOf(t, qf.set).map((q,i)=>({q,i})).filter(x => qf.level==='all' || x.q[4]===qf.level);
+  const n = Math.min(DRAW[qf.set], pool.length);
+  let used = (seen[key] || []).filter(i => i < setOf(t, qf.set).length);
+  let fresh = shuffle(pool.filter(x => !used.includes(x.i)));
+  if (fresh.length < n) {                         // pool used up: start a new round, but avoid the questions just shown
+    used = [];
+    const notLast = shuffle(pool.filter(x => !lastDraw.includes(x.i)));
+    fresh = notLast.length >= n ? notLast : shuffle(pool);
+  }
+  const pick = fresh.slice(0, n);
+  seen[key] = [...used, ...pick.map(x=>x.i)];
+  saveSeen();
+  lastDraw = pick.map(x=>x.i);
+  return pick.map(({q})=>{                         // shuffle options, remap the answer index
+    const order = shuffle([0,1,2,3]);
+    return [q[0], order.map(k=>q[1][k]), order.indexOf(q[2]), q[3], q[4]];
   });
 }
 function renderQuiz(){
   const t = T[ti];
+  if (quizFor !== ti) lastDraw = [];
   quizFor = ti;
-  qlist = setOf(t, qf.set).filter(q => qf.level==='all' || q[4]===qf.level);
+  qlist = drawQuestions(t);
   qa = qlist.map(()=>null);
   $('quizCard').hidden = !t.quiz.length && !t.quizAdv.length;
-  const cnt = (set, lv) => setOf(t, set).filter(q => lv==='all' || q[4]===lv).length;
-  const seg = (key, val, label, n) => `<button type="button" data-f="${key}" data-v="${val}" aria-pressed="${qf[key]===val}"${n===0?' disabled':''}>${label} <span class="n">${n}</span></button>`;
+  const cnt = lv => setOf(t, qf.set).filter(q => lv==='all' || q[4]===lv).length;
+  const seg = (key, val, label, n, note) => `<button type="button" data-f="${key}" data-v="${val}" aria-pressed="${qf[key]===val}"${n===0?' disabled':''}>${label}${note?` <span class="n">${note}</span>`:''}</button>`;
   $('qzBar').innerHTML =
-    `<div class="segwrap"><span class="seg-l">Set</span><div class="seg" role="group" aria-label="Question set">${seg('set','core','Core',t.quiz.length)}${seg('set','adv','Advanced',t.quizAdv.length)}</div></div>` +
-    `<div class="segwrap"><span class="seg-l">Level</span><div class="seg" role="group" aria-label="Difficulty">${seg('level','all','All',cnt(qf.set,'all'))}${['E','M','H'].map(l=>seg('level',l,LV[l],cnt(qf.set,l))).join('')}</div></div>`;
+    `<div class="segwrap"><span class="seg-l">Set</span><div class="seg" role="group" aria-label="Question set">${seg('set','core','Core',t.quiz.length,drawSize(t,'core'))}${seg('set','adv','Advanced',t.quizAdv.length,drawSize(t,'adv'))}</div></div>` +
+    `<div class="segwrap"><span class="seg-l">Level</span><div class="seg" role="group" aria-label="Difficulty">${seg('level','all','All',cnt('all'))}${['E','M','H'].map(l=>seg('level',l,LV[l],cnt(l))).join('')}</div></div>` +
+    `<button type="button" class="qz-new" data-redraw title="Draw different questions from this topic's bank">↻ New questions</button>` +
+    `<p class="qz-bank">Each attempt draws ${drawSize(t,qf.set)} from a hidden bank of ${setOf(t,qf.set).length} for this topic${qf.level!=='all'?` (${cnt(qf.level)} at this level)`:''}; answers are shuffled every time.</p>`;
   drawQuiz();
 }
 function drawQuiz(){
@@ -6786,19 +8041,21 @@ function drawQuiz(){
       const cls = a===null ? '' : j===ans ? 'right' : j===a ? 'wrong' : 'dim';
       return `<button type="button" data-q="${i}" data-o="${j}" class="${cls}"${a!==null?' disabled':''}><span class="l">${'ABCD'[j]}</span><span>${o}</span></button>`;
     }).join('')}</div>${a===null ? '' : `<div class="why" aria-live="polite"><b class="${a===ans?'ok':'bad'}">${a===ans?'Correct.':'Not quite.'}</b> ${why}</div>`}</div>`;
-  }).join('') + (done===qs.length ? `<div class="qzfoot"><span>You scored <b>${right} / ${qs.length}</b>. ${right===qs.length ? (qf.set==='core' && T[ti].quizAdv.length ? 'Solid. Try the Advanced set next.' : 'Solid.') : 'Step back through the walkthrough above, then try again.'}${qf.level!=='all' ? ' <span class="cm">(Best scores are only saved with All levels.)</span>' : ''}</span><button type="button" data-retry>Try again</button>${qf.set==='core' && T[ti].quizAdv.length ? `<button type="button" data-advanced>Advanced set</button>` : ''}${nextVisible(1)>=0?`<button type="button" class="primary" data-nexttopic>Next topic ›</button>`:''}</div>` : '');
+  }).join('') + (done===qs.length ? `<div class="qzfoot"><span>You scored <b>${right} / ${qs.length}</b>. ${right===qs.length ? (qf.set==='core' && T[ti].quizAdv.length ? 'Solid. Try new questions or the Advanced set.' : 'Solid. Try a new set of questions.') : 'Step back through the walkthrough above, then try a new set.'}${qf.level!=='all' ? ' <span class="cm">(Best scores are only saved with All levels.)</span>' : ''}</span><button type="button" data-retry>↻ New questions</button>${qf.set==='core' && T[ti].quizAdv.length ? `<button type="button" data-advanced>Advanced set</button>` : ''}${nextVisible(1)>=0?`<button type="button" class="primary" data-nexttopic>Next topic ›</button>`:''}</div>` : '');
 }
 $('qzBar').onclick = e => {
+  if (e.target.closest('[data-redraw]')) { renderQuiz(); $('quiz').querySelector('button')?.focus(); return; }
   const b = e.target.closest('button[data-f]'); if (!b || b.disabled) return;
   qf[b.dataset.f] = b.dataset.v;
   if (b.dataset.f==='set' && qf.level!=='all' && !setOf(T[ti], qf.set).some(q=>q[4]===qf.level)) qf.level = 'all';
+  lastDraw = [];
   saveFilter(); renderQuiz();
   $('qzBar').querySelector(`button[data-f="${b.dataset.f}"][data-v="${qf[b.dataset.f]}"]`)?.focus();
 };
 $('quiz').onclick = e => {
   const b = e.target.closest('button'); if (!b) return;
   if (b.hasAttribute('data-retry')) { renderQuiz(); $('quiz').querySelector('button')?.focus(); return; }
-  if (b.hasAttribute('data-advanced')) { qf.set = 'adv'; qf.level = 'all'; saveFilter(); renderQuiz(); $('quizCard').scrollIntoView({block:'start'}); return; }
+  if (b.hasAttribute('data-advanced')) { qf.set = 'adv'; qf.level = 'all'; lastDraw = []; saveFilter(); renderQuiz(); $('quizCard').scrollIntoView({block:'start'}); return; }
   if (b.hasAttribute('data-nexttopic')) { const n = nextVisible(1); if (n >= 0) { go(n, 0); window.scrollTo(0, 0); } return; }
   const i = +b.dataset.q, j = +b.dataset.o, qs = qlist;
   if (qa[i] !== null) return;
