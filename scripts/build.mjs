@@ -14,7 +14,7 @@ const STYLES = ['tokens', 'layout', 'theory', 'stepper', 'quiz', 'responsive'].m
 
 // Classic scripts share one global scope, so order matters:
 // registry first, then content (which calls part()/topic()), then the engine, boot last.
-const ENGINE = ['model', 'dom', 'diagrams', 'focus', 'theory', 'quiz', 'stepper', 'main'].map(n => `engine/${n}.js`);
+const ENGINE = ['model', 'dom', 'diagrams', 'focus', 'sidebar', 'theory', 'quiz', 'stepper', 'main'].map(n => `engine/${n}.js`);
 
 const byTopicNo = (a, b) => a.no.localeCompare(b.no, undefined, { numeric: true });
 
