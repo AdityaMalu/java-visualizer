@@ -90,3 +90,70 @@ test('no horizontal scrolling on any topic', async ({ page }) => {
   }).map(t => t.no));
   expect(wide).toEqual([]);
 });
+
+test.describe('topic sidebar', () => {
+  test('collapses and expands on wide screens, and remembers it', async ({ page }, info) => {
+    test.skip(info.project.name === 'mobile', 'wide-screen behaviour');
+    const sidebar = page.locator('#sidebar'), toggle = page.locator('#railToggle');
+    await expect(sidebar).toBeVisible();
+    await expect(toggle).toBeHidden();
+    await page.locator('#railClose').click();
+    await expect(sidebar).toBeHidden();
+    await expect(toggle).toBeVisible();
+    await expect(toggle).toBeFocused();
+    await page.reload();
+    await expect(sidebar).toBeHidden();
+    await toggle.click();
+    await expect(sidebar).toBeVisible();
+    await expect(toggle).toBeHidden();
+  });
+
+  test('resizes with the keyboard and remembers the width', async ({ page }, info) => {
+    test.skip(info.project.name === 'mobile', 'wide-screen behaviour');
+    const width = () => page.locator('#sidebar').evaluate(el => Math.round(el.getBoundingClientRect().width));
+    expect(await width()).toBe(270);
+    const step = await page.locator('#count').textContent();
+    await page.locator('#railResize').focus();
+    await page.keyboard.press('ArrowRight');
+    await page.keyboard.press('ArrowRight');
+    expect(await width()).toBe(310);
+    await expect(page.locator('#count')).toHaveText(step);        // arrows resized, didn't step the walkthrough
+    await page.keyboard.press('End');
+    expect(await width()).toBe(480);
+    await page.reload();
+    expect(await width()).toBe(480);
+    await page.locator('#railResize').dblclick();
+    expect(await width()).toBe(270);
+  });
+
+  test('resizes by dragging the edge', async ({ page }, info) => {
+    test.skip(info.project.name === 'mobile', 'wide-screen behaviour');
+    const box = await page.locator('#railResize').boundingBox();
+    await page.mouse.move(box.x + box.width / 2, 300);
+    await page.mouse.down();
+    await page.mouse.move(400, 300, { steps: 5 });
+    await page.mouse.up();
+    const w = await page.locator('#sidebar').evaluate(el => Math.round(el.getBoundingClientRect().width));
+    expect(w).toBeGreaterThan(390);
+    expect(w).toBeLessThan(410);
+  });
+
+  test('opens as a drawer on small screens', async ({ page }, info) => {
+    test.skip(info.project.name !== 'mobile', 'small-screen behaviour');
+    const sidebar = page.locator('#sidebar');
+    await expect(sidebar).toBeHidden();
+    await page.locator('#railToggle').click();
+    await expect(sidebar).toBeVisible();
+    await expect(page.locator('#railBackdrop')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(sidebar).toBeHidden();
+    await page.locator('#railToggle').click();
+    await page.locator('#rail button[data-i="5"]').click();      // picking a topic closes the drawer
+    await expect(sidebar).toBeHidden();
+    await expect(page.locator('#count')).toHaveText(/^Step 1 \//);
+    expect(await page.evaluate(() => ti)).toBe(5);
+    await page.locator('#railToggle').click();
+    await page.locator('#railBackdrop').click({ position: { x: 380, y: 400 } });
+    await expect(sidebar).toBeHidden();
+  });
+});

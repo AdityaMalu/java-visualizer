@@ -27,6 +27,8 @@ Every topic ends with a quiz drawn from a bank of 12 questions per topic (8 core
 
 Keys: `←` `→` step, `space` play, `[` `]` previous/next topic.
 
+The topic list can be hidden with **«** and brought back with **☰ Topics**, and widened by dragging its right edge (double-click the edge to reset). Both choices are remembered. On phones it opens as a slide-in drawer, which also gives you the interview focus filter.
+
 The written notes are in [Java_Concepts_Visual_Guide.md](Java_Concepts_Visual_Guide.md).
 
 ## Development
@@ -40,7 +42,7 @@ src/
   engine/                    the app, one concern per file
     registry.js              part() / topic() registration, step helpers (mon, G, C) and TH()
     model.js                 flattens parts into topics and resolves step inheritance
-    dom.js  diagrams.js  focus.js  theory.js  quiz.js  stepper.js  main.js
+    dom.js  diagrams.js  focus.js  sidebar.js  theory.js  quiz.js  stepper.js  main.js
   content/
     parts.js                 part numbers and titles
     part-04-multithreading-and-concurrency/

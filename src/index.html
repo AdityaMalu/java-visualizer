@@ -13,8 +13,8 @@
 <!-- @styles -->
 
 <div class="app">
-  <nav class="rail" aria-label="Topics">
-    <h1>Java Concepts Stepper</h1>
+  <nav class="rail" id="sidebar" aria-label="Topics">
+    <div class="rail-head"><h1>Java Concepts Stepper</h1><button type="button" class="rail-close" id="railClose" aria-controls="sidebar" title="Hide the topic list" aria-label="Hide the topic list">«</button></div>
     <p>The Java visual guide, one step at a time, with a short quiz after each topic. Keys: ← → step, space play, [ ] previous/next topic.</p>
     <div class="focus" role="group" aria-label="Interview focus">
       <span class="focus-l">Interview focus</span>
@@ -25,7 +25,10 @@
     </div>
     <div id="rail"></div>
   </nav>
+  <div class="rail-resize" id="railResize" role="separator" aria-orientation="vertical" aria-controls="sidebar" aria-label="Resize the topic list" aria-valuemin="220" aria-valuemax="480" tabindex="0" title="Drag to resize · double-click to reset"></div>
+  <div class="rail-backdrop" id="railBackdrop" hidden></div>
   <main>
+    <button type="button" class="rail-toggle" id="railToggle" aria-controls="sidebar" aria-expanded="false"><span aria-hidden="true">☰</span> Topics</button>
     <div class="mobile-pick"><label for="pick" class="cm" style="font-size:12px">Topic</label><select id="pick"></select></div>
     <div class="crumb" id="crumb"></div>
     <div class="head"><span class="no" id="no"></span><h2 id="title"></h2><span class="imp-pill" id="impPill"></span>
