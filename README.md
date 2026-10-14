@@ -27,4 +27,49 @@ Every topic ends with a quiz drawn from a bank of 12 questions per topic (8 core
 
 Keys: `←` `→` step, `space` play, `[` `]` previous/next topic.
 
-The written notes are in [Java_Concepts_Visual_Guide.md](Java_Concepts_Visual_Guide.md). Everything is one self-contained `index.html`, no build step.
+The written notes are in [Java_Concepts_Visual_Guide.md](Java_Concepts_Visual_Guide.md).
+
+## Development
+
+The site ships as one self-contained `index.html`, built from small source files:
+
+```
+src/
+  index.html                 page shell (markup only); the build inlines styles and scripts here
+  styles/                    tokens, layout, theory, stepper, quiz, responsive (cascade order)
+  engine/                    the app, one concern per file
+    registry.js              part() / topic() registration, step helpers (mon, G, C) and TH()
+    model.js                 flattens parts into topics and resolves step inheritance
+    dom.js  diagrams.js  focus.js  theory.js  quiz.js  stepper.js  main.js
+  content/
+    parts.js                 part numbers and titles
+    part-04-multithreading-and-concurrency/
+      4.6-volatile-and-the-java-memory-model.js   one file per topic
+scripts/
+  build.mjs                  bundles src/ into dist/index.html (no dependencies)
+  check-content.mjs          validates every topic file without a browser
+tests/site.spec.js           Playwright end-to-end tests (desktop and mobile)
+```
+
+Each topic file holds everything about that topic and nothing else:
+
+```js
+topic('4', { no:'4.6', title:'…', idea:`…`, codes:{a:`…`}, steps:[…], keep:[…] }, {
+  imp: 'must',                 // must | good | extra (interview focus filter)
+  theory: TH(one, intro, terms, steps, practice, mistakes),
+  quiz:    [ [question, [a, b, c, d], answerIndex, why, 'E'|'M'|'H'], … ],   // at least 3
+  quizAdv: [ … ],                                                         // at least 2
+});
+```
+
+To add a topic, create `src/content/part-NN-…/<no>-<slug>.js`. The build picks it up and orders topics by number. No other file changes.
+
+```sh
+npm ci                                  # once
+npm run dev                             # rebuild dist/index.html on every change; open it in a browser
+npm run check                           # validate content: structure, quiz banks, highlighted lines
+npm test                                # check + build + end-to-end tests
+npx playwright install chromium         # once, before the first end-to-end run
+```
+
+Every push and pull request runs the checks, the build and the end-to-end tests in GitHub Actions. Pushes to `main` then deploy `dist/` to GitHub Pages.

@@ -1,0 +1,57 @@
+/* 4.13 Thread pools (ExecutorService) */
+topic('4', { no:'4.13', title:'Thread pools (ExecutorService)', idea:`Watch 7 tasks hit a pool with core = 2, max = 3, queue = 2. The order is core → queue → extra threads → reject.`,
+codes:{a:`ThreadPoolExecutor pool = new ThreadPoolExecutor(
+    2,                                  // core threads
+    3,                                  // max threads
+    60, TimeUnit.SECONDS,               // idle extra thread dies after
+    new ArrayBlockingQueue<>(2),        // bounded queue
+    new ThreadPoolExecutor.CallerRunsPolicy());
+
+for (int i = 1; i <= 6; i++) pool.execute(task(i));
+pool.shutdown();`},
+steps:[
+{hl:{main:[1,2,3,4,5,6]}, th:[['main','RUN','pool built']], g:[G('Core workers (2)',C('w1',[['—','dim']]),C('w2',[['—','dim']])), G('Queue (capacity 2)',C('items',[['empty','dim']])), G('Extra workers (max − core = 1)',C('w3',[['—','dim']])), G('Rejected → policy',C('handled',[['none','dim']]))],
+ say:`Core 2, max 3, a bounded queue of 2, CallerRunsPolicy. Threads are expensive to create (OS thread, ~1 MB stack), so a pool <b>reuses</b> a few threads that pull tasks from a queue.`},
+{hl:{main:[8]}, th:[['main','RUN','execute(task1)'],['w1','RUN','task1']], g:[G('Core workers (2)',C('w1',[['task1','hot']]),C('w2',[['—','dim']])), G('Queue (capacity 2)',C('items',[['empty','dim']])), G('Extra workers (max − core = 1)',C('w3',[['—','dim']])), G('Rejected → policy',C('handled',[['none','dim']]))],
+ say:`<b>Rule 1:</b> fewer than <code>core</code> threads → create a new core thread, even if others are idle. task1 → new w1.`},
+{th:[['main','RUN','execute(task2)'],['w1','RUN','task1'],['w2','RUN','task2']], g:[G('Core workers (2)',C('w1',['task1']),C('w2',[['task2','hot']])), G('Queue (capacity 2)',C('items',[['empty','dim']])), G('Extra workers (max − core = 1)',C('w3',[['—','dim']])), G('Rejected → policy',C('handled',[['none','dim']]))],
+ say:`task2 → new core thread w2. Core is now full.`},
+{th:[['main','RUN','execute(task3), execute(task4)'],['w1','RUN','task1'],['w2','RUN','task2']], g:[G('Core workers (2)',C('w1',['task1']),C('w2',['task2'])), G('Queue (capacity 2)',C('items',[['task3','hot'],['task4','hot']])), G('Extra workers (max − core = 1)',C('w3',[['—','dim']])), G('Rejected → policy',C('handled',[['none','dim']]))],
+ say:`<b>Rule 2:</b> core threads busy → <b>queue</b> the task. task3 and task4 go in, and the queue is now full. Interview surprise: the pool does <b>not</b> create more threads while the queue still has room.`},
+{th:[['main','RUN','execute(task5)'],['w1','RUN','task1'],['w2','RUN','task2'],['w3','RUN','task5 (jumps the queue!)']], g:[G('Core workers (2)',C('w1',['task1']),C('w2',['task2'])), G('Queue (capacity 2)',C('items',['task3','task4'])), G('Extra workers (max − core = 1)',C('w3',[['task5','hot']])), G('Rejected → policy',C('handled',[['none','dim']]))],
+ say:`<b>Rule 3:</b> queue full and threads &lt; max → create an extra thread. task5 runs on new w3 <b>before</b> task3 and task4, which are still queued. A ThreadPoolExecutor doesn't promise FIFO order.`},
+{th:[['main','RUN','runs task6 itself (slowed down)'],['w1','RUN','task1'],['w2','RUN','task2'],['w3','RUN','task5']], g:[G('Core workers (2)',C('w1',['task1']),C('w2',['task2'])), G('Queue (capacity 2)',C('items',['task3','task4'])), G('Extra workers (max − core = 1)',C('w3',['task5'])), G('Rejected → policy',C('handled',[['task6 → CallerRuns: main','bad']]))], log:['task6 rejected → CallerRunsPolicy runs it on main'],
+ say:`<b>Rule 4:</b> queue full and threads = max → <b>reject</b>. <code>AbortPolicy</code> (default) throws <code>RejectedExecutionException</code>. <code>CallerRunsPolicy</code> runs the task on the <b>submitting thread</b>, so main can't submit more until it finishes. That's natural <b>back-pressure</b>. Others: DiscardPolicy, DiscardOldestPolicy.`},
+{th:[['main','RUN','loop done'],['w1','RUN','took task3 from queue'],['w2','RUN','took task4 from queue'],['w3','WAITING','idle: poll(60s)']], g:[G('Core workers (2)',C('w1',[['task3','hot']]),C('w2',[['task4','hot']])), G('Queue (capacity 2)',C('items',[['empty','dim']])), G('Extra workers (max − core = 1)',C('w3',[['idle','dim']])), G('Rejected → policy',C('handled',['task6 (done by main)']))],
+ say:`When a worker finishes, it <b>doesn't exit</b>. It loops <code>queue.take()</code> and picks up the next task. Core threads block in <code>take()</code> forever. Extra threads use <code>poll(keepAlive)</code>.`},
+{hl:{main:[9]}, th:[['main','TERM',''],['w1','TERM','queue empty + shutdown'],['w2','TERM',''],['w3','TERM','idle 60s → exited']], g:[G('Pool state',['shutdown()','no new tasks; finish queued ones','ok'],['shutdownNow()','interrupt running, return queued list'],['awaitTermination(t)','wait for workers to finish'])],
+ say:`After 60 s idle, w3 dies (the pool shrinks back to core). <code>shutdown()</code> refuses new tasks and lets queued ones finish. <code>shutdownNow()</code> interrupts workers and returns tasks that never started.`},
+{th:[], g:[G('Executors factory traps',['newFixedThreadPool(n)','unbounded queue → OOM','bad'],['newCachedThreadPool()','unbounded threads → thread explosion','bad'],['newSingleThreadExecutor()','1 thread, ordered; unbounded queue'],['newScheduledThreadPool(n)','delayed / periodic tasks'],['newVirtualThreadPerTaskExecutor()','Java 21, 1 VT per task']), G('Sizing',['CPU-bound','≈ number of cores'],['I/O-bound','≈ cores × (1 + wait / compute)'],['execute()','exception → uncaught handler (visible)'],['submit()','exception hidden in Future until get()','bad'])],
+ say:`In production, build a <code>ThreadPoolExecutor</code> yourself with a <b>bounded</b> queue and a rejection policy. Name the threads with a ThreadFactory so dumps are readable. And remember that <code>submit()</code> hides exceptions inside the Future.`}
+],
+keep:[`Order: core → queue → extra up to max → reject.`,`Bounded queue + rejection policy, never unbounded in prod.`,`CallerRunsPolicy = back-pressure. submit() hides exceptions.`]}, {
+  imp: 'must',
+  theory: TH(`A thread pool keeps a fixed set of reusable threads and a queue of tasks, so you don't pay for creating threads and can limit how much runs at once.`,
+`<p>Creating a thread is expensive, and creating one per request can exhaust the machine. A <b>thread pool</b> (ExecutorService) starts some worker threads and keeps them alive. You submit tasks; idle workers take them from a <b>queue</b>. Like a restaurant with a fixed number of waiters and a waiting list at the door.</p>
+<p><code>ThreadPoolExecutor</code> has a core size, a max size, a queue and a rejection policy. A new task first goes to a core thread, then into the queue, and only when the queue is full are extra threads (up to max) created. After that, tasks are rejected.</p>`,
+[[`Core pool size`,`Threads kept alive even when idle.`],[`Max pool size`,`Upper limit, used only when the queue is full.`],[`Work queue`,`Where tasks wait; should be bounded.`],[`Rejection policy`,`What happens when everything is full (throw, run on caller, discard…).`]],
+[`Task submitted → if fewer than core threads, start one for it.`,`Otherwise put it in the queue.`,`Queue full → start an extra thread if under max.`,`At max with a full queue → reject.`],
+[`Use bounded queues and CallerRunsPolicy for natural back-pressure.`,`Separate pools for CPU work and for blocking I/O.`,`Always shut pools down on application stop.`],
+[`<code>Executors.newFixedThreadPool</code> in servers: its queue is unbounded, so overload becomes memory growth.`,`Exceptions from <code>submit()</code> silently stored in a Future nobody reads.`]),
+  quiz: [
+    [`Why avoid <code>Executors.newFixedThreadPool(n)</code> for a public API under load?`,[`Its threads are daemon, so they die with main`,`It can't be shut down cleanly`,`It has no core threads, only temporary ones`,`Its queue is unbounded, so overload just piles up`],3,`Use a bounded queue plus a rejection policy such as CallerRunsPolicy.`,'E'],
+    [`A task given to <code>submit()</code> throws, and nobody calls get(). What do you see?`,[`A stack trace in the logs`,`Nothing: the exception is stored in the Future`,`The pool shuts down`,`The worker thread dies and isn't replaced`],1,`execute() reports uncaught exceptions; submit() captures them. Handle the Future or log inside the task.`,'M'],
+    [`ThreadPoolExecutor core=2, max=4, queue capacity=2. 7 slow tasks arrive at once. The 7th?`,[`It waits in the queue`,`A 5th thread is created for it`,`It's rejected: 4 running, 2 queued`,`It replaces the oldest queued task`],2,`Order: fill core → queue → extra threads up to max → reject. Extra threads only start once the queue is full.`,'H'],
+    [`Why use a thread pool instead of <code>new Thread</code> per task?`,[`Pools are required by Java`,`Reuse threads and bound concurrency`,`Threads can't be created manually`,`Pools are single-threaded`],1,`Creating threads is expensive and unbounded creation is dangerous.`,'E'],
+    [`<code>Executors.newFixedThreadPool(4)</code> runs at most how many tasks at once?`,[`1`,`4`,`Unlimited`,`Depends on CPU`],1,`Extra tasks wait in an (unbounded) queue.`,'E'],
+    [`What happens after <code>executor.shutdown()</code>?`,[`Running tasks are interrupted and queued ones dropped`,`No new tasks accepted; already submitted ones finish`,`It blocks until all submitted tasks have finished`,`New tasks still queue, but no queued task runs`],1,`shutdownNow() interrupts running tasks.`,'M'],
+    [`What does <code>AbortPolicy</code> (the default) do on rejection?`,[`Runs the task on the calling thread`,`Throws RejectedExecutionException`,`Silently drops the rejected task`,`Discards the oldest queued task`],1,`Choose a policy deliberately.`,'M'],
+    [`For blocking I/O tasks, pool size should be?`,[`Exactly the core count, since extra threads just thrash the CPU`,`Larger than core count, sized for how long tasks wait (or use virtual threads)`,`Core count minus one, the same as for CPU-bound work`,`Unbounded, so that no submitted task ever has to wait`],1,`Threads mostly wait, not compute.`,'M'],
+  ],
+  quizAdv: [
+    [`What does <code>CallerRunsPolicy</code> do when the pool is full?`,[`The caller runs the task itself`,`The task is dropped silently`,`The queue grows past its bound`,`An extra thread is created`],0,`It slows the producer: natural back-pressure.`,'M'],
+    [`core=10, max=20, default settings. Overnight the pool is idle. How many threads remain?`,[`0: idle threads time out`,`20: threads are kept at max`,`1: one is kept warm`,`10: core threads stay`],3,`Only threads above core time out (keepAliveTime), unless allowCoreThreadTimeOut(true).`,'M'],
+    [`<code>Executors.newCachedThreadPool()</code> under a traffic spike?`,[`Queues extra tasks in an unbounded queue until threads free up`,`Creates a new thread per waiting task without limit, risking thousands of threads`,`Rejects new tasks once a default cap of 256 threads is reached`,`Falls back to running tasks on the caller thread when busy`],1,`Unbounded threads are as dangerous as unbounded queues.`,'H'],
+    [`Why should you await termination on shutdown?`,[`shutdown() does nothing until awaitTermination() is called`,`So in-flight tasks complete before the JVM exits (graceful shutdown)`,`To release the ThreadLocal values held by pool threads`,`To make the pool start its queued tasks sooner`],1,`awaitTermination(timeout) then shutdownNow if needed.`,'M'],
+  ],
+});
