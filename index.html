@@ -6181,24 +6181,24 @@ Object.assign(THEORY, {
 Object.assign(QUIZ, {
 '7.1':[
  [`How should you compare an enum value to a constant?`,[`s.equals("PAID")`,`s.name() == "PAID"`,`s == OrderStatus.PAID`,`s.ordinal() == "PAID".hashCode()`],2,`Each constant is a singleton; == is correct and null-safe.`,'E'],
- [`JPA entity uses <code>@Enumerated</code> with the default type. You insert a new constant in the middle of the enum. Effect?`,[`Nothing: names are stored`,`Existing rows now map to different constants`,`Startup fails`,`New rows can't be saved`],1,`The default is ORDINAL; positions shift. Use EnumType.STRING.`,'M'],
+ [`JPA entity uses <code>@Enumerated</code> with the default type. You insert a new constant in the middle of the enum. Effect?`,[`Nothing changes, since enum names are stored`,`Existing rows now map to different constants`,`Hibernate fails schema validation at startup`,`Only newly inserted rows get the shifted values`],1,`The default is ORDINAL; positions shift. Use EnumType.STRING.`,'M'],
  [`A switch expression over an enum has no default. You add a new constant. What happens?`,[`The new constant is silently ignored`,`It throws at run time only`,`Nothing: switch expressions don't need cases`,`The switch fails to compile until the case is handled`],3,`Switch expressions must be exhaustive; that's the safety net.`,'H']],
 '7.2':[
  [`What does an annotation do by itself?`,[`Nothing: some tool or framework must read it`,`It changes the method's bytecode`,`It always runs code before the method`,`It makes the method public`],0,`Annotations are metadata; behaviour comes from whoever processes them.`,'E'],
  [`Your custom annotation is never found via <code>getAnnotation</code>. Most likely cause?`,[`The method isn't public`,`Its retention isn't RUNTIME`,`Annotations need an interface`,`Reflection is disabled by default`],1,`Default retention is CLASS, which isn't visible to reflection.`,'M'],
  [`A reflectively invoked method throws IllegalStateException. What does <code>Method.invoke</code> throw?`,[`IllegalStateException directly`,`ReflectiveOperationException with no cause`,`InvocationTargetException wrapping it`,`Nothing: it's swallowed`],2,`Unwrap with getCause().`,'H']],
 '7.3':[
- [`<code>toMap(Order::customer, Order::amount)</code> and two orders share a customer. Result?`,[`The later value wins`,`The values are summed`,`IllegalStateException: Duplicate key`,`A list of both values`],2,`Pass a merge function as the third argument.`,'E'],
- [`What does <code>partitioningBy(Order::paid)</code> return when every order is paid?`,[`A map with only the true key`,`A map with true → all orders and false → empty list`,`A List`,`An empty map`],1,`partitioningBy always contains both keys.`,'M'],
+ [`<code>toMap(Order::customer, Order::amount)</code> and two orders share a customer. Result?`,[`The later value silently replaces the earlier one`,`The amounts are summed under that customer's key`,`IllegalStateException: Duplicate key`,`A Map whose value is a List of both amounts`],2,`Pass a merge function as the third argument.`,'E'],
+ [`What does <code>partitioningBy(Order::paid)</code> return when every order is paid?`,[`A map with only the true key, since no order was unpaid`,`A map with true → all orders and false → empty list`,`A Map of true and false to the number of matching orders`,`A List of two lists: paid orders first, then unpaid ones`],1,`partitioningBy always contains both keys.`,'M'],
  [`You need total amount per city, with cities in alphabetical order. Which?`,[`groupingBy(Order::city, TreeMap::new, summingLong(Order::amount))`,`groupingBy(Order::city, summingLong(Order::amount))`,`toMap(Order::city, Order::amount)`,`partitioningBy(Order::city)`],0,`The map factory chooses TreeMap; the downstream sums.`,'H']],
 '7.4':[
  [`Which type should a server use to record when an order was created?`,[`LocalDateTime`,`LocalDate`,`String`,`Instant`],3,`Instant is an exact moment, independent of time zones.`,'E'],
  [`<code>LocalDate.of(2026, 1, 31).plusMonths(1)</code>?`,[`2026-03-03`,`2026-02-28`,`2026-02-31`,`DateTimeException`],1,`java.time clamps to the last valid day of the month.`,'M'],
- [`In Berlin, clocks jump from 02:00 to 03:00 on 29 March 2026. <code>LocalDateTime 02:30</code>.atZone(Berlin) gives?`,[`03:30, shifted forward by the gap`,`02:30 exactly`,`01:30`,`DateTimeException`],0,`Times in a DST gap are moved forward by the gap's length.`,'H']],
+ [`In Berlin, clocks jump from 02:00 to 03:00 on 29 March 2026. <code>LocalDateTime 02:30</code>.atZone(Berlin) gives?`,[`03:30, shifted forward by the gap`,`02:30 exactly, with a +02:00 offset`,`01:30, shifted back before the gap`,`DateTimeException, since 02:30 doesn't exist`],0,`Times in a DST gap are moved forward by the gap's length.`,'H']],
 '7.5':[
- [`Best way to count lines matching a pattern in a 5 GB log file?`,[`Files.readAllLines, then filter`,`Files.readString, then split`,`Files.lines inside try-with-resources, then filter and count`,`Load it into a StringBuilder`],2,`Lazy streaming keeps memory flat; the stream must be closed.`,'E'],
+ [`Best way to count lines matching a pattern in a 5 GB log file?`,[`Files.readAllLines, then stream and filter the list`,`Files.readString, then split on newlines and filter`,`Files.lines inside try-with-resources, then filter and count`,`Read it into a StringBuilder, then use a Matcher on it`],2,`Lazy streaming keeps memory flat; the stream must be closed.`,'E'],
  [`A field is marked <code>transient</code> in a Serializable class. After deserialization it is?`,[`Its default value (null / 0)`,`Its original value`,`An exception is thrown`,`Encrypted`],0,`Transient fields aren't written.`,'M'],
- [`Why is <code>ObjectInputStream.readObject</code> on untrusted input dangerous?`,[`It's slow`,`It ignores serialVersionUID`,`It only works with records`,`Crafted byte streams can trigger code in classes on the classpath (gadget chains)`],3,`Deserialization vulnerabilities have led to remote code execution; prefer JSON with explicit types.`,'H']],
+ [`Why is <code>ObjectInputStream.readObject</code> on untrusted input dangerous?`,[`It loads the whole stream into memory before checking types`,`It ignores serialVersionUID, so mismatched classes load silently`,`It skips constructors, so final fields are always left null`,`Crafted byte streams can trigger code in classes on the classpath (gadget chains)`],3,`Deserialization vulnerabilities have led to remote code execution; prefer JSON with explicit types.`,'H']],
 '7.6':[
  [`Which version introduced lambdas and the Stream API?`,[`Java 7`,`Java 8`,`Java 11`,`Java 17`],1,`Java 8 (2014).`,'E'],
  [`Records, sealed classes and switch expressions are all standard by which LTS?`,[`Java 11`,`Java 17`,`Java 21`,`Java 25`],1,`Switch expressions (14), records (16), sealed classes (17).`,'M'],
@@ -6206,23 +6206,23 @@ Object.assign(QUIZ, {
 });
 Object.assign(QUIZ_ADV, {
 '7.1':[
- [`Can an enum extend another class?`,[`Yes, any class`,`Only abstract classes`,`No: enums implicitly extend java.lang.Enum, but they can implement interfaces`,`Only other enums`],2,`Java has single inheritance, and Enum is already the parent.`,'M'],
- [`Why are EnumMap and EnumSet faster than HashMap/HashSet for enum keys?`,[`They cache hash codes`,`They're backed by an array / bit vector indexed by ordinal`,`They're synchronized`,`They use TreeMap internally`],1,`No hashing, compact memory, declaration-order iteration.`,'H']],
+ [`Can an enum extend another class?`,[`Yes, any non-final class, as long as it has a no-arg constructor`,`Only abstract classes, because the constants act as their subclasses`,`No: enums implicitly extend java.lang.Enum, but they can implement interfaces`,`Only other enums, so a child enum inherits all the parent's constants`],2,`Java has single inheritance, and Enum is already the parent.`,'M'],
+ [`Why are EnumMap and EnumSet faster than HashMap/HashSet for enum keys?`,[`They precompute and cache each key's hashCode once at class load`,`They're backed by an array / bit vector indexed by ordinal`,`They're internally synchronized, so lookups avoid lock contention`,`They're backed by a TreeMap sorted by ordinal for faster binary search`],1,`No hashing, compact memory, declaration-order iteration.`,'H']],
 '7.2':[
- [`Why does Spring do most reflection at startup rather than per request?`,[`Reflection is only allowed during startup`,`Requests can't use reflection`,`Annotations disappear after startup`,`Reflective lookups are slow; it caches metadata and builds proxies once`],3,`Per-call paths use proxies and cached method handles.`,'H'],
+ [`Why does Spring do most reflection at startup rather than per request?`,[`The JVM forbids reflection once the application context is refreshed`,`Request threads run without the permissions reflection requires`,`Annotations are discarded from classes once startup has finished`,`Reflective lookups are slow; it caches metadata and builds proxies once`],3,`Per-call paths use proxies and cached method handles.`,'H'],
  [`Lombok's @Getter generates getters when?`,[`At compile time, via an annotation processor`,`At startup, via reflection`,`At first call, via a proxy`,`At class loading, via bytecode rewriting by the JVM`],0,`Compile-time processing: no runtime reflection needed.`,'M']],
 '7.3':[
  [`<code>toMap(User::id, User::email)</code> and one user's email is null?`,[`The entry maps to null`,`The entry is skipped`,`NullPointerException`,`IllegalStateException`],2,`Collectors.toMap uses HashMap.merge, which rejects null values.`,'H'],
- [`<code>stream.toList()</code> (Java 16) vs <code>collect(Collectors.toList())</code>?`,[`toList() returns an unmodifiable list; Collectors.toList() makes no such guarantee`,`They're identical`,`toList() returns a LinkedList`,`Collectors.toList() is unmodifiable`],0,`Calling add on stream.toList()'s result throws UnsupportedOperationException.`,'M']],
+ [`<code>stream.toList()</code> (Java 16) vs <code>collect(Collectors.toList())</code>?`,[`toList() returns an unmodifiable list; Collectors.toList() makes no such guarantee`,`They're identical: both return an ArrayList you can freely modify`,`toList() returns a LinkedList, while Collectors.toList() returns an ArrayList`,`Collectors.toList() is unmodifiable, while toList() returns a mutable copy`],0,`Calling add on stream.toList()'s result throws UnsupportedOperationException.`,'M']],
 '7.4':[
- [`<code>withZoneSameInstant</code> vs <code>withZoneSameLocal</code>?`,[`Same thing`,`SameInstant keeps the moment; SameLocal keeps the clock reading and changes the moment`,`SameLocal keeps the moment`,`SameInstant only works for UTC`],1,`Use SameInstant to convert for display.`,'M'],
- [`Why inject a <code>Clock</code> into services?`,[`It's faster than Instant.now()`,`It's required by Spring`,`Tests can fix or advance "now" deterministically`,`It handles DST automatically`],2,`Instant.now(clock) in code; Clock.fixed(...) in tests.`,'H']],
+ [`<code>withZoneSameInstant</code> vs <code>withZoneSameLocal</code>?`,[`They're the same: both keep the instant and only relabel the zone`,`SameInstant keeps the moment; SameLocal keeps the clock reading and changes the moment`,`SameLocal keeps the moment; SameInstant keeps the clock reading instead`,`SameInstant only works with UTC; SameLocal handles any region zone`],1,`Use SameInstant to convert for display.`,'M'],
+ [`Why inject a <code>Clock</code> into services?`,[`Clock.instant() is cheaper than calling Instant.now() repeatedly`,`Spring requires a Clock bean before any java.time type can be used`,`Tests can fix or advance "now" deterministically`,`A Clock automatically corrects local times around DST transitions`],2,`Instant.now(clock) in code; Clock.fixed(...) in tests.`,'H']],
 '7.5':[
- [`A BufferedWriter writes 100 lines, and the program exits without close() or flush(). What's in the file?`,[`All 100 lines`,`Possibly nothing or a partial file`,`An exception is written`,`The file is deleted`],1,`Unflushed buffer contents are lost.`,'M'],
+ [`A BufferedWriter writes 100 lines, and the program exits without close() or flush(). What's in the file?`,[`All 100 lines, since the JVM flushes writers on exit`,`Possibly nothing or a partial file`,`Exactly the first 99 lines, missing the last one`,`An empty file, plus an IOException written to stderr`],1,`Unflushed buffer contents are lost.`,'M'],
  [`What's the default charset for Files.newBufferedWriter (and since Java 18, most APIs)?`,[`The OS default, always`,`ISO-8859-1`,`UTF-16`,`UTF-8`],3,`Files methods always defaulted to UTF-8; JEP 400 made UTF-8 the platform default in 18.`,'H']],
 '7.6':[
  [`Which Java 21 feature lets you write <code>list.getFirst()</code> and <code>list.reversed()</code>?`,[`Sequenced collections`,`Stream gatherers`,`Record patterns`,`Scoped values`],0,`SequencedCollection adds first/last/reversed to ordered collections.`,'M'],
- [`What do scoped values (final in Java 25) replace in many cases?`,[`Optional`,`synchronized`,`ThreadLocal, for passing immutable context to callees and child tasks`,`CompletableFuture`],2,`They're immutable, bounded to a scope, and cheap with virtual threads.`,'H']]
+ [`What do scoped values (final in Java 25) replace in many cases?`,[`synchronized, for guarding shared mutable state across threads`,`ThreadLocal, for sharing mutable per-request state between threads`,`ThreadLocal, for passing immutable context to callees and child tasks`,`CompletableFuture, for passing async results to child tasks`],2,`They're immutable, bounded to a scope, and cheap with virtual threads.`,'H']]
 });
 </script>
 <script>
@@ -6265,29 +6265,29 @@ Object.assign(QUIZ, {
 '8.2':[
  [`Without an index, how does the DB answer <code>WHERE customer_id = 42</code> on a big table?`,[`It uses the primary key automatically`,`It reads every row (full table scan)`,`It samples a few rows`,`It caches the answer forever`],1,`Seq Scan: cost grows with table size.`,'E'],
  [`Index on (customer_id, created_at). Which query can't use it well?`,[`WHERE customer_id = 42`,`WHERE customer_id = 42 ORDER BY created_at`,`WHERE created_at &gt; yesterday`,`WHERE customer_id = 42 AND created_at &gt; yesterday`],2,`Leftmost-prefix rule: the leading column isn't constrained.`,'M'],
- [`An index exists on status, but <code>WHERE lower(status) = 'paid'</code> does a full scan. Fix?`,[`Add an expression index on lower(status), or store normalised values`,`Increase work_mem`,`Add LIMIT 1`,`Use SELECT DISTINCT`],0,`Functions on the column hide it from a plain index.`,'H']],
+ [`An index exists on status, but <code>WHERE lower(status) = 'paid'</code> does a full scan. Fix?`,[`Add an expression index on lower(status), or store normalised values`,`Increase work_mem so the sort for lower() fits in memory`,`Add LIMIT 1 so the planner stops after the first match`,`Run ANALYZE so the planner picks up the status index`],0,`Functions on the column hide it from a plain index.`,'H']],
 '8.3':[
  [`What does <code>close()</code> on a connection from HikariCP do?`,[`Closes the TCP connection to the database`,`Nothing`,`Returns it to the pool`,`Commits the transaction`],2,`The pool wraps connections; close hands it back for reuse.`,'E'],
- [`Why use PreparedStatement parameters instead of string concatenation?`,[`They're shorter to write`,`They prevent SQL injection and let the DB reuse the parsed statement`,`They return results faster in every case`,`They're required by JPA`],1,`Values are sent as data, never parsed as SQL.`,'M'],
- [`Requests start failing with "Connection is not available, request timed out after 30000ms" while the DB is idle. Likely cause?`,[`The database is down`,`Too many indexes`,`GC pauses`,`Connections are leaked or held too long, so the pool is empty`],3,`Enable leak detection; check for unclosed connections or long transactions (6.4).`,'H']],
+ [`Why use PreparedStatement parameters instead of string concatenation?`,[`They avoid round trips by batching all queries into one call`,`They prevent SQL injection and let the DB reuse the parsed statement`,`They escape results automatically and return them faster`,`They're required for JPA and Spring to manage the transaction`],1,`Values are sent as data, never parsed as SQL.`,'M'],
+ [`Requests start failing with "Connection is not available, request timed out after 30000ms" while the DB is idle. Likely cause?`,[`The database is down, so new connections can't be opened`,`Too many indexes slow every query past the 30 second limit`,`Long GC pauses stop the pool's housekeeping thread`,`Connections are leaked or held too long, so the pool is empty`],3,`Enable leak detection; check for unclosed connections or long transactions (6.4).`,'H']],
 '8.4':[
  [`Kafka guarantees message order...`,[`Across the whole topic`,`Within a partition only`,`Across all topics`,`Never`],1,`Use a key so related events go to the same partition.`,'E'],
  [`A topic has 4 partitions; a group has 6 consumers. How many are actively consuming?`,[`6`,`4; 2 sit idle`,`3`,`1`],1,`Each partition goes to one consumer in a group.`,'M'],
- [`A consumer processes a message, then crashes before committing its offset. What happens?`,[`The message is lost`,`Kafka deletes it`,`It's redelivered after the rebalance, so processing must be idempotent`,`The whole topic is replayed from offset 0`],2,`At-least-once delivery.`,'H']]
+ [`A consumer processes a message, then crashes before committing its offset. What happens?`,[`The message is lost, since it was already read once`,`Kafka moves it to the dead-letter topic automatically`,`It's redelivered after the rebalance, so processing must be idempotent`,`The whole partition is replayed from offset 0 on restart`],2,`At-least-once delivery.`,'H']]
 });
 Object.assign(QUIZ_ADV, {
 '8.1':[
- [`PostgreSQL at REPEATABLE READ: two transactions update the same row concurrently. The second one?`,[`Overwrites the first silently`,`Waits, then fails with "could not serialize access due to concurrent update"`,`Deadlocks forever`,`Sees the first one's change and continues`],1,`Snapshot isolation won't let it update a row changed after its snapshot; retry.`,'H'],
+ [`PostgreSQL at REPEATABLE READ: two transactions update the same row concurrently. The second one?`,[`Overwrites the first silently once the first one commits`,`Waits, then fails with "could not serialize access due to concurrent update"`,`Deadlocks and both transactions are rolled back immediately`,`Waits, then sees the first one's change and applies its own`],1,`Snapshot isolation won't let it update a row changed after its snapshot; retry.`,'H'],
  [`Write skew: two doctors each check "at least one other doctor is on call" and both go off call. Which level prevents it?`,[`READ COMMITTED`,`REPEATABLE READ (snapshot)`,`SERIALIZABLE`,`None`],2,`Each transaction's snapshot looks fine; only serializable detects the conflict.`,'H']],
 '8.2':[
- [`What's a covering index?`,[`An index on every column`,`An index on the primary key`,`A partial index with a WHERE clause`,`An index containing all columns a query needs, so the table isn't read`],3,`Enables index-only scans (INCLUDE columns in PostgreSQL).`,'M'],
- [`Why is an index on a boolean or a 3-value status column often useless?`,[`Low selectivity: each value matches a big share of rows, so a scan is cheaper`,`Databases can't index booleans`,`It breaks foreign keys`,`It makes reads slower`],0,`A partial index (WHERE status = 'PENDING') can still help for rare values.`,'H']],
+ [`What's a covering index?`,[`A composite index that includes every column of the table`,`A clustered index that physically orders rows by primary key`,`A partial index whose WHERE clause covers all the query's rows`,`An index containing all columns a query needs, so the table isn't read`],3,`Enables index-only scans (INCLUDE columns in PostgreSQL).`,'M'],
+ [`Why is an index on a boolean or a 3-value status column often useless?`,[`Low selectivity: each value matches a big share of rows, so a scan is cheaper`,`Most databases store booleans as bits, which B-tree indexes can't hold`,`Every update to the column rewrites the whole index, so it stays bloated`,`The index forces a lock on all matching rows, so reads end up blocking`],0,`A partial index (WHERE status = 'PENDING') can still help for rare values.`,'H']],
 '8.3':[
- [`Inserting 100,000 rows one statement at a time is slow. Better?`,[`More threads with more connections`,`Batch with addBatch/executeBatch (or COPY), inside one transaction`,`autoCommit = true`,`A bigger pool`],1,`Fewer round trips and commits.`,'M'],
- [`What does <code>@Transactional</code> do at the JDBC level?`,[`Opens a new pool`,`Sends BEGIN as a SQL string per query`,`Wraps each statement in its own transaction`,`Borrows a connection, sets autoCommit(false), binds it to the thread, then commit/rollback`],3,`All repository calls in that thread reuse that connection.`,'H']],
+ [`Inserting 100,000 rows one statement at a time is slow. Better?`,[`Spread inserts across many threads, each with its own connection`,`Batch with addBatch/executeBatch (or COPY), inside one transaction`,`Turn autoCommit on so each row commits and frees its locks sooner`,`Raise maximumPoolSize so more inserts can run in parallel`],1,`Fewer round trips and commits.`,'M'],
+ [`What does <code>@Transactional</code> do at the JDBC level?`,[`Opens a dedicated connection pool for each transactional method`,`Prefixes each SQL statement with BEGIN and COMMIT strings`,`Runs each statement in its own transaction, retried on error`,`Borrows a connection, disables autoCommit, binds it to the thread, then commits or rolls back`],3,`All repository calls in that thread reuse that connection.`,'H']],
 '8.4':[
- [`Why does adding partitions to an existing keyed topic break ordering for some keys?`,[`hash(key) % partitions changes, so a key's new events go to a different partition`,`Kafka reorders old messages`,`Offsets are reset`,`It doesn't`],0,`Plan partition counts up front.`,'H'],
- [`A message always fails processing (bad payload). What should the consumer do?`,[`Retry forever`,`Skip silently`,`Retry a few times, then send it to a dead-letter topic and continue`,`Restart the consumer`],2,`Otherwise one poison message blocks the whole partition.`,'M']]
+ [`Why does adding partitions to an existing keyed topic break ordering for some keys?`,[`hash(key) % partitions changes, so a key's new events go to a different partition`,`Kafka rehashes and moves existing messages into the new partitions, reordering them`,`Consumer group offsets are reset to the earliest offset on all existing partitions`,`New partitions get their own leader, which reorders messages from all the other leaders`],0,`Plan partition counts up front.`,'H'],
+ [`A message always fails processing (bad payload). What should the consumer do?`,[`Retry it forever with backoff until a fix is deployed`,`Commit its offset and skip it without logging anything`,`Retry a few times, then send it to a dead-letter topic and continue`,`Stop the consumer so the partition is reassigned elsewhere`],2,`Otherwise one poison message blocks the whole partition.`,'M']]
 });
 </script>
 <script>
@@ -6332,41 +6332,41 @@ Object.assign(THEORY, {
 Object.assign(QUIZ, {
 '9.1':[
  [`What does <code>mock(TaxClient.class)</code> return by default for a method returning an object?`,[`A real TaxClient`,`null (or an empty value for collections/Optional)`,`It throws UnsupportedOperationException`,`The last value returned`],1,`Unstubbed methods return defaults.`,'E'],
- [`Which should you usually NOT mock in a unit test?`,[`A remote HTTP client`,`A repository`,`A message publisher`,`Value objects like Money or a record DTO`],3,`Use real value objects; mock collaborators with side effects or slowness.`,'M'],
+ [`Which should you usually NOT mock in a unit test?`,[`A remote HTTP client calling a payment API`,`A repository that talks to the database`,`A message publisher sending to a broker`,`Value objects like Money or a record DTO`],3,`Use real value objects; mock collaborators with side effects or slowness.`,'M'],
  [`<code>assertEquals(new BigDecimal("119"), result)</code> fails though result is 119.00. Why?`,[`BigDecimal.equals compares scale, and 119 has scale 0`,`assertEquals can't compare BigDecimals`,`Rounding error`,`The mock returned null`],0,`Use compareTo or AssertJ's isEqualByComparingTo.`,'H']],
 '9.2':[
- [`An app is hung but CPU is idle. First evidence to collect?`,[`A heap dump`,`GC logs`,`Several thread dumps a few seconds apart`,`A JFR recording of CPU`],2,`Dumps show what each thread is waiting on, and comparing them shows what's stuck.`,'E'],
+ [`An app is hung but CPU is idle. First evidence to collect?`,[`A heap dump to find leaked objects`,`GC logs covering the last few minutes`,`Several thread dumps a few seconds apart`,`A JFR recording of CPU hot methods`],2,`Dumps show what each thread is waiting on, and comparing them shows what's stuck.`,'E'],
  [`top -H shows thread id 4311 at 98% CPU. How do you find it in a thread dump?`,[`Search for "4311" in the thread names`,`Convert 4311 to hex (0x10d7) and find nid=0x10d7`,`It's always the main thread`,`Take a heap dump instead`],1,`Thread dumps list native thread ids in hex.`,'M'],
  [`Which is safe to run continuously in production with ~1–2% overhead?`,[`Java Flight Recorder`,`A heap dump every minute`,`-verbose:class`,`A debugger attached to the JVM`],0,`JFR was designed for always-on production use.`,'H']],
 '9.3':[
  [`What is a transitive dependency?`,[`A dependency only used in tests`,`A dependency you declared twice`,`A dependency of one of your dependencies`,`A dependency loaded at run time by reflection`],2,`They come along automatically; inspect them with dependency:tree.`,'E'],
- [`Two libraries need json-lite 1.2 and 2.0 at the same depth. Which does Maven pick?`,[`The highest, 2.0`,`The one declared first in the pom`,`Both are loaded`,`The build fails`],1,`Maven: nearest wins, ties go to the first declaration. Gradle picks the highest.`,'M'],
- [`The build succeeds, but production throws NoSuchMethodError inside a library. Most likely?`,[`A dependency version conflict put an older JAR on the classpath`,`A compile error that was ignored`,`The JIT removed the method`,`Out of memory`],0,`Check dependency:tree and pin the version.`,'H']],
+ [`Two libraries need json-lite 1.2 and 2.0 at the same depth. Which does Maven pick?`,[`The highest version, 2.0`,`The one declared first in the pom`,`The lowest version, 1.2`,`The build fails with a conflict`],1,`Maven: nearest wins, ties go to the first declaration. Gradle picks the highest.`,'M'],
+ [`The build succeeds, but production throws NoSuchMethodError inside a library. Most likely?`,[`A dependency version conflict put an older JAR on the classpath`,`The JIT inlined and removed the method at run time`,`A compiler warning about the method was ignored`,`The library was compiled for a newer Java release`],0,`Check dependency:tree and pin the version.`,'H']],
 '9.4':[
- [`Why write <code>log.info("Order {} placed", id)</code> instead of <code>"Order " + id + " placed"</code>?`,[`It's required by SLF4J`,`It's thread-safe`,`It adds the stack trace`,`The message is only formatted if INFO is enabled`],3,`Placeholders avoid building strings for disabled levels.`,'E'],
- [`What's wrong with tagging a metric by userId?`,[`Tags must be numbers`,`Unbounded cardinality creates millions of time series`,`Micrometer forbids it`,`Nothing`],1,`Keep tag values to a small, bounded set.`,'M'],
+ [`Why write <code>log.info("Order {} placed", id)</code> instead of <code>"Order " + id + " placed"</code>?`,[`SLF4J rejects string concatenation at compile time`,`Placeholders make the call thread-safe without locks`,`The id is masked in the output if it's sensitive`,`The message is only formatted if INFO is enabled`],3,`Placeholders avoid building strings for disabled levels.`,'E'],
+ [`What's wrong with tagging a metric by userId?`,[`Tag values must be numeric, so ids are rejected`,`Unbounded cardinality creates millions of time series`,`Micrometer drops tags with more than 32 values`,`User ids leak into traces and break sampling`],1,`Keep tag values to a small, bounded set.`,'M'],
  [`How does one request's trace id reach the next service?`,[`Through a shared database table`,`In the JWT payload`,`It's propagated in request headers (e.g. traceparent)`,`Through MDC, which is shared between services`],2,`MDC is per thread, per process; headers carry context across the network.`,'H']],
 '9.5':[
- [`In module-info.java, what does <code>exports com.shop.api</code> do?`,[`Makes that package accessible to other modules`,`Opens it for reflection only`,`Declares a dependency`,`Hides it from other modules`],0,`Only exported packages are part of the module's public API.`,'E'],
+ [`In module-info.java, what does <code>exports com.shop.api</code> do?`,[`Makes that package accessible to other modules`,`Opens that package for deep reflection only`,`Declares a dependency on that package's module`,`Makes the package readable by the unnamed module only`],0,`Only exported packages are part of the module's public API.`,'E'],
  [`A public class sits in a package that isn't exported. Can another module use it?`,[`Yes, it's public`,`Only via reflection, always`,`No: it's encapsulated`,`Only in the same JAR`],2,`Strong encapsulation: public isn't enough across modules.`,'M'],
- [`Jackson throws InaccessibleObjectException on a modular app's DTO. Fix?`,[`Make the fields public static`,`Open the package to Jackson in module-info (opens … to com.fasterxml.jackson.databind)`,`Add requires transitive`,`Downgrade Java`],1,`Deep reflection needs opens, not just exports.`,'H']]
+ [`Jackson throws InaccessibleObjectException on a modular app's DTO. Fix?`,[`Make the DTO fields public static so Jackson can see them`,`Open the package to Jackson in module-info (opens … to com.fasterxml.jackson.databind)`,`Add requires transitive com.fasterxml.jackson.databind to module-info`,`Run with --add-modules ALL-SYSTEM so Jackson sees the module`],1,`Deep reflection needs opens, not just exports.`,'H']]
 });
 Object.assign(QUIZ_ADV, {
 '9.1':[
- [`Your test verifies 8 internal calls on mocks and breaks on every refactor. Better approach?`,[`Verify even more calls`,`Assert on observable results; verify only interactions that are the behaviour (e.g. "email sent")`,`Delete the test`,`Use spies for everything`],1,`Tests should check behaviour, not implementation details.`,'H'],
- [`What does <code>@InjectMocks</code> do?`,[`Creates the class under test and injects the @Mock fields into it`,`Mocks every field of the test class`,`Injects Spring beans`,`Verifies all mocks after the test`],0,`Prefer explicit constructor calls when it's just as short.`,'M']],
+ [`Your test verifies 8 internal calls on mocks and breaks on every refactor. Better approach?`,[`Verify every call with inOrder() so the test pins the exact sequence of interactions`,`Assert on observable results; verify only interactions that are the behaviour (e.g. "email sent")`,`Replace all the mocks with spies so real code runs and the verify calls stay valid`,`Use verifyNoMoreInteractions on each mock so unexpected calls fail the test early`],1,`Tests should check behaviour, not implementation details.`,'H'],
+ [`What does <code>@InjectMocks</code> do?`,[`Creates the class under test and injects the @Mock fields into it`,`Creates a mock for every field of the test class`,`Injects matching Spring beans from the test context`,`Creates the class under test with real dependencies`],0,`Prefer explicit constructor calls when it's just as short.`,'M']],
 '9.2':[
- [`A heap dump on a 16 GB heap in production. What's the main risk?`,[`It corrupts the heap`,`It needs a debugger`,`It's always under 100 MB`,`It pauses the JVM (seconds or more) and writes a huge file`],3,`Take it from an instance pulled out of the load balancer if possible.`,'H'],
- [`Why check <code>jcmd VM.flags</code> in a container?`,[`To see the real heap size and CPU count the JVM derived from container limits`,`To change flags at run time`,`To list threads`,`It shows HTTP routes`],0,`Container-aware defaults (MaxRAMPercentage, ActiveProcessorCount) often surprise people.`,'M']],
+ [`A heap dump on a 16 GB heap in production. What's the main risk?`,[`It can corrupt live objects that are being moved`,`It requires attaching a debugger and suspending threads`,`It triggers a full GC that frees all soft references`,`It pauses the JVM (seconds or more) and writes a huge file`],3,`Take it from an instance pulled out of the load balancer if possible.`,'H'],
+ [`Why check <code>jcmd VM.flags</code> in a container?`,[`To see the real heap size and CPU count the JVM derived from container limits`,`To change heap and GC flags on the running JVM without a restart`,`To see which container image and base JDK the JVM was started from`,`To list all live threads and the flags each of them was started with`],0,`Container-aware defaults (MaxRAMPercentage, ActiveProcessorCount) often surprise people.`,'M']],
 '9.3':[
- [`What does the Spring Boot parent / BOM give you?`,[`Faster compilation`,`Automatic security patches`,`Tested, compatible versions for many libraries, so you omit versions`,`A Gradle plugin`],2,`You still upgrade Boot to get newer managed versions.`,'M'],
- [`Why commit <code>mvnw</code> / <code>gradlew</code>?`,[`They download faster`,`Everyone and CI run the same build tool version`,`They're required by Maven Central`,`They replace the pom`],1,`Reproducible builds.`,'M']],
+ [`What does the Spring Boot parent / BOM give you?`,[`Faster compilation through shared, precompiled starter modules`,`Automatic security patches applied whenever you rebuild the app`,`Tested, compatible versions for many libraries, so you omit versions`,`A single fat JAR dependency that bundles all Spring libraries`],2,`You still upgrade Boot to get newer managed versions.`,'M'],
+ [`Why commit <code>mvnw</code> / <code>gradlew</code>?`,[`The wrapper downloads dependencies faster`,`Everyone and CI run the same build tool version`,`Maven Central rejects builds without them`,`They let builds run without a JDK installed`],1,`Reproducible builds.`,'M']],
 '9.4':[
- [`A service layer, controller and advice each log the same exception with stack trace. Problem?`,[`None: more logs are safer`,`Logs grow too slowly`,`It changes the HTTP status`,`One error appears 3 times, hiding real counts and flooding logs`],3,`Log once, where it's handled.`,'M'],
- [`MDC values show up on the wrong requests' logs. Likely cause?`,[`MDC isn't cleared in finally, and pooled threads keep old values`,`MDC is shared across threads`,`Logback bug`,`Too many log levels`],0,`It's ThreadLocal-based (4.12).`,'H']],
+ [`A service layer, controller and advice each log the same exception with stack trace. Problem?`,[`None: logging at every layer makes debugging safer`,`Only the controller's log is kept; the rest are dropped`,`Logging an exception three times changes the HTTP status`,`One error appears 3 times, hiding real counts and flooding logs`],3,`Log once, where it's handled.`,'M'],
+ [`MDC values show up on the wrong requests' logs. Likely cause?`,[`MDC isn't cleared in finally, and pooled threads keep old values`,`MDC is a global map shared by every thread in the JVM`,`Logback copies MDC to all threads in the pool by design`,`The log pattern prints %X before the request id is set`],0,`It's ThreadLocal-based (4.12).`,'H']],
 '9.5':[
- [`What does <code>jlink</code> produce?`,[`A fat JAR`,`A custom Java runtime containing only the modules you need`,`A native executable without a JVM`,`A Docker image`],1,`Smaller images; GraalVM native image is the no-JVM option.`,'M'],
- [`Where does code from the classpath live in the module system?`,[`In java.base`,`In no module: it can't run`,`In the unnamed module, which reads all modules`,`In a module named after the JAR`],2,`Automatic modules are JARs on the module path without a descriptor.`,'H']]
+ [`What does <code>jlink</code> produce?`,[`A fat JAR that bundles the app with all its dependencies`,`A custom Java runtime containing only the modules you need`,`A native executable that runs without any JVM at all`,`A module-info.java file generated from your classpath`],1,`Smaller images; GraalVM native image is the no-JVM option.`,'M'],
+ [`Where does code from the classpath live in the module system?`,[`In java.base, alongside the core classes`,`In an automatic module named after each JAR`,`In the unnamed module, which reads all modules`,`In the unnamed module, which reads only java.base`],2,`Automatic modules are JARs on the module path without a descriptor.`,'H']]
 });
 </script>
 <script>
@@ -6389,21 +6389,21 @@ Object.assign(THEORY, {
 });
 Object.assign(QUIZ, {
 '10.1':[
- [`You build a Flux pipeline but never call subscribe. What happens?`,[`It runs once`,`Nothing: reactive pipelines are lazy`,`It runs in the background`,`An exception is thrown`],1,`Like streams, nothing happens until there's a subscriber.`,'E'],
+ [`You build a Flux pipeline but never call subscribe. What happens?`,[`It runs once eagerly when the Flux is assembled`,`Nothing: reactive pipelines are lazy`,`It runs on a background scheduler by default`,`An IllegalStateException is thrown at assembly`],1,`Like streams, nothing happens until there's a subscriber.`,'E'],
  [`How many terminal signals can a Flux emit?`,[`At most one: onComplete or onError`,`One onComplete per item`,`Any number of onError`,`Both onComplete and onError`],0,`onNext* then a single terminal signal (or none if infinite/cancelled).`,'M'],
- [`What is backpressure?`,[`Retrying failed requests`,`Compressing large responses`,`The subscriber limiting how many items the publisher may send`,`Throttling CPU usage`],2,`Via request(n) in the Reactive Streams protocol.`,'H']],
+ [`What is backpressure?`,[`The publisher retrying failed items with growing delays`,`The server compressing large responses to save bandwidth`,`The subscriber limiting how many items the publisher may send`,`The scheduler throttling threads when CPU usage is high`],2,`Via request(n) in the Reactive Streams protocol.`,'H']],
 '10.2':[
  [`How many event-loop threads does WebFlux typically use?`,[`One per request`,`200, like Tomcat`,`Unlimited`,`About one per CPU core`],3,`Few threads, never blocking.`,'E'],
- [`A WebFlux handler calls blocking JDBC directly. Effect?`,[`It blocks an event-loop thread, stalling every request on it`,`It's automatically moved to another thread`,`It fails to compile`,`Nothing: WebFlux makes JDBC non-blocking`],0,`Wrap with subscribeOn(boundedElastic) or use R2DBC.`,'M'],
+ [`A WebFlux handler calls blocking JDBC directly. Effect?`,[`It blocks an event-loop thread, stalling every request on it`,`WebFlux detects it and offloads it to another thread pool`,`The app fails at startup when JDBC is on the classpath`,`Nothing: R2DBC wraps the JDBC driver as non-blocking`],0,`Wrap with subscribeOn(boundedElastic) or use R2DBC.`,'M'],
  [`For a typical new CRUD service on Java 21, the simplest scalable choice is usually?`,[`WebFlux with R2DBC everywhere`,`Bigger Tomcat thread pool (2,000 threads)`,`Spring MVC with virtual threads enabled`,`A single-threaded server`],2,`Plain blocking code that scales for I/O-bound work.`,'H']]
 });
 Object.assign(QUIZ_ADV, {
 '10.1':[
- [`<code>map</code> vs <code>flatMap</code> in Reactor?`,[`Identical`,`map transforms synchronously; flatMap maps each item to a Publisher (async call) and merges the results`,`flatMap is for Monos only`,`map runs on a new thread`],1,`flatMap may interleave results; concatMap keeps order.`,'H'],
+ [`<code>map</code> vs <code>flatMap</code> in Reactor?`,[`map is for Mono and flatMap is for Flux; otherwise they behave identically`,`map transforms synchronously; flatMap maps each item to a Publisher (async call) and merges the results`,`map runs each transform on a new thread; flatMap keeps work on the caller's`,`flatMap flattens nested lists into items; map can only return one Publisher`],1,`flatMap may interleave results; concatMap keeps order.`,'H'],
  [`Where do operators run if you use no publishOn/subscribeOn?`,[`On the thread that emits the signal`,`Always on the main thread`,`On a new thread per operator`,`On the common ForkJoinPool`],0,`Reactor is concurrency-agnostic; schedulers move work explicitly.`,'M']],
 '10.2':[
- [`How do you safely call a blocking API from WebFlux?`,[`Call block() on the event loop`,`Use Thread.sleep to yield`,`Mono.fromCallable(...).subscribeOn(Schedulers.boundedElastic())`,`Wrap it in Mono.just(...)`],2,`Mono.just evaluates eagerly on the current (event-loop) thread.`,'H'],
- [`What do virtual threads NOT give you that reactive streams do?`,[`High concurrency for I/O`,`Simple sequential code`,`Normal stack traces`,`Built-in backpressure between producer and consumer`],3,`You'd add bounded queues or semaphores yourself.`,'H']]
+ [`How do you safely call a blocking API from WebFlux?`,[`Call block() on the event loop so the result is ready`,`Mono.fromCallable(...).publishOn(Schedulers.parallel())`,`Mono.fromCallable(...).subscribeOn(Schedulers.boundedElastic())`,`Wrap it in Mono.just(...) so the call becomes lazy`],2,`Mono.just evaluates eagerly on the current (event-loop) thread.`,'H'],
+ [`What do virtual threads NOT give you that reactive streams do?`,[`High concurrency for I/O-bound work`,`Simple sequential, blocking-style code`,`Normal stack traces through your code`,`Built-in backpressure between producer and consumer`],3,`You'd add bounded queues or semaphores yourself.`,'H']]
 });
 </script>
 <script>
@@ -6460,43 +6460,43 @@ Object.assign(QUIZ, {
 '11.2':[
  [`Two pointers to find a pair with a given sum works directly on which input?`,[`Any array`,`Linked lists only`,`Arrays with no duplicates`,`Sorted arrays`],3,`Order tells you which pointer to move.`,'E'],
  [`Sorted array, sum of a[left] + a[right] is too small. Which pointer moves?`,[`left moves right`,`right moves left`,`both move`,`restart`],0,`Only a bigger left value can increase the sum.`,'M'],
- [`Why is the sliding window solution for "longest substring without repeats" O(n)?`,[`It uses a HashMap`,`Strings are short`,`Each index is added once and removed at most once; start never moves back`,`It stops early`],2,`Both pointers only move forward.`,'H']],
+ [`Why is the sliding window solution for "longest substring without repeats" O(n)?`,[`A HashMap makes each repeat check O(1), so the scan is O(n)`,`The alphabet is bounded, so the window never exceeds 26 chars`,`Each index is added once and removed at most once; start never moves back`,`It stops as soon as the window covers every distinct character`],2,`Both pointers only move forward.`,'H']],
 '11.3':[
  [`In one-pass two-sum, what do you store in the map?`,[`Each value → its index`,`Each pair of values`,`The running sum`,`Only the target`],0,`Then look up target − a[i] in O(1).`,'E'],
  [`Best way to count word frequencies in a HashMap?`,[`map.put(w, map.get(w) + 1)`,`map.putIfAbsent(w, 1)`,`map.replace(w, 1)`,`map.merge(w, 1, Integer::sum)`],3,`get + 1 throws NPE for new words; merge handles both cases.`,'M'],
- [`Grouping anagrams: why sort each word's letters?`,[`To make the output alphabetical`,`Anagrams share the same sorted letters, giving a common key`,`HashMap requires sorted keys`,`To remove duplicates`],1,`A canonical key maps equivalent items together.`,'M']],
+ [`Grouping anagrams: why sort each word's letters?`,[`To make the final output come out in alphabetical order`,`Anagrams share the same sorted letters, giving a common key`,`HashMap keys must be sorted strings for lookups to work`,`Sorting removes duplicate letters, giving shorter keys`],1,`A canonical key maps equivalent items together.`,'M']],
 '11.4':[
  [`About how many comparisons does binary search need for 1,000,000 sorted items?`,[`1,000,000`,`1,000`,`20`,`500,000`],2,`log₂(1,000,000) ≈ 20.`,'E'],
- [`Why write <code>mid = lo + (hi - lo) / 2</code>?`,[`It's faster`,`lo + hi can overflow int for very large arrays`,`It rounds up`,`It handles negative numbers`],1,`The overflow bug lived in the JDK for years.`,'M'],
- [`"Minimum ship capacity to deliver all packages in D days" can use binary search because...`,[`the packages are sorted`,`capacities are integers`,`D is small`,`if a capacity works, every larger one works too (monotonic)`],3,`Binary search the answer range with a feasibility check.`,'H']],
+ [`Why write <code>mid = lo + (hi - lo) / 2</code>?`,[`It avoids a division, so it's faster`,`lo + hi can overflow int for very large arrays`,`lo + hi rounds the wrong way for odd sums`,`(lo + hi) / 2 breaks when lo is negative`],1,`The overflow bug lived in the JDK for years.`,'M'],
+ [`"Minimum ship capacity to deliver all packages in D days" can use binary search because...`,[`the packages are already sorted by weight`,`capacities are integers, so the range is finite`,`D is small enough to try every split of days`,`if a capacity works, every larger one works too (monotonic)`],3,`Binary search the answer range with a feasibility check.`,'H']],
 '11.5':[
  [`Which traversal finds the fewest hops between two nodes in an unweighted graph?`,[`DFS`,`BFS`,`In-order traversal`,`Binary search`],1,`BFS reaches nodes in order of distance.`,'E'],
  [`What data structure drives BFS?`,[`A queue (FIFO)`,`A stack (LIFO)`,`A priority queue`,`A TreeMap`],0,`DFS uses a stack or recursion; Dijkstra a priority queue.`,'M'],
  [`DFS on a graph with cycles, without a visited set?`,[`It's slower but finishes`,`It finds shortest paths`,`It can loop forever`,`It throws ConcurrentModificationException`],2,`Mark nodes visited when you first reach them.`,'H']],
 '11.6':[
- [`What makes a problem a good fit for dynamic programming?`,[`It's about sorting`,`Overlapping subproblems and optimal substructure`,`It has no recursion`,`The input is a graph`],1,`Same subproblems recur, and answers combine.`,'E'],
- [`Naive recursive fib(n) runs in?`,[`O(n)`,`O(n log n)`,`O(n²)`,`Exponential time, about O(2ⁿ)`],3,`Memoisation brings it to O(n).`,'M'],
- [`Coins {1, 3, 4}, amount 6. Greedy (largest first) vs optimal?`,[`Both give 2`,`Greedy 3 coins (4+1+1), optimal 2 (3+3)`,`Greedy 2, optimal 3`,`Both give 3`],1,`Greedy isn't always optimal; DP checks every last-coin option.`,'H']]
+ [`What makes a problem a good fit for dynamic programming?`,[`Inputs that are sorted and searchable`,`Overlapping subproblems and optimal substructure`,`Choices that are always locally optimal`,`A recursion that splits into disjoint halves`],1,`Same subproblems recur, and answers combine.`,'E'],
+ [`Naive recursive fib(n) runs in?`,[`O(n): each call runs once`,`O(n log n): calls split in two`,`O(n²): n levels of n calls`,`Exponential time, about O(2ⁿ)`],3,`Memoisation brings it to O(n).`,'M'],
+ [`Coins {1, 3, 4}, amount 6. Greedy (largest first) vs optimal?`,[`Both give 2 coins (3+3)`,`Greedy 3 coins (4+1+1), optimal 2 (3+3)`,`Greedy 2 coins (4+2), optimal 3 (4+1+1)`,`Both give 3 coins (4+1+1)`],1,`Greedy isn't always optimal; DP checks every last-coin option.`,'H']]
 });
 Object.assign(QUIZ_ADV, {
 '11.1':[
- [`HashMap get is O(1) on average. When can it degrade?`,[`Never`,`When keys are Strings`,`When many keys collide (bad hashCode); Java 8 trees keep it O(log n) per bucket`,`When the map is small`],2,`Treeified bins (2.2) bound the worst case.`,'H'],
- [`Recursive DFS on a path-shaped graph of n nodes: extra space?`,[`O(n): the call stack depth`,`O(1)`,`O(log n)`,`O(n²)`],0,`Recursion depth counts as space.`,'M']],
+ [`HashMap get is O(1) on average. When can it degrade?`,[`When keys are Strings, since their hashCode is recomputed on every get`,`When the map is small, because it scans the table instead of hashing`,`When many keys collide (bad hashCode); Java 8 trees keep it O(log n) per bucket`,`When the load factor passes 0.75, since resizing makes every get O(n)`],2,`Treeified bins (2.2) bound the worst case.`,'H'],
+ [`Recursive DFS on a path-shaped graph of n nodes: extra space?`,[`O(n): the call stack depth`,`O(1): recursion reuses one frame`,`O(log n): the stack is balanced`,`O(n²): each frame copies the path`],0,`Recursion depth counts as space.`,'M']],
 '11.2':[
- [`Max sum of any 3 consecutive elements in an array. Efficient approach?`,[`Check all triples, O(n³)`,`Sort first`,`Fixed-size window: add the new element, subtract the one leaving, O(n)`,`Binary search`],2,`A fixed window updates in O(1) per step.`,'M'],
+ [`Max sum of any 3 consecutive elements in an array. Efficient approach?`,[`Check all triples with three nested loops, O(n³)`,`Sort the array and sum the three largest values, O(n log n)`,`Fixed-size window: add the new element, subtract the one leaving, O(n)`,`Use prefix sums and binary search for each start, O(n log n)`],2,`A fixed window updates in O(1) per step.`,'M'],
  [`3-sum (triplets summing to 0) typical complexity with sort + two pointers?`,[`O(n)`,`O(n log n)`,`O(n³)`,`O(n²)`],3,`Fix one element, two-pointer the rest: n × n.`,'H']],
 '11.3':[
- [`Why check the map before inserting in two-sum?`,[`To avoid pairing an element with itself`,`For speed`,`HashMap requires it`,`To keep order`],0,`e.g. target 10 with a single 5 must not match itself.`,'M'],
- [`Find the first non-repeating character in a string efficiently?`,[`Nested loops`,`Sort the string`,`A TreeSet`,`Count frequencies (LinkedHashMap or array), then scan in order`],3,`Two passes, O(n).`,'H']],
+ [`Why check the map before inserting in two-sum?`,[`To avoid pairing an element with itself`,`Inserting first makes the lookup O(n) for duplicates`,`HashMap.put throws if the key already exists`,`To keep the pairs in their original index order`],0,`e.g. target 10 with a single 5 must not match itself.`,'M'],
+ [`Find the first non-repeating character in a string efficiently?`,[`Nested loops, checking each char against the rest`,`Sort the string, then find a char with no neighbour`,`A TreeSet of seen chars, then take the first() one`,`Count frequencies (LinkedHashMap or array), then scan in order`],3,`Two passes, O(n).`,'H']],
 '11.4':[
- [`<code>Arrays.binarySearch(a, 50)</code> returns -8. What does that mean?`,[`Error code 8`,`Not found; insertion point is 7`,`Found at index 8`,`Found 8 times`],1,`-(insertion point) - 1 = -8 → insertion point 7.`,'H'],
- [`Find the first occurrence of a value with duplicates. Change from plain binary search?`,[`On a match, record it and keep searching left (hi = mid − 1)`,`Return on the first match`,`Use linear search`,`Search right`],0,`Lower-bound variant.`,'M']],
+ [`<code>Arrays.binarySearch(a, 50)</code> returns -8. What does that mean?`,[`Found at index 8 after counting from the end`,`Not found; insertion point is 7`,`Not found; insertion point is 8`,`Not found; the array has 8 elements smaller`],1,`-(insertion point) - 1 = -8 → insertion point 7.`,'H'],
+ [`Find the first occurrence of a value with duplicates. Change from plain binary search?`,[`On a match, record it and keep searching left (hi = mid − 1)`,`Return on the first match, since it's always leftmost`,`On a match, record it and keep searching right (lo = mid + 1)`,`On a match, set hi = mid and stop when lo == mid`],0,`Lower-bound variant.`,'M']],
 '11.5':[
- [`Order courses so prerequisites come first. Which algorithm?`,[`BFS shortest path`,`Binary search`,`Topological sort (DFS post-order or Kahn's algorithm)`,`Dijkstra`],2,`Detects cycles too (impossible orderings).`,'H'],
+ [`Order courses so prerequisites come first. Which algorithm?`,[`BFS from each course, ordering by shortest distance`,`Dijkstra, with prerequisite counts as edge weights`,`Topological sort (DFS post-order or Kahn's algorithm)`,`Union-find, then output each component's members in order`],2,`Detects cycles too (impossible orderings).`,'H'],
  [`In-order DFS of a binary search tree visits values in what order?`,[`Insertion order`,`Level by level`,`Random`,`Sorted ascending`],3,`Left subtree, node, right subtree.`,'M']],
 '11.6':[
- [`Bottom-up DP for climbing stairs only needs dp[i-1] and dp[i-2]. Space optimisation?`,[`Keep two variables instead of an array: O(1) space`,`None possible`,`Use a HashMap`,`Use recursion`],0,`Many 1-D DPs only need the last few states.`,'M'],
- [`Why can <code>memo.computeIfAbsent(n, k -> fib(k-1) + fib(k-2))</code> fail on a HashMap?`,[`computeIfAbsent is not allowed on HashMap`,`It returns null`,`The mapping function modifies the map, which HashMap detects and throws ConcurrentModificationException`,`It overflows`],2,`Use explicit get/put for recursive memoisation.`,'H']]
+ [`Bottom-up DP for climbing stairs only needs dp[i-1] and dp[i-2]. Space optimisation?`,[`Keep two variables instead of an array: O(1) space`,`None possible: the table must keep every step`,`Use a HashMap so only visited steps are stored`,`Use recursion so the call stack holds the values`],0,`Many 1-D DPs only need the last few states.`,'M'],
+ [`Why can <code>memo.computeIfAbsent(n, k -> fib(k-1) + fib(k-2))</code> fail on a HashMap?`,[`computeIfAbsent isn't supported on HashMap and throws UnsupportedOperationException at once`,`It returns null for the base cases, which HashMap rejects with a NullPointerException`,`The mapping function modifies the map, which HashMap detects and throws ConcurrentModificationException`,`The recursion depth always overflows the stack for n above 50, throwing StackOverflowError`],2,`Use explicit get/put for recursive memoisation.`,'H']]
 });
 </script>
 <script>
@@ -7038,25 +7038,25 @@ addQ('3.7j', [
 </script>
 <script>
 addQ('4.1', [
- [`What does each thread have its own copy of?`,[`Heap objects`,`Its stack and program counter`,`Static fields`,`The String pool`],1,`The heap is shared.`,'E'],
- [`Why are threads cheaper to switch between than processes?`,[`They share an address space, so no memory map switch is needed`,`They never switch`,`They run on the GPU`,`They don't have stacks`],0,`Processes are isolated.`,'M'],
- [`Two threads read and write the same object field without coordination. Risk?`,[`None`,`Races and visibility problems`,`Deadlock always`,`Compile error`],1,`Shared mutable state needs coordination.`,'E'],
- [`What is a context switch?`,[`Changing variable scope`,`The OS pausing one thread and resuming another on a CPU`,`Switching Java versions`,`Calling a method`],1,`It has a cost (saving registers, cache effects).`,'E'],
- [`A JVM process with 10 threads crashes from an uncaught Error in one thread. What happens to the others?`,[`All die`,`Only that thread ends; the rest keep running`,`The JVM restarts`,`They pause`],1,`Uncaught exceptions end only the thread (unless it's fatal to the JVM).`,'M']
+ [`What does each thread have its own copy of?`,[`Its heap and loaded classes`,`Its stack and program counter`,`Its static fields and constants`,`Its String pool and metaspace`],1,`The heap is shared.`,'E'],
+ [`Why are threads cheaper to switch between than processes?`,[`They share an address space, so no memory map switch is needed`,`They skip saving registers because they share one stack`,`The JVM switches them itself without involving the OS kernel`,`Each thread is pinned to its own core, so caches never go cold`],0,`Processes are isolated.`,'M'],
+ [`Two threads read and write the same object field without coordination. Risk?`,[`A guaranteed deadlock at runtime`,`Races and visibility problems`,`Only slower performance, not bugs`,`A ConcurrentModificationException`],1,`Shared mutable state needs coordination.`,'E'],
+ [`What is a context switch?`,[`The JVM moving a thread's objects to another heap region`,`The OS pausing one thread and resuming another on a CPU`,`A method call switching from one stack frame to another`,`The compiler changing which variables are in scope`],1,`It has a cost (saving registers, cache effects).`,'E'],
+ [`A JVM process with 10 threads crashes from an uncaught Error in one thread. What happens to the others?`,[`The JVM terminates every thread immediately`,`Only that thread ends; the rest keep running`,`All other threads pause until it's handled`,`The JVM restarts the failed thread automatically`],1,`Uncaught exceptions end only the thread (unless it's fatal to the JVM).`,'M']
 ], [
- [`Hyper-threading shows 16 logical CPUs on 8 cores. Do CPU-bound tasks get 16× parallel speedup?`,[`Yes`,`No: logical CPUs share core resources; gains are much less than 2× per core`,`Only in Java 21`,`Yes, with virtual threads`],1,`Size CPU pools around available processors, then measure.`,'H'],
- [`Amdahl's law says...`,[`More threads always help`,`Speedup is limited by the part of the work that must run sequentially`,`GC is the bottleneck`,`Threads double memory`],1,`10% serial work caps speedup at 10×.`,'H']
+ [`Hyper-threading shows 16 logical CPUs on 8 cores. Do CPU-bound tasks get 16× parallel speedup?`,[`Yes: each logical CPU runs a thread at full core speed`,`No: logical CPUs share core resources; gains are much less than 2× per core`,`Yes, as long as the pool has exactly 16 worker threads`,`Yes, but only when using virtual threads instead of platform ones`],1,`Size CPU pools around available processors, then measure.`,'H'],
+ [`Amdahl's law says...`,[`Speedup grows linearly with the number of threads you add`,`Speedup is limited by the part of the work that must run sequentially`,`Speedup is limited mainly by garbage collection pause time`,`Speedup is capped by memory bandwidth, not by sequential code`],1,`10% serial work caps speedup at 10×.`,'H']
 ]);
 
 addQ('4.2', [
  [`Which interface returns a result from a task?`,[`Runnable`,`Callable`,`Thread`,`Executor`],1,`call() returns V.`,'E'],
- [`What does <code>future.get()</code> do?`,[`Returns immediately`,`Blocks until the result (or exception) is ready`,`Cancels the task`,`Starts the task`],1,`Use get(timeout, unit) to bound the wait.`,'E'],
- [`What does <code>thread.join()</code> do?`,[`Starts the thread`,`Waits for that thread to finish`,`Merges two threads`,`Interrupts it`],1,`join(ms) waits at most ms.`,'E'],
- [`What is a daemon thread?`,[`A high-priority thread`,`A background thread that doesn't keep the JVM alive`,`A thread that never ends`,`A GC thread only`],1,`setDaemon(true) before start().`,'M'],
- [`An exception thrown inside a Callable submitted to an executor appears where?`,[`Printed and lost`,`Wrapped in ExecutionException when you call future.get()`,`It kills the pool`,`Nowhere`],1,`getCause() gives the original.`,'M']
+ [`What does <code>future.get()</code> do?`,[`Returns null immediately if the task isn't done`,`Blocks until the result (or exception) is ready`,`Starts the task and returns its result directly`,`Cancels the task if it hasn't finished yet`],1,`Use get(timeout, unit) to bound the wait.`,'E'],
+ [`What does <code>thread.join()</code> do?`,[`Starts that thread right away`,`Waits for that thread to finish`,`Merges it into the current thread`,`Waits for that thread to start`],1,`join(ms) waits at most ms.`,'E'],
+ [`What is a daemon thread?`,[`A high-priority thread the scheduler runs first`,`A background thread that doesn't keep the JVM alive`,`A thread that keeps running after the JVM exits`,`A system thread reserved only for the GC`],1,`setDaemon(true) before start().`,'M'],
+ [`An exception thrown inside a Callable submitted to an executor appears where?`,[`Thrown directly to the thread that called submit()`,`Wrapped in ExecutionException when you call future.get()`,`Passed to the pool's handler, killing the worker`,`Swallowed entirely, so future.get() returns null`],1,`getCause() gives the original.`,'M']
 ], [
- [`How do you name threads created by an executor?`,[`You can't`,`Provide a ThreadFactory (e.g. Thread.ofPlatform().name("worker-", 0).factory())`,`Rename after start only`,`Use Thread.setName on the executor`],1,`Readable names make thread dumps useful.`,'M'],
- [`What does <code>Thread.ofVirtual().start(task)</code> create (Java 21)?`,[`A platform thread`,`A virtual thread running task`,`A thread pool`,`A process`],1,`Cheap, JVM-scheduled threads.`,'M']
+ [`How do you name threads created by an executor?`,[`Call setName() on the executor before submitting`,`Pass a custom ThreadFactory that sets the names`,`Pass a name prefix string to newFixedThreadPool`,`Set a JVM system property for the pool's prefix`],1,`Readable names make thread dumps useful.`,'M'],
+ [`What does <code>Thread.ofVirtual().start(task)</code> create (Java 21)?`,[`A platform thread running task`,`A virtual thread running task`,`A new pool of virtual threads`,`A carrier thread for task`],1,`Cheap, JVM-scheduled threads.`,'M']
 ]);
 
 addQ('4.3', [
@@ -7064,175 +7064,175 @@ addQ('4.3', [
  [`A thread calls <code>otherThread.join()</code> (no timeout). Its state?`,[`RUNNABLE`,`WAITING`,`BLOCKED`,`NEW`],1,`Waits indefinitely for the other to end.`,'E'],
  [`Can a TERMINATED thread be restarted?`,[`Yes, call start()`,`No: create a new Thread`,`Yes, with run()`,`Only daemons`],1,`start() on it throws IllegalThreadStateException.`,'M'],
  [`What state is a thread in right after <code>new Thread(r)</code>?`,[`RUNNABLE`,`NEW`,`WAITING`,`READY`],1,`Until start() is called.`,'E'],
- [`What does <code>Thread.interrupt()</code> do to a thread that is just computing (not waiting)?`,[`Stops it immediately`,`Sets its interrupt flag; the code must check it`,`Kills the JVM`,`Nothing at all`],1,`Interruption is cooperative.`,'M']
+ [`What does <code>Thread.interrupt()</code> do to a thread that is just computing (not waiting)?`,[`Throws InterruptedException in it right away`,`Sets its interrupt flag; the code must check it`,`Stops it at the next safepoint automatically`,`Does nothing unless it's a daemon thread`],1,`Interruption is cooperative.`,'M']
 ], [
  [`A thread waiting to enter a ReentrantLock (not synchronized) shows as?`,[`BLOCKED`,`WAITING (parked)`,`RUNNABLE`,`TIMED_WAITING always`],1,`BLOCKED is only for monitor locks.`,'H'],
- [`What should code do after catching InterruptedException it can't propagate?`,[`Ignore it`,`Restore the flag with Thread.currentThread().interrupt()`,`Call System.exit`,`Throw Error`],1,`So callers can still see the interruption.`,'M']
+ [`What should code do after catching InterruptedException it can't propagate?`,[`Log it and continue, since the flag stays set`,`Restore the flag with Thread.currentThread().interrupt()`,`Call Thread.interrupted() to clear the flag again`,`Call Thread.yield() so the scheduler can handle it`],1,`So callers can still see the interruption.`,'M']
 ]);
 
 addQ('4.4', [
- [`What is a race condition?`,[`A fast algorithm`,`A result that depends on the timing of threads`,`A deadlock`,`An infinite loop`],1,`Correctness depends on interleaving.`,'E'],
- [`Which pattern is a check-then-act race?`,[`count++`,`if (!map.containsKey(k)) map.put(k, v) from many threads`,`final fields`,`immutable objects`],1,`Two threads can both see "absent".`,'E'],
- [`Simplest way to avoid races on shared data?`,[`Use more threads`,`Don't share mutable state: immutability or confinement`,`Add sleep()`,`Use volatile everywhere`],1,`No sharing, no race.`,'M'],
- [`Lazy initialisation <code>if (instance == null) instance = new X();</code> from many threads. Problem?`,[`None`,`Several instances may be created (and published unsafely)`,`Deadlock`,`Compile error`],1,`Use a holder class or proper locking.`,'M'],
- [`Why do race bugs often pass tests?`,[`Tests are single-threaded or the bad interleaving is rare`,`Races only occur in production builds`,`JUnit prevents them`,`They don't`],0,`Stress tests and reasoning are needed.`,'M']
+ [`What is a race condition?`,[`Two threads waiting on each other's locks`,`A result that depends on the timing of threads`,`A loop that spins until another thread ends`,`Threads competing to start first in a pool`],1,`Correctness depends on interleaving.`,'E'],
+ [`Which pattern is a check-then-act race?`,[`count++ on a shared int field from many threads`,`if (!map.containsKey(k)) map.put(k, v) from many threads`,`map.computeIfAbsent(k, f) on a ConcurrentHashMap`,`Reading a final field set in the constructor from many threads`],1,`Two threads can both see "absent".`,'E'],
+ [`Simplest way to avoid races on shared data?`,[`Mark every shared field volatile to make it safe`,`Don't share mutable state: immutability or confinement`,`Add Thread.sleep() calls to space out accesses`,`Run more threads so each touches less data`],1,`No sharing, no race.`,'M'],
+ [`Lazy initialisation <code>if (instance == null) instance = new X();</code> from many threads. Problem?`,[`Threads deadlock on the null check forever`,`Several instances may be created (and published unsafely)`,`None: reference assignment is atomic, so it's safe`,`The JIT removes the null check, so X is never built`],1,`Use a holder class or proper locking.`,'M'],
+ [`Why do race bugs often pass tests?`,[`Tests are single-threaded or the bad interleaving is rare`,`Races only show up in optimized production builds`,`JUnit runs tests under a global lock that hides races`,`The JVM serializes threads when assertions are on`],0,`Stress tests and reasoning are needed.`,'M']
 ], [
- [`A "read-modify-write" on a database row from two app instances is...`,[`Safe`,`The same race at a different layer; needs a DB-level guarantee`,`Prevented by synchronized`,`Prevented by @Transactional alone`],1,`See 6.1.`,'M'],
- [`What does jcstress test?`,[`Performance`,`Concurrency correctness under many interleavings and memory-model effects`,`GC tuning`,`HTTP APIs`],1,`An OpenJDK tool for concurrency tests.`,'H']
+ [`A "read-modify-write" on a database row from two app instances is...`,[`Safe, because each DB statement is atomic on its own`,`The same race at a different layer; needs a DB-level guarantee`,`Fixed by marking the service method synchronized`,`Fixed by @Transactional at default isolation alone`],1,`See 6.1.`,'M'],
+ [`What does jcstress test?`,[`Throughput and latency of concurrent code under heavy load`,`Concurrency correctness under many interleavings and memory-model effects`,`Thread-pool sizing under stress with simulated traffic`,`GC pause behaviour when many threads allocate at once`],1,`An OpenJDK tool for concurrency tests.`,'H']
 ]);
 
 addQ('4.5', [
- [`A synchronized block <code>synchronized (lock) { … }</code> locks?`,[`The current method`,`The monitor of the lock object`,`The whole class`,`All threads`],1,`Pick a private final lock object.`,'E'],
+ [`A synchronized block <code>synchronized (lock) { … }</code> locks?`,[`The current method for all callers`,`The monitor of the lock object`,`The Class object of the lock's type`,`Every field of the enclosing object`],1,`Pick a private final lock object.`,'E'],
  [`Thread A holds a monitor. Thread B tries to enter a block on the same monitor. B's state?`,[`WAITING`,`BLOCKED`,`RUNNABLE`,`TERMINATED`],1,`Waiting for the monitor.`,'E'],
- [`Is synchronized fair (first come, first served)?`,[`Yes`,`No: any waiting thread may get the lock next`,`Only on Linux`,`Only for static methods`],1,`ReentrantLock(true) offers fairness.`,'M'],
+ [`Is synchronized fair (first come, first served)?`,[`Yes: waiters are queued and served in order`,`No: any waiting thread may get the lock next`,`Yes, but only for static synchronized methods`,`Only when the JVM is started in fair-lock mode`],1,`ReentrantLock(true) offers fairness.`,'M'],
  [`An exception is thrown inside a synchronized block. Is the lock released?`,[`No, deadlock`,`Yes, automatically`,`Only with finally`,`Only for RuntimeException`],1,`Monitors are released on any exit.`,'M'],
- [`Why keep synchronized blocks small?`,[`Syntax rules`,`Other threads wait while you hold the lock; long sections kill throughput`,`To save memory`,`The JIT can't compile them`],1,`Never do I/O while holding a lock.`,'E']
+ [`Why keep synchronized blocks small?`,[`The JIT can't optimize code inside large synchronized blocks`,`Other threads wait while you hold the lock; long sections kill throughput`,`Locked objects can't be GC'd, so big blocks hold more memory`,`Long blocks trip the JVM's deadlock detector and get aborted`],1,`Never do I/O while holding a lock.`,'E']
 ], [
- [`Why lock on a private final object instead of <code>this</code>?`,[`It's faster`,`Outside code can also lock on this, causing unexpected contention or deadlock`,`this can't be locked`,`Required by the JMM`],1,`Encapsulate your lock.`,'M'],
- [`Since Java 15, biased locking was...`,[`Made default`,`Disabled and later removed; uncontended locking is already cheap`,`Required`,`Moved to synchronized blocks only`],1,`JEP 374.`,'H']
+ [`Why lock on a private final object instead of <code>this</code>?`,[`The JMM requires lock objects to be final fields for visibility`,`Outside code can also lock on this, causing unexpected contention or deadlock`,`Locking on this is slower because it inflates the object header`,`Locking this blocks every method of the class, even unsynchronized ones`],1,`Encapsulate your lock.`,'M'],
+ [`Since Java 15, biased locking was...`,[`Enabled by default for all synchronized blocks`,`Disabled and later removed; uncontended locking is already cheap`,`Made mandatory to support virtual threads`,`Replaced by fair locking for every monitor`],1,`JEP 374.`,'H']
 ]);
 
 addQ('4.6', [
- [`What does volatile guarantee?`,[`Atomic compound operations`,`Visibility and ordering for reads/writes of that variable`,`Mutual exclusion`,`Fairness`],1,`Not atomicity of count++.`,'E'],
- [`Good use of volatile?`,[`A shared counter`,`A stop flag set by one thread and read by another`,`A list modified by many threads`,`Money balance updates`],1,`Single writes and reads.`,'E'],
- [`What is "happens-before"?`,[`A scheduling order`,`A guarantee that one action's effects are visible to another`,`A lock type`,`A GC phase`],1,`Created by locks, volatile, thread start/join, etc.`,'M'],
- [`Does <code>Thread.start()</code> create a happens-before edge?`,[`No`,`Yes: everything before start() is visible to the new thread`,`Only for volatile fields`,`Only on x86`],1,`Same for join(): the thread's writes are visible afterwards.`,'M'],
- [`Why can a plain field update be invisible to another thread?`,[`It's always visible`,`Caches, store buffers and JIT optimisations may keep it local without a happens-before edge`,`The GC hides it`,`Because it's private`],1,`The JMM only promises visibility with synchronization.`,'M']
+ [`What does volatile guarantee?`,[`Atomicity for compound operations like count++ on it`,`Visibility and ordering for reads/writes of that variable`,`Mutual exclusion for any code that touches that variable`,`Fair, first-come access to that variable across threads`],1,`Not atomicity of count++.`,'E'],
+ [`Good use of volatile?`,[`A hit counter incremented by many request threads`,`A stop flag set by one thread and read by another`,`A shared list that several threads append to`,`An account balance debited by concurrent transfers`],1,`Single writes and reads.`,'E'],
+ [`What is "happens-before"?`,[`A rule that one thread is scheduled before another`,`A guarantee that one action's effects are visible to another`,`A lock that orders threads by their start time`,`A GC phase that runs before objects are collected`],1,`Created by locks, volatile, thread start/join, etc.`,'M'],
+ [`Does <code>Thread.start()</code> create a happens-before edge?`,[`No: the new thread may see stale values of all fields`,`Yes: everything before start() is visible to the new thread`,`Only for fields marked volatile before start()`,`Only on x86, which has a strong memory model`],1,`Same for join(): the thread's writes are visible afterwards.`,'M'],
+ [`Why can a plain field update be invisible to another thread?`,[`Private fields are only visible to the thread that last wrote them`,`Caches, store buffers and JIT optimisations may keep it local without a happens-before edge`,`The GC may move the object before the other thread reads it`,`Each thread works on its own heap copy until it calls join()`],1,`The JMM only promises visibility with synchronization.`,'M']
 ], [
- [`Is publishing an immutable object (all final fields) through a plain field safe?`,[`No, never`,`Its fields are seen correctly, but the reference itself may be seen late (or stale)`,`Yes, and the reference is always seen immediately`,`Only with records`],1,`Final-field semantics cover the fields, not when the reference becomes visible.`,'H'],
- [`What do VarHandle acquire/release modes offer?`,[`Nothing new`,`Weaker (cheaper) ordering than volatile for advanced lock-free code`,`Stronger locks`,`GC control`],1,`Used inside java.util.concurrent.`,'H']
+ [`Is publishing an immutable object (all final fields) through a plain field safe?`,[`No: other threads may see default values in its final fields`,`Its fields are seen correctly, but the reference itself may be seen late (or stale)`,`Yes, and the reference is guaranteed to be seen immediately`,`Only if it's a record; ordinary classes need volatile fields`],1,`Final-field semantics cover the fields, not when the reference becomes visible.`,'H'],
+ [`What do VarHandle acquire/release modes offer?`,[`Stronger ordering than volatile, like a lock on each access`,`Weaker (cheaper) ordering than volatile for advanced lock-free code`,`Control over when the GC may move the referenced object`,`Automatic atomicity for compound updates such as x++`],1,`Used inside java.util.concurrent.`,'H']
 ]);
 
 addQ('4.7', [
  [`Which class offers atomic increments?`,[`Integer`,`AtomicInteger`,`int`,`volatile int`],1,`incrementAndGet uses CAS.`,'E'],
  [`What does <code>getAndIncrement()</code> return?`,[`The new value`,`The old value`,`void`,`true/false`],1,`incrementAndGet returns the new value.`,'E'],
- [`What does "lock-free" mean?`,[`No locks are ever needed anywhere`,`Threads never block on a lock; at least one always makes progress`,`Faster in all cases`,`Single-threaded`],1,`CAS loops retry instead of waiting.`,'M'],
- [`Atomically set a value only if it's currently 5?`,[`set(5)`,`compareAndSet(5, newValue)`,`getAndSet(5)`,`lazySet(5)`],1,`Returns false if it wasn't 5.`,'M'],
- [`<code>AtomicInteger.updateAndGet(x -&gt; x * 2)</code> with contention: the lambda may run?`,[`Exactly once`,`More than once, so it must be side-effect free`,`Never`,`On another thread`],1,`CAS retries re-apply it.`,'H']
+ [`What does "lock-free" mean?`,[`No thread ever retries, so every thread always progresses`,`Threads never block on a lock; at least one always makes progress`,`It's always faster than locking in every workload`,`The code runs on one thread, so no locks are needed`],1,`CAS loops retry instead of waiting.`,'M'],
+ [`Atomically set a value only if it's currently 5?`,[`if (get() == 5) set(newValue)`,`compareAndSet(5, newValue)`,`getAndSet(newValue)`,`compareAndSet(newValue, 5)`],1,`Returns false if it wasn't 5.`,'M'],
+ [`<code>AtomicInteger.updateAndGet(x -&gt; x * 2)</code> with contention: the lambda may run?`,[`Exactly once, since updates are serialized by a lock`,`More than once, so it must be side-effect free`,`At most once; contended updates are dropped`,`Once, but on a separate pool thread`],1,`CAS retries re-apply it.`,'H']
 ], [
- [`What does <code>AtomicReference&lt;State&gt;</code> enable?`,[`Atomic updates of a reference, e.g. swapping an immutable state object`,`Locking`,`Weak references`,`Thread names`],0,`Combine with immutable objects for lock-free updates.`,'M'],
- [`LongAdder.sum() under concurrent updates is?`,[`An exact snapshot`,`Not an atomic snapshot: concurrent updates may or may not be included`,`Always zero`,`Blocking`],1,`Great for metrics, not for exact sequencing.`,'H']
+ [`What does <code>AtomicReference&lt;State&gt;</code> enable?`,[`Atomic updates of a reference, e.g. swapping an immutable state object`,`A reference the GC can clear when memory runs low`,`Locking the referenced State object during each update`,`Atomic updates to every field inside the State object`],0,`Combine with immutable objects for lock-free updates.`,'M'],
+ [`LongAdder.sum() under concurrent updates is?`,[`An exact snapshot, since it locks all cells while summing`,`Not an atomic snapshot: concurrent updates may or may not be included`,`A blocking call that waits for pending updates to finish`,`A stale value cached from the last call to reset()`],1,`Great for metrics, not for exact sequencing.`,'H']
 ]);
 
 addQ('4.8', [
- [`What does <code>notifyAll()</code> do?`,[`Wakes every thread waiting on that object's monitor`,`Releases the lock`,`Interrupts all threads`,`Wakes all threads in the JVM`],0,`They then compete for the lock.`,'E'],
- [`Does <code>wait()</code> release the monitor?`,[`No`,`Yes, while waiting; it's re-acquired before returning`,`Only with a timeout`,`Only for static locks`],1,`Unlike sleep().`,'E'],
- [`What is a spurious wakeup?`,[`A deadlock`,`A thread returning from wait() without being notified`,`An interrupt`,`A GC pause`],1,`Hence while loops.`,'M'],
+ [`What does <code>notifyAll()</code> do?`,[`Wakes every thread waiting on that object's monitor`,`Releases the monitor immediately so waiters can run`,`Interrupts every thread blocked on that monitor`,`Wakes every waiting thread in the JVM, on any object`],0,`They then compete for the lock.`,'E'],
+ [`Does <code>wait()</code> release the monitor?`,[`No: it keeps holding the monitor while it waits`,`Yes, while waiting; it's re-acquired before returning`,`Only when called with a timeout argument`,`Yes, and it returns without re-acquiring it`],1,`Unlike sleep().`,'E'],
+ [`What is a spurious wakeup?`,[`A notify() sent when no thread is waiting yet`,`A thread returning from wait() without being notified`,`A thread woken by an interrupt during sleep()`,`A GC pause that briefly wakes all threads`],1,`Hence while loops.`,'M'],
  [`Higher-level replacement for wait/notify producer-consumer?`,[`Thread.sleep`,`BlockingQueue`,`HashMap`,`volatile`],1,`put/take block as needed.`,'E'],
- [`Which object should you call wait() on?`,[`Any object`,`The object whose lock you hold and that guards the condition`,`Thread.currentThread()`,`System`],1,`Lock, condition and wait must be on the same monitor.`,'M']
+ [`Which object should you call wait() on?`,[`Thread.currentThread(), since the current thread waits`,`The object whose lock you hold and that guards the condition`,`Any object, as long as some thread will notify it`,`The Thread object of the thread that will notify you`],1,`Lock, condition and wait must be on the same monitor.`,'M']
 ], [
- [`What is a "lost wakeup"?`,[`A notify that happens before the other thread starts waiting, so it waits forever`,`A GC bug`,`A deadlock between two locks`,`An interrupt`],0,`Checking the condition under the lock prevents it.`,'H'],
- [`<code>Condition.await()</code> belongs to?`,[`Object`,`A Lock (from lock.newCondition())`,`Thread`,`Executor`],1,`Lock + Conditions = explicit monitors.`,'M']
+ [`What is a "lost wakeup"?`,[`A notify that happens before the other thread starts waiting, so it waits forever`,`Two threads each holding a lock the other needs, waiting forever`,`A notifyAll() that wakes threads waiting on a different object`,`A GC pause that drops pending notifications from the wait set`],0,`Checking the condition under the lock prevents it.`,'H'],
+ [`<code>Condition.await()</code> belongs to?`,[`Object (every object has one)`,`A Lock (from lock.newCondition())`,`Thread (from currentThread())`,`An ExecutorService (from submit())`],1,`Lock + Conditions = explicit monitors.`,'M']
 ]);
 
 addQ('4.9', [
  [`Which is NOT one of the four deadlock conditions?`,[`Mutual exclusion`,`Hold and wait`,`Circular wait`,`High CPU usage`],3,`The others plus "no preemption".`,'E'],
- [`What is starvation?`,[`All threads blocked`,`A thread repeatedly losing out and never getting the resource`,`Out of memory`,`A busy loop`],1,`Fair locks can help.`,'M'],
- [`How does tryLock with a timeout help with deadlocks?`,[`It doesn't`,`A thread gives up instead of waiting forever, then retries or backs off`,`It makes locks fair`,`It sorts locks`],1,`Breaks "hold and wait".`,'M'],
+ [`What is starvation?`,[`All threads blocked waiting on each other forever`,`A thread repeatedly losing out and never getting the resource`,`A thread spinning in a busy loop that burns CPU`,`The JVM running out of heap for new threads`],1,`Fair locks can help.`,'M'],
+ [`How does tryLock with a timeout help with deadlocks?`,[`It sorts lock requests so all threads acquire them in order`,`A thread gives up instead of waiting forever, then retries or backs off`,`It makes the lock fair so waiters get it by arrival order`,`It detects the lock cycle and throws a DeadlockException`],1,`Breaks "hold and wait".`,'M'],
  [`A thread dump shows thread A waiting for lock X held by B, and B waiting for lock Y held by A. That is?`,[`Livelock`,`Deadlock`,`Starvation`,`A race`],1,`A cycle of waits.`,'E'],
- [`Does a deadlock use CPU?`,[`Yes, 100%`,`No: deadlocked threads are blocked, idle`,`Only on one core`,`Only with GC`],1,`Hangs with low CPU often mean deadlock or waiting.`,'M']
+ [`Does a deadlock use CPU?`,[`Yes: they spin at 100% CPU retrying`,`No: deadlocked threads are blocked, idle`,`Yes, but only one core is kept busy`,`Only while the GC scans their stacks`],1,`Hangs with low CPU often mean deadlock or waiting.`,'M']
 ], [
- [`Calling an external callback while holding a lock risks?`,[`Nothing`,`Deadlock: the callback may take other locks in a different order`,`Faster code`,`Memory leak`],1,`"Open calls": call out without holding locks.`,'H'],
- [`Can deadlocks happen with only one lock?`,[`Never`,`Yes, e.g. a non-reentrant lock taken twice by the same thread, or a pool waiting on its own tasks (6.3)`,`Only in databases`,`Only with synchronized`],1,`Resource deadlocks aren't only about two locks.`,'H']
+ [`Calling an external callback while holding a lock risks?`,[`A memory leak, since the lock pins the callback object`,`Deadlock: the callback may take other locks in a different order`,`Nothing, because synchronized locks are reentrant`,`Lost updates, since the lock is released during the call`],1,`"Open calls": call out without holding locks.`,'H'],
+ [`Can deadlocks happen with only one lock?`,[`Never: a deadlock needs at least two locks`,`Yes, e.g. a non-reentrant lock taken twice by one thread`,`Only with synchronized, since it isn't reentrant`,`Only in databases that use row-level locking`],1,`Resource deadlocks aren't only about two locks.`,'H']
 ]);
 
 addQ('4.10', [
- [`What does <code>lock.lockInterruptibly()</code> allow?`,[`Locking twice`,`Giving up waiting if the thread is interrupted`,`Fairness`,`Timeouts`],1,`synchronized can't be interrupted while blocked.`,'M'],
- [`Is ReentrantLock re-entrant?`,[`No`,`Yes: the same thread can lock it again; unlock as many times`,`Only with fairness`,`Only once`],1,`Hence the name.`,'E'],
+ [`What does <code>lock.lockInterruptibly()</code> allow?`,[`Acquiring the lock again without blocking`,`Giving up waiting if the thread is interrupted`,`Waiting for the lock with a fixed timeout`,`Granting the lock in fair arrival order`],1,`synchronized can't be interrupted while blocked.`,'M'],
+ [`Is ReentrantLock re-entrant?`,[`No: a second lock() from the same thread deadlocks`,`Yes: the same thread can lock it again; unlock as many times`,`Only when created in fair mode with new ReentrantLock(true)`,`Yes, and a single unlock() releases all nested holds`],1,`Hence the name.`,'E'],
  [`ReadWriteLock allows?`,[`Many writers at once`,`Many readers at once, or one writer`,`Readers and writers at once`,`One reader only`],1,`Good for read-mostly data.`,'E'],
- [`What does a fair ReentrantLock do?`,[`Runs faster`,`Grants the lock roughly in arrival order, reducing starvation but lowering throughput`,`Prevents deadlock`,`Nothing`],1,`Fairness has a cost.`,'M'],
- [`Where must unlock() go?`,[`At the end of the method`,`In a finally block right after the try that follows lock()`,`Before lock()`,`In a catch block`],1,`Otherwise an exception leaks the lock.`,'E']
+ [`What does a fair ReentrantLock do?`,[`Prevents deadlock by ordering how threads acquire the lock`,`Grants the lock roughly in arrival order, reducing starvation but lowering throughput`,`Runs faster by letting the newest waiter barge in first`,`Gives each thread an equal time slice while holding it`],1,`Fairness has a cost.`,'M'],
+ [`Where must unlock() go?`,[`At the end of the method, after the last statement`,`In a finally block right after the try that follows lock()`,`In a catch block so it runs only when errors occur`,`Inside the try block, as its last statement`],1,`Otherwise an exception leaks the lock.`,'E']
 ], [
- [`StampedLock: is it re-entrant?`,[`Yes`,`No: re-acquiring in the same thread can deadlock`,`Only for reads`,`Only optimistic`],1,`Use it carefully, in small sections.`,'H'],
- [`Why might ReentrantReadWriteLock perform worse than a simple lock?`,[`It can't`,`Bookkeeping overhead; with short critical sections or many writes, a plain lock or immutable snapshot wins`,`It's deprecated`,`It uses the GC`],1,`Measure before choosing.`,'H']
+ [`StampedLock: is it re-entrant?`,[`Yes: it tracks the owner like ReentrantLock`,`No: re-acquiring in the same thread can deadlock`,`Only for read locks, not for write locks`,`Only in optimistic read mode`],1,`Use it carefully, in small sections.`,'H'],
+ [`Why might ReentrantReadWriteLock perform worse than a simple lock?`,[`It's deprecated in favour of StampedLock`,`Extra bookkeeping; short sections or many writes erase its gains`,`Readers block each other just like with a plain lock`,`Every read lock forces a full memory barrier on all cores`],1,`Measure before choosing.`,'H']
 ]);
 
 addQ('4.11', [
- [`What does <code>latch.countDown()</code> do?`,[`Waits`,`Decrements the count; at zero, waiting threads are released`,`Resets the latch`,`Adds a permit`],1,`await() waits for zero.`,'E'],
- [`Can a CountDownLatch be reset?`,[`Yes, with reset()`,`No: it's one-shot; use CyclicBarrier or a new latch`,`Only at zero`,`Only in tests`],1,`CyclicBarrier is reusable.`,'M'],
- [`<code>Semaphore(3)</code> means?`,[`3 threads total in the JVM`,`At most 3 holders of a permit at once`,`3 seconds timeout`,`3 retries`],1,`acquire / release.`,'E'],
+ [`What does <code>latch.countDown()</code> do?`,[`Blocks the caller until the count reaches zero`,`Decrements the count; at zero, waiting threads are released`,`Resets the count back to its initial value`,`Releases one waiting thread per call to it`],1,`await() waits for zero.`,'E'],
+ [`Can a CountDownLatch be reset?`,[`Yes: call reset() once the count hits zero`,`No: it's one-shot; use CyclicBarrier or a new latch`,`Yes: await() resets it automatically after release`,`Only if it was created with a count of one`],1,`CyclicBarrier is reusable.`,'M'],
+ [`<code>Semaphore(3)</code> means?`,[`At most 3 threads in the whole JVM`,`At most 3 holders of a permit at once`,`A 3-second timeout on each acquire()`,`At most 3 acquires over its lifetime`],1,`acquire / release.`,'E'],
  [`What happens to <code>semaphore.tryAcquire()</code> when no permits are left?`,[`Blocks forever`,`Returns false immediately`,`Throws`,`Creates a permit`],1,`tryAcquire(timeout) waits up to the timeout.`,'M'],
- [`CyclicBarrier's barrier action runs?`,[`On every await`,`Once per generation, when the last thread arrives`,`Never`,`On a new thread`],1,`Useful to merge partial results.`,'M']
+ [`CyclicBarrier's barrier action runs?`,[`On every await() call, by each arriving thread`,`Once per generation, when the last thread arrives`,`Once only, the first time the barrier trips`,`On a new thread after all parties are released`],1,`Useful to merge partial results.`,'M']
 ], [
- [`What is a Phaser?`,[`A GC phase`,`A flexible barrier where parties can register and deregister across phases`,`A lock`,`A thread pool`],1,`Generalises latch and barrier.`,'H'],
- [`Using a Semaphore as a simple bulkhead for an API client means?`,[`Retrying calls`,`Limiting concurrent calls to protect the dependency and your threads`,`Caching responses`,`Encrypting calls`],1,`Resilience4j's Bulkhead works similarly.`,'M']
+ [`What is a Phaser?`,[`A lock that switches between read and write phases`,`A flexible barrier where parties can register and deregister across phases`,`A pool that runs tasks in fixed phases of equal size`,`A one-shot latch whose count can only go down to zero`],1,`Generalises latch and barrier.`,'H'],
+ [`Using a Semaphore as a simple bulkhead for an API client means?`,[`Retrying failed calls a fixed number of times`,`Limiting concurrent calls to protect the dependency and your threads`,`Limiting calls per second within a fixed time window`,`Opening a circuit to stop calls after repeated errors`],1,`Resilience4j's Bulkhead works similarly.`,'M']
 ]);
 
 addQ('4.12', [
  [`What does ThreadLocal give each thread?`,[`A shared value`,`Its own independent value`,`A lock`,`A stack`],1,`get/set act on the current thread's copy.`,'E'],
- [`Common legitimate uses of ThreadLocal?`,[`Shared counters`,`Per-request context: user, transaction, logging MDC`,`Caching across threads`,`Locking`],1,`Clean up afterwards.`,'E'],
- [`Why call remove() in a finally block?`,[`Required by the compiler`,`Pooled threads are reused; leftover values leak into later tasks and memory`,`To speed up GC`,`It isn't needed`],1,`Classic production bug.`,'M'],
- [`<code>ThreadLocal.withInitial(() -&gt; new SimpleDateFormat(...))</code> does what?`,[`Shares one formatter`,`Gives each thread its own formatter, created on first get()`,`Throws`,`Creates one per call`],1,`A fix for non-thread-safe objects (prefer DateTimeFormatter).`,'M'],
+ [`Common legitimate uses of ThreadLocal?`,[`Shared counters updated by all request threads`,`Per-request context: user, transaction, logging MDC`,`Caches meant to be shared across all threads`,`Locks that coordinate several worker threads`],1,`Clean up afterwards.`,'E'],
+ [`Why call remove() in a finally block?`,[`Values stay after the thread dies, leaking until the JVM exits`,`Pooled threads are reused; leftover values leak into later tasks and memory`,`Without it, other threads can read your stale per-thread value`,`The compiler requires ThreadLocals to be cleared before reuse`],1,`Classic production bug.`,'M'],
+ [`<code>ThreadLocal.withInitial(() -&gt; new SimpleDateFormat(...))</code> does what?`,[`Shares one formatter instance across all threads`,`Gives each thread its own formatter, created on first get()`,`Creates a new formatter on every call to get()`,`Eagerly creates formatters for all threads up front`],1,`A fix for non-thread-safe objects (prefer DateTimeFormatter).`,'M'],
  [`Does <code>@Async</code> code see the caller's ThreadLocal values?`,[`Yes`,`No: it runs on another thread`,`Only static ThreadLocals`,`Only in tests`],1,`Propagate explicitly.`,'E']
 ], [
- [`With millions of virtual threads, why can heavy ThreadLocal use hurt?`,[`It's not allowed`,`Each virtual thread gets its own copy, multiplying memory`,`They're shared`,`It disables virtual threads`],1,`Scoped values are designed for this.`,'H'],
- [`How does Spring keep the current transaction for a thread?`,[`A global static`,`TransactionSynchronizationManager, built on ThreadLocals`,`A database table`,`A HashMap keyed by request`],1,`That's why @Transactional work must stay on one thread.`,'H']
+ [`With millions of virtual threads, why can heavy ThreadLocal use hurt?`,[`Virtual threads share one copy, so values clash`,`Each virtual thread gets its own copy, multiplying memory`,`ThreadLocal throws when used on a virtual thread`,`Values live on the carrier, leaking between tasks`],1,`Scoped values are designed for this.`,'H'],
+ [`How does Spring keep the current transaction for a thread?`,[`A static field holding the current Connection`,`TransactionSynchronizationManager, built on ThreadLocals`,`A request-scoped bean stored in the session`,`A ConcurrentHashMap keyed by request ID`],1,`That's why @Transactional work must stay on one thread.`,'H']
 ]);
 
 addQ('4.13', [
  [`Why use a thread pool instead of <code>new Thread</code> per task?`,[`Pools are required by Java`,`Reuse threads and bound concurrency`,`Threads can't be created manually`,`Pools are single-threaded`],1,`Creating threads is expensive and unbounded creation is dangerous.`,'E'],
  [`<code>Executors.newFixedThreadPool(4)</code> runs at most how many tasks at once?`,[`1`,`4`,`Unlimited`,`Depends on CPU`],1,`Extra tasks wait in an (unbounded) queue.`,'E'],
- [`What happens after <code>executor.shutdown()</code>?`,[`Running tasks are killed`,`No new tasks accepted; already submitted ones finish`,`Nothing`,`The JVM exits`],1,`shutdownNow() interrupts running tasks.`,'M'],
- [`What does <code>AbortPolicy</code> (the default) do on rejection?`,[`Runs on the caller`,`Throws RejectedExecutionException`,`Drops silently`,`Drops the oldest`],1,`Choose a policy deliberately.`,'M'],
- [`For blocking I/O tasks, pool size should be?`,[`Exactly the core count`,`Larger than core count, sized for how long tasks wait (or use virtual threads)`,`1`,`Unlimited`],1,`Threads mostly wait, not compute.`,'M']
+ [`What happens after <code>executor.shutdown()</code>?`,[`Running tasks are interrupted and queued ones dropped`,`No new tasks accepted; already submitted ones finish`,`It blocks until all submitted tasks have finished`,`New tasks still queue, but no queued task runs`],1,`shutdownNow() interrupts running tasks.`,'M'],
+ [`What does <code>AbortPolicy</code> (the default) do on rejection?`,[`Runs the task on the calling thread`,`Throws RejectedExecutionException`,`Silently drops the rejected task`,`Discards the oldest queued task`],1,`Choose a policy deliberately.`,'M'],
+ [`For blocking I/O tasks, pool size should be?`,[`Exactly the core count, since extra threads just thrash the CPU`,`Larger than core count, sized for how long tasks wait (or use virtual threads)`,`Core count minus one, the same as for CPU-bound work`,`Unbounded, so that no submitted task ever has to wait`],1,`Threads mostly wait, not compute.`,'M']
 ], [
- [`<code>Executors.newCachedThreadPool()</code> under a traffic spike?`,[`Queues tasks`,`Creates a new thread per waiting task without limit, risking thousands of threads`,`Rejects tasks`,`Uses one thread`],1,`Unbounded threads are as dangerous as unbounded queues.`,'H'],
- [`Why should you await termination on shutdown?`,[`It's required`,`So in-flight tasks complete before the JVM exits (graceful shutdown)`,`To free memory`,`To clear ThreadLocals`],1,`awaitTermination(timeout) then shutdownNow if needed.`,'M']
+ [`<code>Executors.newCachedThreadPool()</code> under a traffic spike?`,[`Queues extra tasks in an unbounded queue until threads free up`,`Creates a new thread per waiting task without limit, risking thousands of threads`,`Rejects new tasks once a default cap of 256 threads is reached`,`Falls back to running tasks on the caller thread when busy`],1,`Unbounded threads are as dangerous as unbounded queues.`,'H'],
+ [`Why should you await termination on shutdown?`,[`shutdown() does nothing until awaitTermination() is called`,`So in-flight tasks complete before the JVM exits (graceful shutdown)`,`To release the ThreadLocal values held by pool threads`,`To make the pool start its queued tasks sooner`],1,`awaitTermination(timeout) then shutdownNow if needed.`,'M']
 ]);
 
 addQ('4.14', [
- [`What does <code>supplyAsync</code> return?`,[`The value`,`A CompletableFuture that completes with the value later`,`A Thread`,`void`],1,`Non-blocking start.`,'E'],
+ [`What does <code>supplyAsync</code> return?`,[`The value, after blocking until it's computed`,`A CompletableFuture that completes with the value later`,`A new Thread that has already started running`,`A Supplier wrapping the computation for later`],1,`Non-blocking start.`,'E'],
  [`Chain another async call that returns a CompletableFuture?`,[`thenApply`,`thenCompose`,`thenAccept`,`join`],1,`thenApply would nest futures.`,'M'],
  [`Combine two independent futures' results?`,[`thenCompose`,`thenCombine`,`exceptionally`,`orTimeout`],1,`Runs the combiner when both are done.`,'E'],
  [`Wait for many futures to finish?`,[`anyOf`,`allOf`,`join each in parallel streams`,`thenRun`],1,`anyOf completes with the first.`,'E'],
- [`What does <code>join()</code> do differently from <code>get()</code>?`,[`Doesn't block`,`Throws unchecked CompletionException instead of checked exceptions`,`Cancels`,`Nothing`],1,`Convenient in lambdas.`,'M']
+ [`What does <code>join()</code> do differently from <code>get()</code>?`,[`Returns null immediately if the future isn't complete yet`,`Throws unchecked CompletionException instead of checked exceptions`,`Cancels the future if it hasn't completed by the call`,`Waits with a default timeout, whereas get() waits forever`],1,`Convenient in lambdas.`,'M']
 ], [
- [`<code>completeOnTimeout(fallback, 1, SECONDS)</code> vs <code>orTimeout(1, SECONDS)</code>?`,[`Same`,`completeOnTimeout completes normally with a fallback; orTimeout completes exceptionally with TimeoutException`,`Both cancel the task`,`orTimeout returns null`],1,`Neither stops the underlying work.`,'H'],
- [`Does <code>future.cancel(true)</code> on a CompletableFuture interrupt the running task?`,[`Yes`,`No: CompletableFuture's cancel doesn't interrupt the computation`,`Only for virtual threads`,`Only with allOf`],1,`It just completes the future with CancellationException.`,'H']
+ [`<code>completeOnTimeout(fallback, 1, SECONDS)</code> vs <code>orTimeout(1, SECONDS)</code>?`,[`Both cancel the task and interrupt its thread after one second`,`completeOnTimeout yields the fallback; orTimeout fails with TimeoutException`,`orTimeout completes with null; completeOnTimeout throws TimeoutException`,`Both complete with the fallback, but orTimeout also logs a warning`],1,`Neither stops the underlying work.`,'H'],
+ [`Does <code>future.cancel(true)</code> on a CompletableFuture interrupt the running task?`,[`Yes: it interrupts the thread running the supplier`,`No: CompletableFuture's cancel doesn't interrupt the computation`,`Only when the future runs on a virtual thread`,`Only if it was created with an explicit executor`],1,`It just completes the future with CancellationException.`,'H']
 ]);
 
 addQ('4.15', [
- [`What kind of tasks suit ForkJoinPool?`,[`Blocking I/O`,`Recursive divide-and-conquer CPU work`,`Single long tasks`,`Database calls`],1,`Split, compute, combine.`,'E'],
- [`RecursiveTask vs RecursiveAction?`,[`Same`,`RecursiveTask returns a result; RecursiveAction doesn't`,`Action is faster`,`Task is deprecated`],1,`compute() returns V or void.`,'M'],
- [`What is the common pool's default parallelism?`,[`1`,`Number of available processors − 1`,`100`,`Unlimited`],1,`Shared by the whole JVM.`,'M'],
- [`What uses the common ForkJoinPool by default?`,[`Tomcat`,`Parallel streams and CompletableFuture async methods without an executor`,`Spring @Scheduled`,`JDBC`],1,`Don't block it.`,'M'],
- [`Why steal from the opposite end of another worker's deque?`,[`Random choice`,`Older tasks are bigger, so fewer steals are needed and contention with the owner is low`,`To keep order`,`For fairness`],1,`Owner works LIFO at its end.`,'H']
+ [`What kind of tasks suit ForkJoinPool?`,[`Blocking I/O like file and socket reads`,`Recursive divide-and-conquer CPU work`,`Long single tasks that can't be split`,`Database calls issued in parallel batches`],1,`Split, compute, combine.`,'E'],
+ [`RecursiveTask vs RecursiveAction?`,[`RecursiveAction returns a result; RecursiveTask doesn't`,`RecursiveTask returns a result; RecursiveAction doesn't`,`RecursiveTask can fork subtasks; RecursiveAction can't`,`RecursiveAction is for I/O; RecursiveTask for CPU work`],1,`compute() returns V or void.`,'M'],
+ [`What is the common pool's default parallelism?`,[`Number of available processors × 2`,`Number of available processors − 1`,`Exactly the number of available processors`,`A fixed 256, regardless of CPU count`],1,`Shared by the whole JVM.`,'M'],
+ [`What uses the common ForkJoinPool by default?`,[`Tomcat request threads and Spring @Async methods`,`Parallel streams and CompletableFuture async methods without an executor`,`Spring @Scheduled tasks and JDBC connection pools`,`Every pool created by Executors.newFixedThreadPool`],1,`Don't block it.`,'M'],
+ [`Why steal from the opposite end of another worker's deque?`,[`To keep tasks in strict FIFO order across all the workers`,`Older tasks are bigger, so fewer steals are needed and contention with the owner is low`,`So stolen tasks are always the smallest and finish fastest`,`Either end works; the opposite end is just a convention`],1,`Owner works LIFO at its end.`,'H']
 ], [
- [`What does <code>ForkJoinPool.managedBlock</code> help with?`,[`Nothing`,`Compensating with extra threads when a task must block, avoiding starvation`,`Logging`,`Cancelling tasks`],1,`Used internally by some blocking JDK classes.`,'H'],
- [`Can you run a parallel stream in your own pool?`,[`No`,`Submitting the stream pipeline to a custom ForkJoinPool works in practice (not a documented guarantee)`,`Yes, with stream.pool(p)`,`Only in Java 25`],1,`Implementation behaviour; prefer explicit executors.`,'H']
+ [`What does <code>ForkJoinPool.managedBlock</code> help with?`,[`Cancelling a blocked task after a timeout so others can run`,`Compensating with extra threads when a task must block, avoiding starvation`,`Moving the blocking task onto the caller thread instead`,`Logging which tasks block, so you can tune the pool size`],1,`Used internally by some blocking JDK classes.`,'H'],
+ [`Can you run a parallel stream in your own pool?`,[`No: parallel streams always use the common pool, whoever calls them`,`Running it inside your own ForkJoinPool works, but isn't documented`,`Yes, by passing your pool directly to stream.parallel(pool)`,`Yes, by calling Executors.newWorkStealingPool().stream()`],1,`Implementation behaviour; prefer explicit executors.`,'H']
 ]);
 
 addQ('4.16', [
  [`Does ConcurrentHashMap allow null keys or values?`,[`Both allowed`,`Neither`,`Null keys only`,`Null values only`],1,`null would be ambiguous with "absent".`,'E'],
- [`Atomic "insert if absent" in ConcurrentHashMap?`,[`containsKey then put`,`putIfAbsent or computeIfAbsent`,`put twice`,`synchronized(map)`],1,`Single atomic operation.`,'E'],
+ [`Atomic "insert if absent" in ConcurrentHashMap?`,[`containsKey followed by put`,`putIfAbsent or computeIfAbsent`,`get, then put if it was null`,`putAll with a single-entry map`],1,`Single atomic operation.`,'E'],
  [`Which queue blocks producers when it's full?`,[`ConcurrentLinkedQueue`,`ArrayBlockingQueue`,`PriorityQueue`,`ArrayDeque`],1,`Bounded blocking queue.`,'E'],
- [`What is ConcurrentSkipListMap?`,[`A hash map`,`A concurrent sorted map (like a thread-safe TreeMap)`,`A queue`,`A cache`],1,`O(log n), lock-free.`,'M'],
- [`<code>size()</code> on a ConcurrentHashMap under updates is?`,[`Exact`,`An estimate that may be stale`,`Always 0`,`Blocking`],1,`Don't base logic on it.`,'M']
+ [`What is ConcurrentSkipListMap?`,[`A concurrent hash map with linked buckets`,`A concurrent sorted map (like a thread-safe TreeMap)`,`A lock-free FIFO queue of key-value pairs`,`A size-bounded cache with LRU eviction`],1,`O(log n), lock-free.`,'M'],
+ [`<code>size()</code> on a ConcurrentHashMap under updates is?`,[`Exact, since it locks every bin`,`An estimate that may be stale`,`Blocking until updates finish`,`The count at the last resize`],1,`Don't base logic on it.`,'M']
 ], [
- [`Why did ConcurrentHashMap drop segment locks in Java 8?`,[`Bug fixes`,`Finer-grained CAS + per-bin locks scale better and use less memory`,`Licensing`,`To allow nulls`],1,`Reads are lock-free.`,'H'],
- [`SynchronousQueue has what capacity?`,[`1`,`0: each put waits for a matching take`,`Unlimited`,`16`],1,`Used by cached thread pools for direct hand-off.`,'H']
+ [`Why did ConcurrentHashMap drop segment locks in Java 8?`,[`Segments caused data loss during heavy concurrent resizing`,`Finer-grained CAS + per-bin locks scale better and use less memory`,`To let the map finally accept null keys and values`,`Segment locks were incompatible with lambdas and streams`],1,`Reads are lock-free.`,'H'],
+ [`SynchronousQueue has what capacity?`,[`1: it holds one element until it's taken`,`0: each put waits for a matching take`,`Unbounded, growing as producers add`,`16, the default like other queues`],1,`Used by cached thread pools for direct hand-off.`,'H']
 ]);
 
 addQ('4.17', [
- [`What's the main benefit of virtual threads?`,[`Faster CPU work`,`Very cheap threads, so blocking I/O code can scale to many concurrent tasks`,`No need for locks`,`Smaller JAR`],1,`Thread-per-request without the cost.`,'E'],
+ [`What's the main benefit of virtual threads?`,[`Faster CPU-bound work, since they run on more cores at once`,`Very cheap threads, so blocking I/O code can scale to many concurrent tasks`,`No need for locks, because each virtual thread is isolated`,`Less GC work, since their stacks never live on the heap`],1,`Thread-per-request without the cost.`,'E'],
  [`Which Java version made virtual threads final?`,[`17`,`19`,`21`,`25`],2,`JEP 444.`,'E'],
- [`How do you enable virtual threads for Spring Boot request handling?`,[`Rewrite controllers`,`spring.threads.virtual.enabled=true (Boot 3.2+, Java 21+)`,`Use WebFlux`,`Add a dependency only`],1,`Tomcat then uses virtual threads.`,'M'],
- [`What is pinning?`,[`A virtual thread that can't unmount, blocking its carrier`,`A thread with high priority`,`A deadlock`,`Fixing a thread to a CPU`],0,`Mostly synchronized blocks before JDK 24, and native calls.`,'M'],
+ [`How do you enable virtual threads for Spring Boot request handling?`,[`Switch to WebFlux, which runs on virtual threads by default`,`spring.threads.virtual.enabled=true (Boot 3.2+, Java 21+)`,`server.tomcat.threads.virtual=true (Boot 3.0+, Java 17+)`,`Add a Loom starter dependency; no configuration is needed`],1,`Tomcat then uses virtual threads.`,'M'],
+ [`What is pinning?`,[`A virtual thread that can't unmount, blocking its carrier`,`A thread bound to one CPU core by affinity`,`A platform thread given the highest priority`,`A virtual thread stuck forever in a deadlock`],0,`Mostly synchronized blocks before JDK 24, and native calls.`,'M'],
  [`Should virtual threads be pooled?`,[`Yes, like platform threads`,`No: create one per task`,`Only for CPU work`,`Only in tests`],1,`Pooling defeats the purpose.`,'E']
 ], [
- [`Which still limits a virtual-thread service calling a database?`,[`Nothing`,`The DB connection pool and the database's capacity`,`The number of carrier threads only`,`The heap size only`],1,`Plan pool sizes and timeouts.`,'M'],
- [`What does structured concurrency (StructuredTaskScope) add?`,[`Faster threads`,`Treats related subtasks as one unit: they're started, joined, failed and cancelled together`,`A new GC`,`Distributed locks`],1,`Still a preview API in Java 25.`,'H']
+ [`Which still limits a virtual-thread service calling a database?`,[`Only the number of carrier threads`,`The DB connection pool and the database's capacity`,`Only the heap needed for thread stacks`,`The OS limit on native threads per process`],1,`Plan pool sizes and timeouts.`,'M'],
+ [`What does structured concurrency (StructuredTaskScope) add?`,[`Runs subtasks on dedicated carrier threads so they finish faster`,`Treats related subtasks as one unit: they're started, joined, failed and cancelled together`,`Spreads subtasks across JVMs and coordinates them with distributed locks`,`Lets subtasks outlive their parent so failures don't propagate up`],1,`Still a preview API in Java 25.`,'H']
 ]);
 
 addQ('4.18', [
- [`Two threads must print alternately. What shared state do they need?`,[`Nothing`,`A lock plus a variable saying whose turn it is`,`Two separate locks only`,`A static final constant`],1,`Each waits until it's their turn.`,'E'],
+ [`Two threads must print alternately. What shared state do they need?`,[`Two separate locks, one held by each thread`,`A lock plus a variable saying whose turn it is`,`A static final flag fixed at startup`,`Nothing, if both threads call Thread.yield()`],1,`Each waits until it's their turn.`,'E'],
  [`Simplest thread-safe lazy singleton in Java?`,[`DCL without volatile`,`The holder idiom or an enum`,`synchronized on every line`,`A static block with sleep`],1,`The JVM handles the safety.`,'E'],
- [`Producer-consumer interview question: best modern answer?`,[`wait/notify with if`,`A BlockingQueue with put/take`,`Thread.sleep polling`,`volatile list`],1,`Mention wait/notify as the low-level alternative.`,'M'],
- [`How would you print numbers 1–10 with 3 threads in round-robin order?`,[`Impossible`,`Shared counter + lock/condition (or semaphores), each thread waits until counter % 3 matches its id`,`Three independent loops`,`One volatile int`],1,`Generalises odd/even.`,'M'],
- [`What makes a classic "bank transfer" concurrency answer correct?`,[`synchronized on one account`,`Locking both accounts in a consistent order (by id) to avoid deadlock`,`volatile balances`,`Random sleeps`],1,`Plus checks inside the locked section.`,'M']
+ [`Producer-consumer interview question: best modern answer?`,[`wait/notify guarded by an if check`,`A BlockingQueue with put/take`,`Polling a list with Thread.sleep`,`A volatile ArrayList shared by both`],1,`Mention wait/notify as the low-level alternative.`,'M'],
+ [`How would you print numbers 1–10 with 3 threads in round-robin order?`,[`Three independent loops, each printing its own numbers`,`A shared counter plus lock/condition; each waits for its turn`,`One volatile int that all three threads increment freely`,`Start the threads in order; the OS keeps them in sequence`],1,`Generalises odd/even.`,'M'],
+ [`What makes a classic "bank transfer" concurrency answer correct?`,[`Marking both balances volatile so updates are visible`,`Locking both accounts in a consistent order (by id) to avoid deadlock`,`Synchronizing on the source account for the whole transfer`,`Locking the source, then the target, in the order of the call`],1,`Plus checks inside the locked section.`,'M']
 ], [
- [`Implement a thread-safe bounded cache with LRU eviction quickly?`,[`HashMap + volatile`,`LinkedHashMap LRU wrapped in a lock, or (better) Caffeine`,`ConcurrentHashMap alone`,`An ArrayList`],1,`CHM has no eviction order.`,'H'],
- [`A rate limiter allowing N requests per second across threads. A simple approach?`,[`Thread.sleep`,`A token bucket (AtomicLong + timestamps) or a Semaphore refilled on a schedule`,`synchronized method with counter that never resets`,`volatile boolean`],1,`Libraries: Resilience4j RateLimiter, Bucket4j.`,'H']
+ [`Implement a thread-safe bounded cache with LRU eviction quickly?`,[`A ConcurrentHashMap alone, relying on its built-in LRU`,`LinkedHashMap LRU wrapped in a lock, or (better) Caffeine`,`A HashMap with a volatile field for each entry`,`A WeakHashMap, letting the GC handle eviction`],1,`CHM has no eviction order.`,'H'],
+ [`A rate limiter allowing N requests per second across threads. A simple approach?`,[`Thread.sleep(1000 / N) before each request in every caller thread`,`A token bucket (AtomicLong + timestamps) or a Semaphore refilled on a schedule`,`A synchronized counter that rejects all calls after N in total`,`A volatile boolean that a timer flips back on once per second`],1,`Libraries: Resilience4j RateLimiter, Bucket4j.`,'H']
 ]);
 </script>
 <script>
@@ -7469,58 +7469,58 @@ addQ('6.6', [
 </script>
 <script>
 addQ('7.1', [
- [`What does <code>OrderStatus.values()</code> return?`,[`A Set`,`An array of all constants in declaration order`,`A Map`,`A List of names`],1,`A new array each call.`,'E'],
- [`Can enum constants have their own fields?`,[`No`,`Yes, set through the enum's constructor`,`Only static fields`,`Only booleans`],1,`e.g. PAID(false).`,'E'],
+ [`What does <code>OrderStatus.values()</code> return?`,[`A Set of all constants in hash order`,`An array of all constants in declaration order`,`An immutable List of constants sorted by name`,`A Map from each constant's name to its ordinal`],1,`A new array each call.`,'E'],
+ [`Can enum constants have their own fields?`,[`No, enums can only hold their name and ordinal`,`Yes, set through the enum's constructor`,`Yes, but only static fields shared by all constants`,`Only if each field is a compile-time constant`],1,`e.g. PAID(false).`,'E'],
  [`An enum's constructor is...`,[`public`,`implicitly private`,`protected`,`static`],1,`You can't call it yourself.`,'M'],
- [`Why is an enum good for statuses instead of String constants?`,[`Strings are slower`,`The compiler only allows valid values and switches can be checked for exhaustiveness`,`Enums use less disk`,`Strings can't be compared`],1,`Typos become compile errors.`,'E'],
+ [`Why is an enum good for statuses instead of String constants?`,[`String comparisons are slower and the JIT can't inline them, so enums are always faster`,`The compiler only allows valid values and switches can be checked for exhaustiveness`,`Enums are stored more compactly in the database and use less disk than text columns`,`String constants can't be used as switch labels, so validation logic must use if-chains`],1,`Typos become compile errors.`,'E'],
  [`<code>OrderStatus.PAID.compareTo(OrderStatus.SHIPPED)</code> compares?`,[`Names alphabetically`,`Ordinal positions`,`Hash codes`,`It throws`],1,`Declaration order.`,'M']
 ], [
- [`Can an enum implement an interface?`,[`No`,`Yes, and each constant can provide its own implementation`,`Only Comparable`,`Only if abstract`],1,`Useful for strategy-like enums.`,'M'],
- [`Why is switching on an enum's ordinal stored in the DB risky?`,[`Slow`,`Reordering or inserting constants changes ordinals and corrupts meaning`,`Ordinals are random`,`It's not risky`],1,`Store names (EnumType.STRING).`,'M']
+ [`Can an enum implement an interface?`,[`No, enums are final, so they can't implement interfaces`,`Yes, and each constant can provide its own implementation`,`Yes, but only marker interfaces with no abstract methods`,`Only Comparable and Serializable, which Enum already declares`],1,`Useful for strategy-like enums.`,'M'],
+ [`Why is switching on an enum's ordinal stored in the DB risky?`,[`Ordinals are recomputed at each JVM start and can differ between runs`,`Reordering or inserting constants changes ordinals and corrupts meaning`,`Switching on an int is slower than switching on the enum constant itself`,`Ordinals are capped at 127 because they're stored as a single signed byte`],1,`Store names (EnumType.STRING).`,'M']
 ]);
 
 addQ('7.2', [
- [`What does <code>Foo.class</code> give you?`,[`An instance of Foo`,`The Class object describing Foo`,`The source file`,`A proxy`],1,`Entry point for reflection.`,'E'],
+ [`What does <code>Foo.class</code> give you?`,[`A new instance of Foo built with its no-arg constructor`,`The Class object describing Foo`,`A dynamic proxy that intercepts calls on Foo`,`The loaded bytecode of Foo as a byte array`],1,`Entry point for reflection.`,'E'],
  [`Which retention keeps an annotation available at run time?`,[`SOURCE`,`CLASS`,`RUNTIME`,`DEFAULT`],2,`Needed for reflection-based frameworks.`,'E'],
  [`<code>@Override</code> has which retention?`,[`RUNTIME`,`SOURCE`,`CLASS`,`None`],1,`It's only for the compiler.`,'M'],
- [`What does <code>getDeclaredFields()</code> return?`,[`Only public fields including inherited`,`All fields declared in this class, including private (not inherited)`,`Only static fields`,`Methods`],1,`getFields() returns public ones, including inherited.`,'M'],
- [`Why is reflection slower than direct calls?`,[`It isn't`,`Extra checks, boxing of arguments and harder JIT optimisation`,`It uses the network`,`It runs in another thread`],1,`Fine at startup, avoid in hot paths.`,'M']
+ [`What does <code>getDeclaredFields()</code> return?`,[`All public fields, including the ones inherited from superclasses`,`All fields declared in this class, including private (not inherited)`,`All fields from this class and its superclasses, including private ones`,`Only the static fields declared in this class, including private ones`],1,`getFields() returns public ones, including inherited.`,'M'],
+ [`Why is reflection slower than direct calls?`,[`Every reflective call is executed on a separate internal thread`,`Extra checks, boxing of arguments and harder JIT optimisation`,`The class file is re-parsed from disk on each invocation`,`Reflection always bypasses the JIT and runs in interpreted mode`],1,`Fine at startup, avoid in hot paths.`,'M']
 ], [
- [`MethodHandles vs reflection?`,[`Same`,`MethodHandles are lower-level, typed handles the JIT can optimise much better`,`MethodHandles are slower`,`Reflection is newer`],1,`Used under the hood by lambdas and modern reflection.`,'H'],
- [`Can annotations hold arbitrary objects as values?`,[`Yes`,`No: only primitives, String, Class, enums, other annotations and arrays of these`,`Only Strings`,`Only ints`],1,`Values must be compile-time constants.`,'H']
+ [`MethodHandles vs reflection?`,[`They're the same API, just renamed in java.lang.invoke for Java 7`,`MethodHandles are lower-level, typed handles the JIT can optimise much better`,`MethodHandles skip access checks, so they're slower but more flexible`,`Reflection is the newer API and is preferred over MethodHandles today`],1,`Used under the hood by lambdas and modern reflection.`,'H'],
+ [`Can annotations hold arbitrary objects as values?`,[`Yes, any Serializable object can be used as an annotation value`,`No: only primitives, String, Class, enums, other annotations and arrays of these`,`Only String and primitive values, without arrays or nested annotations`,`Any object, provided it is created by a static factory at compile time`],1,`Values must be compile-time constants.`,'H']
 ]);
 
 addQ('7.3', [
  [`<code>Collectors.groupingBy(Order::city)</code> produces?`,[`List&lt;Order&gt;`,`Map&lt;String, List&lt;Order&gt;&gt;`,`Set&lt;String&gt;`,`Map&lt;String, Order&gt;`],1,`Values are lists by default.`,'E'],
  [`Count orders per city?`,[`groupingBy(Order::city)`,`groupingBy(Order::city, counting())`,`toMap(Order::city, 1)`,`partitioningBy(Order::city)`],1,`Downstream counting.`,'E'],
  [`<code>joining(", ")</code> on [a, b, c]?`,[`abc`,`a, b, c`,`[a, b, c]`,`a,b,c,`],1,`Separator between elements.`,'E'],
- [`Names of customers per city?`,[`groupingBy(Order::city, mapping(Order::customer, toList()))`,`groupingBy(Order::customer)`,`toMap(Order::city, Order::customer)`,`counting()`],0,`mapping transforms before collecting.`,'M'],
+ [`Names of customers per city?`,[`groupingBy(Order::city, mapping(Order::customer, toList()))`,`groupingBy(Order::customer, mapping(Order::city, toList()))`,`toMap(Order::city, Order::customer)`,`groupingBy(Order::city, counting())`],0,`mapping transforms before collecting.`,'M'],
  [`Which collector keeps the first value on duplicate keys?`,[`toMap(k, v)`,`toMap(k, v, (a, b) -&gt; a)`,`toMap(k, v, (a, b) -&gt; b)`,`groupingBy(k)`],1,`The merge function decides.`,'M']
 ], [
- [`<code>teeing(c1, c2, merger)</code> (Java 12) does?`,[`Runs two collectors on the same elements and merges their results`,`Splits a stream in two`,`Sorts`,`Joins strings`],0,`e.g. min and max in one pass.`,'H'],
- [`Why might <code>groupingByConcurrent</code> be used with parallel streams?`,[`Sorted output`,`It builds a ConcurrentMap directly, avoiding expensive map merging`,`It's required`,`Fewer keys`],1,`Order of values isn't preserved.`,'H']
+ [`<code>teeing(c1, c2, merger)</code> (Java 12) does?`,[`Runs two collectors on the same elements and merges their results`,`Splits a stream into two streams based on a predicate`,`Runs the two collectors one after another, feeding c1's result to c2`,`Zips two streams together element by element using the merger`],0,`e.g. min and max in one pass.`,'H'],
+ [`Why might <code>groupingByConcurrent</code> be used with parallel streams?`,[`It guarantees the groups come out sorted in encounter order`,`It builds a ConcurrentMap directly, avoiding expensive map merging`,`Plain groupingBy throws when used on a parallel stream`,`It removes duplicate keys before grouping, so there are fewer keys`],1,`Order of values isn't preserved.`,'H']
 ]);
 
 addQ('7.4', [
  [`Which type represents a birthday?`,[`Instant`,`LocalDate`,`ZonedDateTime`,`Duration`],1,`A calendar date without time or zone.`,'E'],
- [`Are java.time objects mutable?`,[`Yes`,`No: methods return new instances`,`Only LocalDate`,`Only Instant`],1,`Thread-safe as a result.`,'E'],
+ [`Are java.time objects mutable?`,[`Yes, setters like setDayOfMonth change them in place`,`No: methods return new instances`,`Only LocalDate is immutable; the other types are mutable`,`Only Instant is immutable, because it has no time zone`],1,`Thread-safe as a result.`,'E'],
  [`Exact elapsed time between two Instants?`,[`Period.between`,`Duration.between`,`ChronoUnit.YEARS`,`LocalDate.until`],1,`Period is for calendar amounts.`,'E'],
  [`Parse "2026-03-31" into a date?`,[`new Date("2026-03-31")`,`LocalDate.parse("2026-03-31")`,`Instant.parse("2026-03-31")`,`Integer.parseInt`],1,`ISO format by default.`,'M'],
- [`Why store timestamps in UTC?`,[`Smaller`,`A single unambiguous timeline; convert to local zones only for display`,`Required by Java`,`Faster sorting only`],1,`Avoids DST and region confusion.`,'M']
+ [`Why store timestamps in UTC?`,[`UTC values take less space in the database than zoned values`,`A single unambiguous timeline; convert to local zones only for display`,`The JVM requires UTC to sort timestamps correctly across hosts`,`UTC removes the need to convert anything when showing times to users`],1,`Avoids DST and region confusion.`,'M']
 ], [
- [`In autumn, a local time like 02:30 can occur twice (DST overlap). What does atZone pick?`,[`It throws`,`The earlier offset by default (withLaterOffsetAtOverlap() to choose the later)`,`Random`,`The later offset`],1,`Ambiguous local times need a policy.`,'H'],
+ [`In autumn, a local time like 02:30 can occur twice (DST overlap). What does atZone pick?`,[`It throws DateTimeException because the time is ambiguous`,`The earlier offset by default (withLaterOffsetAtOverlap() to choose the later)`,`The later offset by default (withEarlierOffsetAtOverlap() to choose the earlier)`,`The system default zone's standard offset, ignoring the overlap`],1,`Ambiguous local times need a policy.`,'H'],
  [`<code>LocalDate.of(2024, 2, 29).plusYears(1)</code>?`,[`2025-02-29`,`2025-02-28`,`2025-03-01`,`Exception`],1,`Clamped to the last valid day.`,'M']
 ]);
 
 addQ('7.5', [
- [`Read a small text file in one line?`,[`new File(path).read()`,`Files.readString(Path.of(path))`,`System.in.read()`,`Paths.read(path)`],1,`Java 11+.`,'E'],
- [`What's the difference between InputStream and Reader?`,[`None`,`InputStream reads bytes; Reader reads characters (decoded with a charset)`,`Reader is faster`,`InputStream is for files only`],1,`Wrap with InputStreamReader to convert.`,'E'],
- [`Why use try-with-resources for files?`,[`Style`,`Files get closed even if an exception happens`,`It reads faster`,`It's required`],1,`Avoids leaking file handles.`,'E'],
+ [`Read a small text file in one line?`,[`new File(path).readText()`,`Files.readString(Path.of(path))`,`Paths.get(path).readString()`,`Files.readAllBytes(path).toString()`],1,`Java 11+.`,'E'],
+ [`What's the difference between InputStream and Reader?`,[`InputStream is buffered while Reader reads one byte at a time`,`InputStream reads bytes; Reader reads characters (decoded with a charset)`,`Reader reads lines only; InputStream reads raw characters (UTF-16)`,`InputStream is for files only; Reader is for network sockets`],1,`Wrap with InputStreamReader to convert.`,'E'],
+ [`Why use try-with-resources for files?`,[`It buffers the file so reads become faster`,`Files get closed even if an exception happens`,`The compiler rejects file APIs used outside it`,`It retries automatically if opening the file fails`],1,`Avoids leaking file handles.`,'E'],
  [`Convert an object to JSON in Spring apps?`,[`toString()`,`Jackson's ObjectMapper`,`Serializable`,`String.format`],1,`Spring MVC uses it automatically.`,'E'],
- [`What does <code>serialVersionUID</code> protect against?`,[`SQL injection`,`Deserializing data written by an incompatible class version`,`Memory leaks`,`Thread races`],1,`Mismatches throw InvalidClassException.`,'M']
+ [`What does <code>serialVersionUID</code> protect against?`,[`Deserializing objects whose classes aren't on the classpath`,`Deserializing data written by an incompatible class version`,`Classes being serialized concurrently from several threads`,`Malicious byte streams triggering gadget chains on deserialize`],1,`Mismatches throw InvalidClassException.`,'M']
 ], [
- [`What does Jackson's <code>FAIL_ON_UNKNOWN_PROPERTIES = false</code> allow?`,[`Missing fields`,`Ignoring JSON fields your class doesn't have, so newer producers don't break older consumers`,`Null values`,`Faster parsing`],1,`Spring Boot disables failing by default.`,'H'],
- [`Why is <code>Files.walk(dir)</code> wrapped in try-with-resources?`,[`It isn't needed`,`It returns a lazy Stream holding open directory handles`,`It's slow`,`For sorting`],1,`Same for Files.lines and Files.list.`,'M']
+ [`What does Jackson's <code>FAIL_ON_UNKNOWN_PROPERTIES = false</code> allow?`,[`Deserializing JSON that is missing some of your class's required fields, filling them with defaults`,`Ignoring JSON fields your class doesn't have, so newer producers don't break older consumers`,`Accepting null values for primitive fields instead of throwing a MismatchedInputException`,`Skipping schema validation on every field, so large payloads are parsed noticeably faster`],1,`Spring Boot disables failing by default.`,'H'],
+ [`Why is <code>Files.walk(dir)</code> wrapped in try-with-resources?`,[`It reads every file's contents eagerly into memory`,`It returns a lazy Stream holding open directory handles`,`It locks the directory against writes until closed`,`It starts a background thread that must be stopped`],1,`Same for Files.lines and Files.list.`,'M']
 ]);
 
 addQ('7.6', [
@@ -7530,128 +7530,128 @@ addQ('7.6', [
  [`Records became standard in?`,[`14`,`16`,`17`,`21`],1,`Previewed in 14 and 15.`,'M'],
  [`Virtual threads became standard in?`,[`17`,`19`,`21`,`25`],2,`JEP 444.`,'E']
 ], [
- [`What does "helpful NullPointerExceptions" (Java 14+) add?`,[`Nothing`,`Messages naming exactly which variable or call was null`,`Automatic null checks`,`Optional everywhere`],1,`e.g. Cannot invoke "String.length()" because "name" is null.`,'M'],
- [`Moving from javax.* to jakarta.* matters for which upgrade?`,[`Java 8 → 11 only`,`Spring Boot 2 → 3 (Jakarta EE 9+)`,`Java 21 → 25`,`None`],1,`Imports like javax.persistence become jakarta.persistence.`,'M']
+ [`What does "helpful NullPointerExceptions" (Java 14+) add?`,[`An automatic null check on every method parameter`,`Messages naming exactly which variable or call was null`,`Stack traces that show the full value of every local`,`A compile-time warning listing variables that may be null`],1,`e.g. Cannot invoke "String.length()" because "name" is null.`,'M'],
+ [`Moving from javax.* to jakarta.* matters for which upgrade?`,[`Java 8 → 11 (removal of the Java EE modules)`,`Spring Boot 2 → 3 (Jakarta EE 9+)`,`Spring Boot 1 → 2 (Jakarta EE 8)`,`Java 17 → 21 (virtual threads)`],1,`Imports like javax.persistence become jakarta.persistence.`,'M']
 ]);
 
 addQ('8.1', [
- [`What does atomicity guarantee?`,[`Speed`,`All statements in a transaction take effect, or none do`,`Isolation`,`Durability`],1,`The A in ACID.`,'E'],
+ [`What does atomicity guarantee?`,[`Concurrent transactions never see each other's changes`,`All statements in a transaction take effect, or none do`,`Committed changes survive a crash or power loss`,`Each statement is applied the moment it executes`],1,`The A in ACID.`,'E'],
  [`Which level prevents dirty reads but allows non-repeatable reads?`,[`READ UNCOMMITTED`,`READ COMMITTED`,`REPEATABLE READ`,`SERIALIZABLE`],1,`The most common default.`,'E'],
- [`What is a phantom read?`,[`Reading deleted data`,`New rows appearing when a range query is repeated`,`Reading uncommitted data`,`A lost update`],1,`Prevented by SERIALIZABLE.`,'M'],
+ [`What is a phantom read?`,[`A row disappearing after another transaction deletes it`,`New rows appearing when a range query is repeated`,`Reading data another transaction hasn't committed yet`,`A row's value changing when the same row is re-read`],1,`Prevented by SERIALIZABLE.`,'M'],
  [`MySQL InnoDB's default isolation level?`,[`READ COMMITTED`,`REPEATABLE READ`,`SERIALIZABLE`,`READ UNCOMMITTED`],1,`PostgreSQL defaults to READ COMMITTED.`,'M'],
- [`Set isolation for one Spring method?`,[`Not possible`,`@Transactional(isolation = Isolation.REPEATABLE_READ)`,`In application.yml only`,`With @Lock`],1,`Per transaction.`,'M']
+ [`Set isolation for one Spring method?`,[`@Transactional(propagation = Propagation.REQUIRES_NEW)`,`@Transactional(isolation = Isolation.REPEATABLE_READ)`,`spring.jpa.properties.isolation in application.yml`,`@Lock(LockModeType.PESSIMISTIC_READ) on the method`],1,`Per transaction.`,'M']
 ], [
- [`What is MVCC?`,[`A Java framework`,`Multi-version concurrency control: readers see snapshots while writers create new row versions`,`A lock type`,`A GC`],1,`Readers don't block writers.`,'H'],
- [`Lost update: two transactions read 100, both write 100 − 10. Which isolation catches it in PostgreSQL?`,[`READ COMMITTED`,`REPEATABLE READ (the second write fails with a serialization error)`,`READ UNCOMMITTED`,`None`],1,`Or use SELECT … FOR UPDATE / @Version.`,'H']
+ [`What is MVCC?`,[`Model-view-controller-cache: a pattern for caching query results`,`Multi-version concurrency control: readers see snapshots while writers create new row versions`,`A locking scheme where readers take shared locks that block writers`,`A replication mode where every write goes to multiple versions of the DB`],1,`Readers don't block writers.`,'H'],
+ [`Lost update: two transactions read 100, both write 100 − 10. Which isolation catches it in PostgreSQL?`,[`READ COMMITTED (the second write re-reads and applies on top)`,`REPEATABLE READ (the second write fails with a serialization error)`,`READ UNCOMMITTED (the second write sees the first's dirty value)`,`None of them: only explicit SELECT ... FOR UPDATE catches it`],1,`Or use SELECT … FOR UPDATE / @Version.`,'H']
 ]);
 
 addQ('8.2', [
  [`What's the most common index structure in relational databases?`,[`Hash table`,`B-tree`,`Linked list`,`Bitmap`],1,`Supports equality and range queries.`,'E'],
  [`Does a primary key create an index?`,[`No`,`Yes, automatically`,`Only in MySQL`,`Only if named`],1,`Unique constraints too.`,'E'],
- [`Why does every extra index slow down inserts?`,[`It doesn't`,`Each insert must also update every index`,`Indexes lock tables`,`Indexes use the CPU cache`],1,`Write cost vs read benefit.`,'E'],
+ [`Why does every extra index slow down inserts?`,[`Each insert must rebuild the index from scratch`,`Each insert must also update every index`,`Each index takes a table-level lock on insert`,`Each insert is replayed once per index in the WAL`],1,`Write cost vs read benefit.`,'E'],
  [`<code>WHERE name LIKE 'abc%'</code> vs <code>LIKE '%abc'</code>: which can use a B-tree index on name?`,[`Both`,`Only 'abc%' (prefix)`,`Only '%abc'`,`Neither`],1,`A leading wildcard can't use the sort order.`,'M'],
- [`What does EXPLAIN (without ANALYZE) show?`,[`Real timings`,`The planned execution strategy and estimated costs`,`The data`,`Locks`],1,`ANALYZE runs it and shows actual numbers.`,'M']
+ [`What does EXPLAIN (without ANALYZE) show?`,[`The actual run time of each plan node`,`The planned execution strategy and estimated costs`,`The rows the query would return, unsorted`,`The locks each step would take at runtime`],1,`ANALYZE runs it and shows actual numbers.`,'M']
 ], [
- [`What is a partial index?`,[`A broken index`,`An index on only rows matching a condition, e.g. WHERE status = 'PENDING'`,`An index on half the columns`,`A temporary index`],1,`Small and useful for rare values.`,'H'],
- [`Why does the planner sometimes ignore an existing index?`,[`Bug`,`It estimates a sequential scan is cheaper (low selectivity, small table, stale statistics)`,`Indexes expire`,`Only on Mondays`],1,`Run ANALYZE to refresh statistics.`,'H']
+ [`What is a partial index?`,[`An index on only the first part of each value, e.g. a column prefix`,`An index on only rows matching a condition, e.g. WHERE status = 'PENDING'`,`An index split across partitions, each covering one date range`,`An index built in the background, usable for reads before it finishes`],1,`Small and useful for rare values.`,'H'],
+ [`Why does the planner sometimes ignore an existing index?`,[`Indexes are skipped once they exceed shared_buffers, so it scans`,`It estimates a sequential scan is cheaper (low selectivity, small table, stale statistics)`,`It only uses an index when the query includes an ORDER BY clause`,`The index was created after the connection opened its plan cache`],1,`Run ANALYZE to refresh statistics.`,'H']
 ]);
 
 addQ('8.3', [
- [`What does a JDBC driver do?`,[`Compiles Java`,`Implements JDBC for a specific database`,`Pools connections`,`Writes SQL for you`],1,`e.g. the PostgreSQL driver.`,'E'],
+ [`What does a JDBC driver do?`,[`Pools and reuses connections for the app`,`Implements JDBC for a specific database`,`Translates JPQL into native SQL queries`,`Compiles SQL strings into Java bytecode`],1,`e.g. the PostgreSQL driver.`,'E'],
  [`Which object runs parameterised SQL?`,[`Statement`,`PreparedStatement`,`ResultSet`,`DriverManager`],1,`With ? placeholders.`,'E'],
  [`How do you read the next row of a ResultSet?`,[`rs.get()`,`rs.next()`,`rs.read()`,`rs.row()`],1,`Returns false when there are no more rows.`,'E'],
  [`Default pool in Spring Boot?`,[`Tomcat JDBC`,`HikariCP`,`C3P0`,`DBCP 1`],1,`Fast and well tuned.`,'M'],
- [`What does <code>con.setAutoCommit(false)</code> start?`,[`A new connection`,`A manual transaction: you must commit or roll back`,`Read-only mode`,`Batching`],1,`What @Transactional does for you.`,'M']
+ [`What does <code>con.setAutoCommit(false)</code> start?`,[`A new physical connection reserved for writes`,`A manual transaction: you must commit or roll back`,`Read-only mode until you call setAutoCommit(true)`,`Statement batching: queries run on executeBatch()`],1,`What @Transactional does for you.`,'M']
 ], [
- [`What does <code>maximumPoolSize</code> too large risk?`,[`Nothing`,`Overloading the database with connections and context switching, slowing everything`,`Faster queries`,`Less memory`],1,`More connections isn't more throughput.`,'H'],
- [`Why use <code>getBigDecimal</code> instead of <code>getDouble</code> for money columns?`,[`Speed`,`Exact decimal values without binary floating point errors`,`Required by JDBC`,`It's shorter`],1,`See 1.10.`,'M']
+ [`What does <code>maximumPoolSize</code> too large risk?`,[`Nothing serious: idle connections cost the database nothing`,`Overloading the database with connections and context switching, slowing everything`,`Hikari ignores values above the CPU count, so it has no effect`,`The pool opens all connections lazily, delaying the first queries`],1,`More connections isn't more throughput.`,'H'],
+ [`Why use <code>getBigDecimal</code> instead of <code>getDouble</code> for money columns?`,[`getDouble rounds every value to two decimal places`,`Exact decimal values without binary floating point errors`,`JDBC drivers reject getDouble on NUMERIC columns`,`BigDecimal is faster since it skips floating point`],1,`See 1.10.`,'M']
 ]);
 
 addQ('8.4', [
- [`What is a Kafka topic?`,[`A database table`,`A named stream of events, split into partitions`,`A consumer`,`A broker`],1,`Producers write, consumers read.`,'E'],
- [`What is an offset?`,[`A timestamp`,`The position of a message within a partition`,`A partition id`,`A message key`],1,`Consumers commit offsets to track progress.`,'E'],
- [`Two different consumer groups subscribe to the same topic. Each gets?`,[`Half the messages`,`All the messages, independently`,`None`,`Duplicates only`],1,`Groups don't share progress.`,'E'],
- [`Are Kafka messages deleted once consumed?`,[`Yes`,`No: they're kept for the retention period`,`Only if acknowledged`,`Only in the first group`],1,`Enables replay.`,'M'],
- [`What does a message key influence?`,[`Encryption`,`Which partition the message goes to (and so its ordering)`,`Retention`,`Compression`],1,`Same key → same partition.`,'M']
+ [`What is a Kafka topic?`,[`A table-like store of current values, keyed by id`,`A named stream of events, split into partitions`,`A queue owned by one consumer group, split into shards`,`A broker process that hosts a set of partition replicas`],1,`Producers write, consumers read.`,'E'],
+ [`What is an offset?`,[`The timestamp at which the broker stored a message`,`The position of a message within a partition`,`The id of the partition a message was written to`,`A global sequence number across the whole topic`],1,`Consumers commit offsets to track progress.`,'E'],
+ [`Two different consumer groups subscribe to the same topic. Each gets?`,[`Each gets a share of the messages, split across groups`,`All the messages, independently`,`Only the group that subscribed first gets the messages`,`All the messages, but only after the other group commits`],1,`Groups don't share progress.`,'E'],
+ [`Are Kafka messages deleted once consumed?`,[`Yes, once every consumer group commits its offset`,`No: they're kept for the retention period`,`Only after the consumer acknowledges them`,`Yes, once all in-sync replicas have read them`],1,`Enables replay.`,'M'],
+ [`What does a message key influence?`,[`Which broker replica handles the consumer's reads`,`Which partition the message goes to (and so its ordering)`,`How long the message is kept before it's deleted`,`Which consumer group the message is delivered to`],1,`Same key → same partition.`,'M']
 ], [
- [`What is a consumer lag metric?`,[`Network latency`,`How far a group's committed offset is behind the latest offset`,`GC time`,`Message size`],1,`Rising lag means consumers can't keep up.`,'M'],
- [`What does an idempotent producer (enable.idempotence=true) prevent?`,[`Consumer duplicates`,`Duplicate writes to a partition caused by producer retries`,`Rebalances`,`Data loss on disk`],1,`Default in recent clients.`,'H']
+ [`What is a consumer lag metric?`,[`The network delay between the producer and the broker`,`How far a group's committed offset is behind the latest offset`,`How long a consumer takes to process each message`,`How far a follower replica is behind the partition leader`],1,`Rising lag means consumers can't keep up.`,'M'],
+ [`What does an idempotent producer (enable.idempotence=true) prevent?`,[`Duplicate processing on the consumer side after a rebalance`,`Duplicate writes to a partition caused by producer retries`,`Message loss when the broker crashes before flushing to disk`,`Reordering of messages across different partitions of a topic`],1,`Default in recent clients.`,'H']
 ]);
 
 addQ('9.1', [
- [`What does <code>assertEquals(expected, actual)</code> do when they differ?`,[`Logs a warning`,`Fails the test with both values in the message`,`Throws NullPointerException`,`Passes`],1,`Order matters for readable messages.`,'E'],
- [`What does <code>when(mock.find(1)).thenReturn(car)</code> do?`,[`Calls the real method`,`Stubs the mock to return car for find(1)`,`Verifies a call`,`Creates a car`],1,`Arrange step.`,'E'],
+ [`What does <code>assertEquals(expected, actual)</code> do when they differ?`,[`Logs a warning and lets the test continue`,`Fails the test with both values in the message`,`Fails the test, but shows only the expected value`,`Throws a RuntimeException that stops the suite`],1,`Order matters for readable messages.`,'E'],
+ [`What does <code>when(mock.find(1)).thenReturn(car)</code> do?`,[`Calls the real find(1) and records the result`,`Stubs the mock to return car for find(1)`,`Verifies that find(1) was called exactly once`,`Stubs find() to return car for any argument`],1,`Arrange step.`,'E'],
  [`Which JUnit 5 annotation runs before each test?`,[`@Before`,`@BeforeEach`,`@BeforeAll`,`@Setup`],1,`@BeforeAll runs once per class.`,'E'],
- [`How do you assert an exception in JUnit 5?`,[`@Test(expected = …)`,`assertThrows(Type.class, () -> …)`,`try/catch only`,`assertException`],1,`@Test(expected) was JUnit 4.`,'M'],
+ [`How do you assert an exception in JUnit 5?`,[`@Test(expected = Type.class) on the method`,`assertThrows(Type.class, () -> …)`,`assertException(Type.class, () -&gt; …)`,`@ExpectedException(Type.class) on the class`],1,`@Test(expected) was JUnit 4.`,'M'],
  [`<code>verify(repo, never()).save(any())</code> checks?`,[`save was called once`,`save was never called`,`save threw`,`Nothing`],1,`Useful for "no side effect on invalid input".`,'M']
 ], [
- [`What is a spy in Mockito?`,[`A mock with no behaviour`,`A wrapper around a real object; unstubbed methods call the real code`,`A test listener`,`A logger`],1,`Use sparingly.`,'M'],
- [`Why is <code>Thread.sleep</code> in tests a smell?`,[`It's fine`,`Tests become slow and flaky; wait on a condition (Awaitility) or inject a Clock`,`It's not allowed`,`It breaks JUnit`],1,`Make time and async completion controllable.`,'H']
+ [`What is a spy in Mockito?`,[`A mock whose methods all return defaults until stubbed`,`A wrapper around a real object; unstubbed methods call the real code`,`A listener that records each test's calls for reports`,`A mock that verifies every call automatically at the end`],1,`Use sparingly.`,'M'],
+ [`Why is <code>Thread.sleep</code> in tests a smell?`,[`It's fine: a fixed sleep makes async timing deterministic`,`Tests become slow and flaky; wait on a condition (Awaitility) or inject a Clock`,`It blocks JUnit's thread pool, so other tests can't run`,`Sleeping threads aren't interrupted when the test times out`],1,`Make time and async completion controllable.`,'H']
 ]);
 
 addQ('9.2', [
- [`Which command lists running JVMs?`,[`java -list`,`jcmd (with no arguments) or jps`,`top only`,`javap`],1,`Then target a pid.`,'E'],
- [`What does a thread dump contain?`,[`All objects`,`Each thread's state and stack trace`,`GC logs`,`CPU temperatures`],1,`Plus locks held and waited for.`,'E'],
+ [`Which command lists running JVMs?`,[`java -list or java --running`,`jcmd (with no arguments) or jps`,`javap with no arguments`,`jstat -list or jmap -list`],1,`Then target a pid.`,'E'],
+ [`What does a thread dump contain?`,[`Every live object and its size`,`Each thread's state and stack trace`,`The GC log since the JVM started`,`Each thread's CPU time and heap usage`],1,`Plus locks held and waited for.`,'E'],
  [`Which file format does Java Flight Recorder produce?`,[`.hprof`,`.jfr`,`.log`,`.class`],1,`Open with JDK Mission Control.`,'E'],
- [`Why take several thread dumps instead of one?`,[`Tools require three`,`To tell stuck threads (same frame every time) from busy ones`,`Each dump shows different threads`,`For compression`],1,`A few seconds apart.`,'M'],
- [`What's the first thing to check for "OutOfMemoryError: Metaspace"?`,[`Heap size`,`Class loading: generated classes or class loader leaks`,`Thread count`,`Disk space`],1,`See 1.3 and 1.2.`,'M']
+ [`Why take several thread dumps instead of one?`,[`Each dump only shows a random subset of the threads`,`To tell stuck threads (same frame every time) from busy ones`,`Tools like fastThread need at least three to parse`,`A single dump pauses threads and hides their real state`],1,`A few seconds apart.`,'M'],
+ [`What's the first thing to check for "OutOfMemoryError: Metaspace"?`,[`Heap size: Metaspace is carved out of -Xmx`,`Class loading: generated classes or class loader leaks`,`Thread count: each thread stack uses Metaspace`,`String interning filling the Metaspace pool`],1,`See 1.3 and 1.2.`,'M']
 ], [
- [`async-profiler flame graphs show?`,[`Memory layout`,`Where CPU time (or allocations) is spent, stacked by call path`,`Network traffic`,`GC pauses only`],1,`Wide bars = hot code paths.`,'H'],
- [`<code>-XX:+ExitOnOutOfMemoryError</code> is useful in containers because?`,[`It prevents OOM`,`The JVM exits immediately so the orchestrator restarts a clean instance`,`It increases heap`,`It writes a dump`],1,`Pair with HeapDumpOnOutOfMemoryError.`,'H']
+ [`async-profiler flame graphs show?`,[`How objects are laid out in memory, grouped by class`,`Where CPU time (or allocations) is spent, stacked by call path`,`Where wall-clock time goes, but only for blocked threads`,`Which threads were running, stacked on a timeline by start`],1,`Wide bars = hot code paths.`,'H'],
+ [`<code>-XX:+ExitOnOutOfMemoryError</code> is useful in containers because?`,[`It frees soft references first, so OOM rarely happens at all`,`The JVM exits immediately so the orchestrator restarts a clean instance`,`It doubles the heap size once, before giving up on recovery`,`It writes a heap dump and then keeps serving the requests`],1,`Pair with HeapDumpOnOutOfMemoryError.`,'H']
 ]);
 
 addQ('9.3', [
- [`What identifies a Maven dependency?`,[`Its file name`,`groupId, artifactId and version`,`Its URL`,`Its size`],1,`Coordinates.`,'E'],
+ [`What identifies a Maven dependency?`,[`The JAR file name and its checksum`,`groupId, artifactId and version`,`The repository URL and its path`,`groupId, artifactId and packaging`],1,`Coordinates.`,'E'],
  [`Which scope keeps JUnit out of the production JAR?`,[`compile`,`test`,`runtime`,`provided`],1,`Test-only dependencies.`,'E'],
  [`Command to see the full dependency tree in Maven?`,[`mvn tree`,`mvn dependency:tree`,`mvn deps`,`mvn list`],1,`Gradle: gradle dependencies.`,'E'],
- [`What does <code>mvn package</code> run?`,[`Only compile`,`Compile, test, then package (earlier phases included)`,`Deploy`,`Only tests`],1,`The lifecycle runs phases in order.`,'M'],
+ [`What does <code>mvn package</code> run?`,[`Only compile and package, skipping the tests`,`Compile, test, then package (earlier phases included)`,`Compile, test, package, then install locally`,`Only the package phase, using existing classes`],1,`The lifecycle runs phases in order.`,'M'],
  [`Gradle's default conflict resolution picks?`,[`The nearest`,`The highest version`,`The first declared`,`The oldest`],1,`Maven picks the nearest.`,'M']
 ], [
- [`Gradle <code>api</code> vs <code>implementation</code>?`,[`Same`,`api exposes the dependency to consumers' compile classpath; implementation keeps it internal`,`implementation is for tests`,`api is deprecated`],1,`implementation speeds builds and hides internals.`,'H'],
- [`What does a BOM import (<code>&lt;scope&gt;import&lt;/scope&gt;</code>) do?`,[`Adds all libraries`,`Brings in managed versions without adding dependencies`,`Imports Java classes`,`Nothing`],1,`e.g. spring-boot-dependencies, testcontainers-bom.`,'M']
+ [`Gradle <code>api</code> vs <code>implementation</code>?`,[`They're the same; implementation is just the newer name for compile`,`api exposes the dependency to consumers' compile classpath; implementation keeps it internal`,`implementation exposes the dependency to consumers; api keeps it internal`,`api is for published library JARs only; implementation is for test code`],1,`implementation speeds builds and hides internals.`,'H'],
+ [`What does a BOM import (<code>&lt;scope&gt;import&lt;/scope&gt;</code>) do?`,[`Adds every library in the BOM as a dependency`,`Brings in managed versions without adding dependencies`,`Copies the BOM's plugins into your build section`,`Replaces your parent pom with the BOM's parent`],1,`e.g. spring-boot-dependencies, testcontainers-bom.`,'M']
 ]);
 
 addQ('9.4', [
  [`Which log level is typical in production?`,[`TRACE`,`DEBUG`,`INFO`,`OFF`],2,`DEBUG temporarily, when investigating.`,'E'],
  [`Which library is the logging facade most Java code uses?`,[`Log4j 1`,`SLF4J`,`System.out`,`JUL only`],1,`Logback or Log4j2 implement it.`,'E'],
  [`Which metric type measures request durations and percentiles?`,[`Counter`,`Timer`,`Gauge`,`Tag`],1,`Counters only count.`,'M'],
- [`What is a trace id?`,[`A thread id`,`An id shared by all spans of one request across services`,`A log level`,`A user id`],1,`Propagated in headers.`,'E'],
- [`Why is structured (JSON) logging useful?`,[`Smaller files`,`Fields are searchable and filterable in log tools`,`Faster writes`,`Required by SLF4J`],1,`e.g. filter by orderId.`,'M']
+ [`What is a trace id?`,[`The id of the thread that handled the request`,`An id shared by all spans of one request across services`,`An id unique to each span within a service`,`An id the client sends to dedupe retries`],1,`Propagated in headers.`,'E'],
+ [`Why is structured (JSON) logging useful?`,[`Log files are much smaller than plain text`,`Fields are searchable and filterable in log tools`,`Writes are faster since nothing is formatted`,`SLF4J needs JSON to attach MDC values`],1,`e.g. filter by orderId.`,'M']
 ], [
- [`What is an SLO?`,[`A logger`,`A service-level objective, e.g. 99.9% of requests under 300 ms`,`A GC setting`,`A database index`],1,`Alert when you're burning the error budget.`,'H'],
- [`Why sample traces instead of recording 100%?`,[`Tracing is illegal`,`Volume and cost; keep enough to diagnose (often all errors plus a sample)`,`Traces are inaccurate`,`No reason`],1,`Tail-based sampling keeps interesting ones.`,'H']
+ [`What is an SLO?`,[`A service-level obligation, e.g. a refund if uptime drops`,`A service-level objective, e.g. 99.9% of requests under 300 ms`,`A service log output setting, e.g. JSON at INFO level`,`A system latency objective set per JVM, e.g. GC under 300 ms`],1,`Alert when you're burning the error budget.`,'H'],
+ [`Why sample traces instead of recording 100%?`,[`Full tracing breaks the ordering of spans across services`,`Volume and cost; keep enough to diagnose (often all errors plus a sample)`,`Sampling keeps trace ids unique across services`,`Tracing every request makes span timestamps inaccurate`],1,`Tail-based sampling keeps interesting ones.`,'H']
 ]);
 
 addQ('9.5', [
  [`What file declares a Java module?`,[`module.xml`,`module-info.java`,`pom.xml`,`MANIFEST.MF`],1,`At the source root.`,'E'],
  [`Which keyword declares a dependency on another module?`,[`imports`,`requires`,`uses`,`needs`],1,`requires java.sql;`,'E'],
  [`Which module is always available without requires?`,[`java.sql`,`java.base`,`java.desktop`,`java.logging`],1,`Contains java.lang, java.util…`,'M'],
- [`What does <code>exports</code> NOT allow by itself?`,[`Using public types`,`Deep reflection into private members`,`Compiling against it`,`Importing it`],1,`That needs opens.`,'M'],
+ [`What does <code>exports</code> NOT allow by itself?`,[`Using the package's public types`,`Deep reflection into private members`,`Compiling against the package`,`Calling its public static methods`],1,`That needs opens.`,'M'],
  [`Since which version are JDK internals strongly encapsulated by default?`,[`9`,`11`,`16/17`,`21`],2,`JEP 396 (16) then 403 (17).`,'M']
 ], [
- [`What is an automatic module?`,[`A generated module-info`,`A plain JAR placed on the module path, named from its manifest or file name`,`A JDK module`,`A test module`],1,`Helps migration.`,'H'],
- [`<code>requires transitive</code> means?`,[`Optional dependency`,`Modules requiring this one also get read access to that dependency`,`Runtime only`,`Test only`],1,`Implied readability.`,'H']
+ [`What is an automatic module?`,[`A module-info.java that jdeps generates for a JAR at build time`,`A plain JAR placed on the module path, named from its manifest or file name`,`A JDK module loaded on demand the first time a class needs it`,`A plain JAR on the classpath, which the JVM names after its package`],1,`Helps migration.`,'H'],
+ [`<code>requires transitive</code> means?`,[`The dependency is optional and may be missing at runtime`,`Modules requiring this one also get read access to that dependency`,`The dependency is only needed at runtime, not at compile time`,`This module's packages are exported to all modules that read it`],1,`Implied readability.`,'H']
 ]);
 
 addQ('10.1', [
  [`Mono emits how many values at most?`,[`Many`,`One`,`Zero always`,`Two`],1,`Flux emits many.`,'E'],
  [`What starts a Reactor pipeline?`,[`Creating it`,`Subscribing to it`,`Calling map`,`Logging it`],1,`Lazy until subscribe.`,'E'],
- [`What does <code>block()</code> do on a Mono?`,[`Nothing`,`Waits for and returns the value, blocking the current thread`,`Cancels it`,`Subscribes asynchronously`],1,`Avoid it on event-loop threads.`,'M'],
+ [`What does <code>block()</code> do on a Mono?`,[`Subscribes asynchronously and returns the Mono itself`,`Waits for and returns the value, blocking the current thread`,`Cancels the Mono if it hasn't emitted within a timeout`,`Waits for the value, but only on the event loop thread`],1,`Avoid it on event-loop threads.`,'M'],
  [`Combine two Monos' results when both complete?`,[`flatMap`,`zip / zipWith`,`take`,`filter`],1,`Runs them concurrently.`,'M'],
  [`Recover from an error with another publisher?`,[`onErrorResume`,`map`,`doOnNext`,`subscribe`],0,`onErrorReturn for a plain value.`,'M']
 ], [
- [`concatMap vs flatMap?`,[`Same`,`concatMap preserves order and runs inner publishers one at a time; flatMap may interleave`,`flatMap is ordered`,`concatMap is faster always`],1,`Choose by whether order matters.`,'H'],
- [`What does <code>Flux.interval(Duration.ofSeconds(1))</code> run on?`,[`The caller`,`Schedulers.parallel() by default`,`A new thread per tick`,`The main thread`],1,`Time-based operators use the parallel scheduler.`,'H']
+ [`concatMap vs flatMap?`,[`They're the same, but concatMap subscribes to all inner publishers eagerly`,`concatMap preserves order and runs inner publishers one at a time; flatMap may interleave`,`flatMap preserves order and runs one at a time; concatMap may interleave`,`concatMap is always faster because it runs all inner publishers in parallel`],1,`Choose by whether order matters.`,'H'],
+ [`What does <code>Flux.interval(Duration.ofSeconds(1))</code> run on?`,[`The caller's thread that subscribed`,`Schedulers.parallel() by default`,`Schedulers.boundedElastic() by default`,`A new platform thread for each tick`],1,`Time-based operators use the parallel scheduler.`,'H']
 ]);
 
 addQ('10.2', [
- [`What is an event loop?`,[`A for loop`,`A thread that handles many connections' events without blocking`,`A GC phase`,`A Kafka consumer`],1,`Netty powers WebFlux.`,'E'],
+ [`What is an event loop?`,[`A loop that polls the database for new rows`,`A thread that handles many connections' events without blocking`,`A thread pool that gives each connection a thread`,`A GC phase that reclaims short-lived objects`],1,`Netty powers WebFlux.`,'E'],
  [`Non-blocking database access for WebFlux?`,[`JDBC`,`R2DBC`,`JPA`,`JdbcTemplate`],1,`JDBC is blocking.`,'E'],
- [`Which Spring property enables virtual threads in MVC?`,[`spring.mvc.virtual=true`,`spring.threads.virtual.enabled=true`,`server.virtual=on`,`None`],1,`Java 21+, Boot 3.2+.`,'M'],
+ [`Which Spring property enables virtual threads in MVC?`,[`spring.mvc.virtual-threads=true`,`spring.threads.virtual.enabled=true`,`server.tomcat.threads.virtual=on`,`spring.task.execution.virtual=true`],1,`Java 21+, Boot 3.2+.`,'M'],
  [`Who benefits from virtual threads most?`,[`CPU-heavy number crunching`,`I/O-heavy request handling`,`GC tuning`,`Startup time`],1,`Waiting is cheap.`,'E'],
  [`Detect blocking calls in reactive code during tests?`,[`jstack`,`BlockHound`,`JFR only`,`EXPLAIN`],1,`Fails tests that block event loops.`,'M']
 ], [
- [`Why can a reactive stack trace be hard to read?`,[`It's encrypted`,`Work hops threads and operators, so the stack shows framework frames, not your call chain`,`It's empty`,`It's in Kotlin`],1,`Use checkpoint() or Reactor debug tooling.`,'M'],
+ [`Why can a reactive stack trace be hard to read?`,[`Reactor strips all user frames to keep traces short for performance reasons`,`Work hops threads and operators, so the stack shows framework frames, not your call chain`,`Operators run in a separate JVM, so the trace stops at the network boundary`,`Errors are wrapped in a Mono, so the trace only shows the outermost operator`],1,`Use checkpoint() or Reactor debug tooling.`,'M'],
  [`Server-Sent Events streaming 10,000 updates per second to clients: which fits better?`,[`Blocking MVC with platform threads`,`WebFlux with Flux and backpressure`,`JDBC`,`@Scheduled`],1,`Streaming is reactive's strength.`,'H']
 ]);
 
@@ -7662,63 +7662,63 @@ addQ('11.1', [
  [`What's the space complexity of a HashSet holding n items?`,[`O(1)`,`O(n)`,`O(log n)`,`O(n²)`],1,`Memory grows with the input.`,'E'],
  [`Two separate (not nested) loops over n items?`,[`O(n²)`,`O(n)`,`O(2ⁿ)`,`O(log n)`],1,`O(n) + O(n) = O(n).`,'M']
 ], [
- [`Amortised O(1) for ArrayList.add means?`,[`Every add is O(1)`,`Occasional O(n) resizes average out to O(1) per add`,`It's O(log n)`,`It's random`],1,`Doubling-style growth.`,'M'],
+ [`Amortised O(1) for ArrayList.add means?`,[`Every single add is guaranteed O(1) by preallocation`,`Occasional O(n) resizes average out to O(1) per add`,`Each add is O(log n) because the array grows by half`,`Adds are O(1) except at the end, where they're O(n)`],1,`Doubling-style growth.`,'M'],
  [`Recursion that splits the problem in half and does O(n) work per level (merge sort)?`,[`O(n)`,`O(n log n)`,`O(n²)`,`O(log n)`],1,`log n levels × n work.`,'H']
 ]);
 
 addQ('11.2', [
- [`Reverse an array in place with two pointers: where do they start?`,[`Both at 0`,`One at each end, swapping and moving inward`,`At the middle`,`Randomly`],1,`O(n) time, O(1) space.`,'E'],
- [`Check if a string is a palindrome efficiently?`,[`Reverse and compare (O(n) extra)`,`Two pointers from both ends comparing characters`,`Sort it`,`Use a HashMap`],1,`O(1) extra space.`,'E'],
- [`Fixed-size window sum: when moving the window by one, you?`,[`Recompute the whole sum`,`Add the new element and subtract the one leaving`,`Sort the window`,`Restart`],1,`O(1) per move.`,'E'],
- [`Remove duplicates from a sorted array in place?`,[`Nested loops`,`Slow/fast pointers: copy each new value forward`,`HashSet only`,`Sort again`],1,`O(n), O(1) space.`,'M'],
- [`Merge two sorted arrays?`,[`Concatenate and sort`,`Two pointers taking the smaller head each time: O(n + m)`,`Binary search`,`HashMap`],1,`Merge step of merge sort.`,'M']
+ [`Reverse an array in place with two pointers: where do they start?`,[`Both at index 0, one moving twice as fast`,`One at each end, swapping and moving inward`,`Both at the middle, moving outward and swapping`,`One at the start, one at the middle, both moving right`],1,`O(n) time, O(1) space.`,'E'],
+ [`Check if a string is a palindrome efficiently?`,[`Reverse it with a StringBuilder and compare with equals`,`Two pointers from both ends comparing characters`,`Push half onto a stack, then pop while scanning the rest`,`Compare the hashCode of the string and of its reverse`],1,`O(1) extra space.`,'E'],
+ [`Fixed-size window sum: when moving the window by one, you?`,[`Recompute the sum of the window from scratch`,`Add the new element and subtract the one leaving`,`Add the new element and subtract the window's minimum`,`Replace the oldest element and re-sort the window`],1,`O(1) per move.`,'E'],
+ [`Remove duplicates from a sorted array in place?`,[`Nested loops: shift the rest left on each duplicate`,`Slow/fast pointers: copy each new value forward`,`Copy everything into a HashSet, then back to the array`,`Two pointers from both ends, swapping duplicates out`],1,`O(n), O(1) space.`,'M'],
+ [`Merge two sorted arrays?`,[`Concatenate them, then sort the result: O((n + m) log(n + m))`,`Two pointers taking the smaller head each time: O(n + m)`,`Binary search each element of one into the other: O(n log m)`,`Insert both into a TreeSet and copy them back out in order`],1,`Merge step of merge sort.`,'M']
 ], [
- [`Smallest subarray with sum ≥ target (positive numbers). Approach?`,[`All subarrays O(n²)`,`Variable sliding window: expand right, shrink left while sum ≥ target`,`Sort`,`Binary search only`],1,`O(n).`,'H'],
- [`Why does the sliding window fail for "subarray sum = k" with negative numbers?`,[`It doesn't`,`Shrinking no longer reliably decreases the sum; use prefix sums + HashMap`,`Negative numbers are invalid`,`Sorting fixes it`],1,`Monotonicity is lost.`,'H']
+ [`Smallest subarray with sum ≥ target (positive numbers). Approach?`,[`Check all subarrays with prefix sums for O(1) sums, O(n²) overall`,`Variable sliding window: expand right, shrink left while sum ≥ target`,`Sort the numbers and take the largest ones until the sum is reached`,`Fixed-size window, trying every length from 1 to n until one works`],1,`O(n).`,'H'],
+ [`Why does the sliding window fail for "subarray sum = k" with negative numbers?`,[`It works if you take absolute values before summing the window`,`Shrinking no longer reliably decreases the sum; use prefix sums + HashMap`,`Negative numbers overflow the running sum; use long and a window`,`Sorting the array first restores the monotonic window property`],1,`Monotonicity is lost.`,'H']
 ]);
 
 addQ('11.3', [
- [`Check if two strings are anagrams in O(n)?`,[`Sort both always`,`Count letters with a map or int[26] and compare`,`Nested loops`,`Binary search`],1,`Sorting is O(n log n).`,'E'],
- [`First duplicate in an array?`,[`Nested loops`,`Scan with a HashSet; the first failed add is the answer`,`Sort`,`Two pointers`],1,`O(n).`,'E'],
+ [`Check if two strings are anagrams in O(n)?`,[`Sort both and compare: sorting is linear for strings`,`Count letters with a map or int[26] and compare`,`Compare the sum of the character codes of both`,`Check each char of one with indexOf in the other`],1,`Sorting is O(n log n).`,'E'],
+ [`First duplicate in an array?`,[`Sort it, then return the first equal neighbours`,`Scan with a HashSet; the first failed add is the answer`,`Nested loops, comparing each item with later ones`,`Two pointers from both ends moving toward each other`],1,`O(n).`,'E'],
  [`What does <code>map.getOrDefault(k, 0)</code> return for a missing key?`,[`null`,`0`,`Throws`,`k`],1,`Handy for counting.`,'E'],
- [`Most frequent element?`,[`Sort and guess`,`Frequency map, then the max entry`,`Binary search`,`Stack`],1,`O(n).`,'M'],
- [`Longest consecutive sequence (e.g. 100, 4, 200, 1, 3, 2 → 4) in O(n)?`,[`Sort`,`Put all in a HashSet; start counting only from numbers whose n−1 is absent`,`Nested loops`,`Heap`],1,`Each number is visited a constant number of times.`,'H']
+ [`Most frequent element?`,[`Sort, then take the middle element`,`Frequency map, then the max entry`,`A max-heap of the raw values`,`A Set, then the largest element`],1,`O(n).`,'M'],
+ [`Longest consecutive sequence (e.g. 100, 4, 200, 1, 3, 2 → 4) in O(n)?`,[`Sort the numbers, then count the longest run of +1 steps`,`Put all in a HashSet; start counting only from numbers whose n−1 is absent`,`Put all in a HashSet; count up from every number in the set`,`Use a min-heap and pop numbers while each is one larger`],1,`Each number is visited a constant number of times.`,'H']
 ], [
- [`Subarray sum equals k (with negatives) in O(n)?`,[`Sliding window`,`Prefix sums with a HashMap of prefix → count`,`Sorting`,`Binary search`],1,`Count prefixes equal to current − k.`,'H'],
- [`Why use int[26] instead of a HashMap for lowercase letter counts?`,[`HashMap can't count`,`Faster and smaller: direct indexing, no boxing or hashing`,`Required`,`Thread safety`],1,`When the alphabet is small and known.`,'M']
+ [`Subarray sum equals k (with negatives) in O(n)?`,[`Sliding window that shrinks the left side while sum is over k`,`Prefix sums with a HashMap of prefix → count`,`Sort the array, then use two pointers to find sums equal to k`,`Binary search on prefix sums for each end index to find k`],1,`Count prefixes equal to current − k.`,'H'],
+ [`Why use int[26] instead of a HashMap for lowercase letter counts?`,[`HashMap can't store char keys without converting them first`,`Faster and smaller: direct indexing, no boxing or hashing`,`int[26] is thread-safe, while HashMap needs synchronization`,`HashMap has a fixed capacity of 16, so it rehashes often`],1,`When the alphabet is small and known.`,'M']
 ]);
 
 addQ('11.4', [
  [`Binary search requires the data to be?`,[`Unique`,`Sorted (or monotonic)`,`Small`,`In a HashMap`],1,`Otherwise halving is meaningless.`,'E'],
  [`What's the loop condition in the standard version?`,[`lo &lt; hi - 1`,`lo &lt;= hi`,`lo != hi`,`true`],1,`With hi = length − 1.`,'E'],
- [`What does <code>Collections.binarySearch(list, key)</code> need?`,[`An unsorted list`,`A list sorted in ascending order (by the same comparator)`,`A LinkedList`,`A Set`],1,`Otherwise results are undefined.`,'E'],
- [`On a LinkedList, is binary search O(log n)?`,[`Yes`,`No: reaching the middle is O(n), so overall it's O(n)`,`It's O(1)`,`It's not allowed`],1,`Random access matters.`,'M'],
- [`Find the square root (floor) of n without Math.sqrt?`,[`Linear scan only`,`Binary search on the answer: largest x with x*x ≤ n`,`Sort`,`HashMap`],1,`O(log n).`,'M']
+ [`What does <code>Collections.binarySearch(list, key)</code> need?`,[`A RandomAccess list, sorted or not`,`A list sorted in ascending order (by the same comparator)`,`A list sorted in descending order`,`A list with no duplicate elements`],1,`Otherwise results are undefined.`,'E'],
+ [`On a LinkedList, is binary search O(log n)?`,[`Yes, the iterator jumps to the middle in O(1) each step`,`No: reaching the middle is O(n), so overall it's O(n)`,`Yes, LinkedList caches node positions after the first pass`,`No: it falls back to a linear scan, so it's O(n log n)`],1,`Random access matters.`,'M'],
+ [`Find the square root (floor) of n without Math.sqrt?`,[`Linear scan from n downward until x*x ≤ n`,`Binary search on the answer: largest x with x*x ≤ n`,`Newton's method on the smallest x with x*x ≥ n`,`Binary search for the smallest x with x*x &gt; n, then return it`],1,`O(log n).`,'M']
 ], [
- [`Search in a rotated sorted array (e.g. 4 5 6 7 0 1 2)?`,[`Impossible in O(log n)`,`Binary search: at each step one half is sorted; check if target lies in it`,`Linear only`,`Sort first`],1,`Still O(log n).`,'H'],
- [`Lower bound (first index with a[i] ≥ x) loop typically uses?`,[`lo &lt;= hi with hi = mid - 1 on match`,`lo &lt; hi with hi = mid when a[mid] ≥ x, else lo = mid + 1`,`A linear scan`,`Recursion only`],1,`Half-open interval variant.`,'H']
+ [`Search in a rotated sorted array (e.g. 4 5 6 7 0 1 2)?`,[`Impossible in O(log n): find the pivot with a linear scan first`,`Binary search: at each step one half is sorted; check if target lies in it`,`Sort it back in O(n log n), then run plain binary search`,`Binary search on the left half only, since it stays sorted`],1,`Still O(log n).`,'H'],
+ [`Lower bound (first index with a[i] ≥ x) loop typically uses?`,[`lo &lt;= hi with hi = mid - 1 on match, returning mid on equality`,`lo &lt; hi with hi = mid when a[mid] ≥ x, else lo = mid + 1`,`lo &lt; hi with lo = mid when a[mid] &lt; x, else hi = mid - 1`,`lo &lt;= hi with lo = mid + 1 when a[mid] ≥ x, else hi = mid`],1,`Half-open interval variant.`,'H']
 ]);
 
 addQ('11.5', [
  [`BFS uses which structure?`,[`Stack`,`Queue`,`Heap`,`Hash table only`],1,`FIFO gives level order.`,'E'],
- [`DFS is naturally written with?`,[`A queue`,`Recursion (or an explicit stack)`,`A heap`,`Sorting`],1,`Go deep, backtrack.`,'E'],
- [`Why keep a visited set?`,[`Speed only`,`To avoid processing nodes twice and looping forever on cycles`,`To sort output`,`To save memory`],1,`Trees don't need it (no cycles).`,'E'],
+ [`DFS is naturally written with?`,[`A queue (FIFO)`,`Recursion (or an explicit stack)`,`A priority queue`,`A sorted list`],1,`Go deep, backtrack.`,'E'],
+ [`Why keep a visited set?`,[`To record the order nodes are visited in for output`,`To avoid processing nodes twice and looping forever on cycles`,`To make neighbour lookups O(1) instead of O(n)`,`To free memory by dropping finished nodes early`],1,`Trees don't need it (no cycles).`,'E'],
  [`Time complexity of BFS/DFS on a graph?`,[`O(V × E)`,`O(V + E)`,`O(log V)`,`O(V²) always`],1,`Each vertex and edge once.`,'M'],
  [`Level-order traversal of a binary tree uses?`,[`DFS`,`BFS with a queue`,`Binary search`,`A heap`],1,`Process level by level.`,'M']
 ], [
- [`Number of islands in a grid of 0/1 cells?`,[`Sort cells`,`For each unvisited land cell, run BFS/DFS to mark its island, count launches`,`Binary search`,`DP only`],1,`Classic flood fill.`,'H'],
- [`Shortest path with weighted edges (non-negative)?`,[`BFS`,`Dijkstra with a PriorityQueue`,`DFS`,`Binary search`],1,`BFS only works for unweighted graphs.`,'M']
+ [`Number of islands in a grid of 0/1 cells?`,[`Count land cells, then divide by the average island size computed by scanning each row`,`For each unvisited land cell, run BFS/DFS to mark its island, count launches`,`Sort all land cells by row and column, then count the gaps between consecutive cells`,`For each land cell, count it only if both its top and left neighbours are water cells`],1,`Classic flood fill.`,'H'],
+ [`Shortest path with weighted edges (non-negative)?`,[`BFS with a plain FIFO queue`,`Dijkstra with a PriorityQueue`,`Topological sort, then relax edges`,`DFS keeping the minimum seen so far`],1,`BFS only works for unweighted graphs.`,'M']
 ]);
 
 addQ('11.6', [
- [`What's memoisation?`,[`Writing notes`,`Caching results of function calls to reuse them`,`Sorting`,`A loop`],1,`Top-down DP.`,'E'],
+ [`What's memoisation?`,[`Storing a loop's state so it can be resumed later`,`Caching results of function calls to reuse them`,`Converting a recursive function into an iterative loop`,`Sorting inputs so repeated calls are found faster`],1,`Top-down DP.`,'E'],
  [`Climbing stairs (1 or 2 steps): ways(n) = ?`,[`ways(n−1) × ways(n−2)`,`ways(n−1) + ways(n−2)`,`n²`,`2n`],1,`Like Fibonacci.`,'E'],
  [`Bottom-up DP fills the table in which order?`,[`Random`,`From base cases towards the answer`,`From the answer backwards`,`Alphabetical`],1,`So dependencies are ready.`,'E'],
- [`Why does greedy fail for coins {1, 3, 4} and amount 6?`,[`It doesn't`,`Taking 4 first leads to 4+1+1 (3 coins), but 3+3 (2 coins) is better`,`Coins must be sorted`,`6 is too big`],1,`DP checks every choice.`,'M'],
- [`Space for the climbing-stairs DP can be reduced to?`,[`O(n²)`,`O(1): keep only the last two values`,`O(log n)`,`O(n) minimum`],1,`Rolling variables.`,'M']
+ [`Why does greedy fail for coins {1, 3, 4} and amount 6?`,[`Greedy needs the coins sorted ascending; descending makes it pick 4+1+1`,`Taking 4 first leads to 4+1+1 (3 coins), but 3+3 (2 coins) is better`,`Greedy only works when the amount is a multiple of the largest coin, here 4`,`Taking 3 first leads to 3+1+1+1 (4 coins), while 4+1+1 is better`],1,`DP checks every choice.`,'M'],
+ [`Space for the climbing-stairs DP can be reduced to?`,[`O(n): the dp array can't shrink`,`O(1): keep only the last two values`,`O(log n): by halving the steps`,`O(√n): keeping a block of values`],1,`Rolling variables.`,'M']
 ], [
  [`Longest common subsequence of strings of length n and m: table size and time?`,[`O(n + m)`,`O(n × m) for both`,`O(log n)`,`O(2ⁿ)`],1,`dp[i][j] from dp[i−1][j−1], dp[i−1][j], dp[i][j−1].`,'H'],
- [`0/1 knapsack: why iterate capacity backwards in the 1-D DP version?`,[`Style`,`So each item is used at most once (values from this item's round aren't reused)`,`Faster`,`To sort items`],1,`Forwards would allow unlimited copies.`,'H']
+ [`0/1 knapsack: why iterate capacity backwards in the 1-D DP version?`,[`Iterating backwards visits fewer cells, so it's faster`,`So each item is used at most once (values from this item's round aren't reused)`,`So each item can be reused as many times as it fits`,`Forward iteration reads indexes below 0 and throws`],1,`Forwards would allow unlimited copies.`,'H']
 ]);
 </script>
 <script>
