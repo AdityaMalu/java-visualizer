@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Step-by-step visual walkthroughs of Java: JVM and memory, collections internals, OOP and design patterns, concurrency, Spring and microservices, real-world production scenarios, with a quiz after each topic.">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>Java Concepts Stepper</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<!-- @styles -->
+
+<div class="app">
+  <nav class="rail" aria-label="Topics">
+    <h1>Java Concepts Stepper</h1>
+    <p>The Java visual guide, one step at a time, with a short quiz after each topic. Keys: ← → step, space play, [ ] previous/next topic.</p>
+    <div class="focus" role="group" aria-label="Interview focus">
+      <span class="focus-l">Interview focus</span>
+      <div class="seg" id="focus">
+        <button type="button" data-focus="must">Must-know</button><button type="button" data-focus="good">+ Good to know</button><button type="button" data-focus="all">All</button>
+      </div>
+      <p class="focus-key"><i class="imp imp-must"></i>must-know <i class="imp imp-good"></i>good to know <i class="imp imp-extra"></i>beyond interviews</p>
+    </div>
+    <div id="rail"></div>
+  </nav>
+  <main>
+    <div class="mobile-pick"><label for="pick" class="cm" style="font-size:12px">Topic</label><select id="pick"></select></div>
+    <div class="crumb" id="crumb"></div>
+    <div class="head"><span class="no" id="no"></span><h2 id="title"></h2><span class="imp-pill" id="impPill"></span>
+      <div class="topnav"><button id="ptopic">‹ Prev topic</button><button id="ntopic">Next topic ›</button></div></div>
+    <p class="idea" id="idea"></p>
+    <details class="card theory" id="theoryCard">
+      <summary><span class="th-sum">Theory: start here</span><span class="th-meta" id="thMeta"></span></summary>
+      <div class="theory-body" id="theory"></div>
+    </details>
+
+    <section class="narr" aria-live="polite">
+      <div class="ctrl">
+        <button id="first" title="Back to step 1">⟲ Reset</button>
+        <button id="prev">← Prev</button>
+        <button id="next" class="primary">Next →</button>
+        <button id="play">▶ Play</button>
+        <span class="count" id="count"></span>
+      </div>
+      <div class="dots" id="dots"></div>
+      <div class="say" id="say"></div>
+    </section>
+
+    <div class="work">
+      <section class="card"><h3><span>Code</span><span id="codeTag"></span></h3><div class="code"><pre id="code"></pre></div></section>
+      <div class="stage">
+        <section class="card" id="thCard"><h3><span id="thTitle">Threads</span></h3><div class="threads" id="threads"></div></section>
+        <section class="card" id="dgCard"><h3><span id="dgTitle">Diagram</span></h3><div class="diagram" id="diagram"></div></section>
+        <section class="card" id="gCard"><h3><span id="gTitle">Shared state</span></h3><div class="groups" id="groups"></div></section>
+        <section class="card"><h3><span id="lgTitle">Console / events</span></h3><div class="log" id="log"></div></section>
+      </div>
+    </div>
+    <div class="legend" id="legend">
+      <span><span class="pill s-NEW">NEW</span>created, not started</span>
+      <span><span class="pill s-READY">READY</span>RUNNABLE, waiting for a CPU</span>
+      <span><span class="pill s-RUN">RUNNING</span>RUNNABLE, on a CPU now</span>
+      <span><span class="pill s-BLOCKED">BLOCKED</span>wants a monitor lock</span>
+      <span><span class="pill s-WAITING">WAITING</span>wait / join / park</span>
+      <span><span class="pill s-TIMED">TIMED_WAITING</span>sleep / wait(ms)</span>
+      <span><span class="pill s-TERM">TERMINATED</span>run() ended</span>
+    </div>
+    <section class="card keep"><h3><span>Remember for the interview</span></h3><ul id="keep"></ul></section>
+    <section class="card quiz" id="quizCard" aria-labelledby="qzTitle"><h3><span id="qzTitle">Check your understanding</span><span id="qzScore"></span></h3><div class="qzbar" id="qzBar"></div><div id="quiz"></div></section>
+  </main>
+</div>
+
+<!-- @scripts -->
+
+</body>
+</html>
